@@ -412,10 +412,6 @@ def render_pitch_tab(cliente_id, cliente_info):
 def render_meetings_tab(cliente_id, cliente_info):
     st.title("Reuniões")
 
-    if "meetings_transcript" not in st.session_state:
-        st.session_state.meetings_transcript = ""
-    if "meetings_summary" not in st.session_state:
-        st.session_state.meetings_summary = ""
     if "meetings_last_saved_path" not in st.session_state:
         st.session_state.meetings_last_saved_path = None
 
@@ -458,9 +454,6 @@ def render_meetings_tab(cliente_id, cliente_info):
             with st.spinner("Gerando resumo da reunião..."):
                 summary = summarize_transcript(cliente_info, transcript)
 
-            st.session_state.meetings_transcript = transcript
-            st.session_state.meetings_summary = summary
-
             meeting_path = save_meeting(
                 cliente_id=cliente_id,
                 cliente_nome=cliente_info.get("Nome", "Cliente"),
@@ -471,29 +464,10 @@ def render_meetings_tab(cliente_id, cliente_info):
             st.session_state.meetings_last_saved_path = str(meeting_path)
             st.success(f"Resumo salvo em: {meeting_path}")
 
-    st.subheader("2) Transcrição")
-    with st.expander("Ver transcrição", expanded=False):
-        st.text_area(
-            "Conteúdo transcrito",
-            value=st.session_state.meetings_transcript or "Sem transcrição gerada ainda.",
-            height=220,
-            key="meetings_transcript_display",
-            disabled=True,
-        )
-
-    st.subheader("3) Resumo")
-    st.text_area(
-        "Resumo estruturado",
-        value=st.session_state.meetings_summary or "Sem resumo gerado ainda.",
-        height=260,
-        key="meetings_summary_display",
-        disabled=True,
-    )
-
     if st.session_state.meetings_last_saved_path:
         st.caption(f"Último arquivo salvo: {st.session_state.meetings_last_saved_path}")
 
-    st.subheader("4) Histórico de reuniões")
+    st.subheader("2) Histórico de reuniões")
     st.button("🔄 Atualizar histórico", key="meetings_btn_refresh_history")
 
     meeting_files = list_client_meetings(cliente_id)
