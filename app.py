@@ -431,11 +431,15 @@ def main():
     st.sidebar.header("Selecionar Cliente")
     clientes_df = load_clientes()
 
+    cliente_ids = clientes_df["Cliente_ID"].tolist()
+    selected_index = 0
+    if st.session_state.selected_cliente_id in cliente_ids:
+        selected_index = int(cliente_ids.index(st.session_state.selected_cliente_id))
+
     selected_cliente_id = st.sidebar.selectbox(
         "Cliente",
-        clientes_df["Cliente_ID"],
-        index=clientes_df[clientes_df["Cliente_ID"] == st.session_state.selected_cliente_id].index[0]
-        if st.session_state.selected_cliente_id in clientes_df["Cliente_ID"].values else 0,
+        cliente_ids,
+        index=selected_index,
         key="global_cliente_select"
     )
     st.session_state.selected_cliente_id = selected_cliente_id
