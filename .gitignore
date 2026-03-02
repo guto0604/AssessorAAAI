@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.venv/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Streamlit
+.streamlit/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+
+# Jupyter (se usar)
+.ipynb_checkpoints/
+
+# Data / artifacts (se não quiser versionar)
+# data/
+# knowledge_base/

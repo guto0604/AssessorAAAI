@@ -1,0 +1,440 @@
+import streamlit as st
+from data_loader import (
+    load_clientes, load_jornadas, get_cliente_by_id,
+    load_investimentos, load_produtos,
+    get_investimentos_by_cliente, carteira_summary_for_llm
+)
+
+from journey_ranker import rank_journeys
+from source_selector import select_sources_step4
+from pitch_structurer import build_pitch_options_step5
+
+from pitch_writer import generate_final_pitch_step7, revise_pitch_step8
+
+
+
+if "etapa" not in st.session_state:
+    st.session_state.etapa = 1
+
+if "ranking_resultado" not in st.session_state:
+    st.session_state.ranking_resultado = None
+
+st.set_page_config(page_title="POC Jornada Comercial", layout="wide")
+
+st.title("Contato Assessor")
+
+# Sidebar
+st.sidebar.header("Selecionar Cliente")
+
+clientes_df = load_clientes()
+cliente_id = st.sidebar.selectbox(
+    "Cliente",
+    clientes_df["Cliente_ID"]
+)
+
+cliente_info = get_cliente_by_id(cliente_id)
+
+st.sidebar.markdown("### Dados do Cliente")
+st.sidebar.json(cliente_info)
+
+# Área principal
+st.header("1️⃣ Definir intenção do contato")
+
+prompt_assessor = st.text_area(
+    "Escreva o objetivo do contato:",
+    height=150
+)
+
+
+if st.button("🔎 Sugerir Jornadas"): # Gerar jornadas
+    
+    jornadas_df = load_jornadas()
+
+    with st.spinner("Analisando e ranqueando jornadas..."):
+        resultado = rank_journeys(cliente_info, prompt_assessor, jornadas_df)
+
+    st.session_state.ranking_resultado = resultado
+    st.session_state.etapa = 2
+
+
+if st.session_state.etapa >= 2 and st.session_state.ranking_resultado: # Jornadas já foram geradas
+
+    jornadas_df = load_jornadas()
+    resultado = st.session_state.ranking_resultado
+
+    st.subheader("📊 Jornadas Sugeridas")
+
+    ranking = resultado["ranking"]
+
+    jornadas_dict = {}
+
+    for item in ranking:
+        jornada_id = item["jornada_id"]
+        jornada_base = jornadas_df[jornadas_df["Jornada_ID"] == jornada_id].iloc[0]
+
+        jornadas_dict[jornada_id] = {
+            "nome": item["nome_jornada"],
+            "score": round(item["score"], 2),
+            "descricao_original": jornada_base["Descricao_Resumida"]
+        }
+
+    jornada_escolhida_id = st.radio(
+        "Selecione a jornada:",
+        options=list(jornadas_dict.keys()),
+        format_func=lambda x: f"{jornadas_dict[x]['nome']} (Score: {jornadas_dict[x]['score']})",
+        key="radio_jornada"
+    )
+
+    st.divider()
+
+    if "editar_descricao" not in st.session_state:
+        st.session_state["editar_descricao"] = False
+
+    if st.button("✏️ Editar descrição da jornada selecionada"):
+        st.session_state["editar_descricao"] = True
+
+    if st.session_state["editar_descricao"]:
+
+        descricao_editada = st.text_area(
+            "Ajuste o direcionamento da jornada:",
+            value=jornadas_dict[jornada_escolhida_id]["descricao_original"],
+            height=150,
+            key="descricao_editada_unica"
+        )
+
+        st.session_state["jornada_selecionada"] = {
+            "jornada_id": jornada_escolhida_id,
+            "descricao_editada": descricao_editada
+        }
+
+
+# ---------------------------
+# PASSO 4 - Seleção de fontes
+# ---------------------------
+if "jornada_selecionada" in st.session_state and st.session_state["jornada_selecionada"]:
+
+    st.divider()
+    st.header("4️⃣ Seleção de Fontes (Agent Router)")
+
+    # Carregar dados
+    investimentos_cliente_df = get_investimentos_by_cliente(cliente_id)
+    produtos_df = load_produtos()
+
+    # Summary (inclui rentabilidade x CDI se estiver no excel de clientes)
+    carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
+
+    # Mostrar resumo rápido (para o assessor ver o que o modelo está usando)
+    with st.expander("🔎 Resumo do Cliente e Carteira (inputs do passo 4)", expanded=False):
+        st.json(carteira_summary)
+        st.dataframe(investimentos_cliente_df, use_container_width=True)
+
+    if st.button("➡️ Executar Passo 4: Selecionar fontes e produtos", key="btn_step4"):
+
+        with st.spinner("Selecionando fontes da Knowledge-Base e produtos candidatos..."):
+            step4_result = select_sources_step4(
+                cliente_info=cliente_info,
+                prompt_assessor=prompt_assessor,
+                jornada_selecionada=st.session_state["jornada_selecionada"],
+                carteira_summary=carteira_summary,
+                produtos_df=produtos_df,
+                investimentos_cliente_df=investimentos_cliente_df,
+                kb_dir="knowledge_base",
+                model="gpt-4o-mini"
+            )
+
+        st.session_state["step4_result"] = step4_result
+        st.session_state.etapa = 4  # opcional, se você quiser controlar "etapas"
+
+    # Se já temos resultado, exibimos
+    if "step4_result" in st.session_state and st.session_state["step4_result"]:
+
+        step4_result = st.session_state["step4_result"]
+
+        st.success("✅ Passo 4 concluído: fontes e produtos selecionados")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("📚 Knowledge Base selecionada (por nome)")
+            st.write(step4_result.get("kb_files_selected", []))
+
+        with col2:
+            st.subheader("🧾 Data sources a usar")
+            st.write(step4_result.get("data_sources", []))
+
+        # Produtos selecionados
+        selected_ids = step4_result.get("products_selected_ids", [])
+        produtos_selecionados_df = produtos_df[produtos_df["Produto_ID"].isin(selected_ids)].copy()
+
+        st.subheader("🧩 Produtos candidatos selecionados")
+        st.dataframe(produtos_selecionados_df, use_container_width=True)
+
+        # Carteira do cliente (já filtrada)
+        st.subheader("👤 Investimentos atuais do cliente (filtrados)")
+        st.dataframe(investimentos_cliente_df, use_container_width=True)
+
+        # Métricas de performance (carteira vs CDI)
+        rent_12m = carteira_summary.get("rentabilidade_12_meses")
+        cdi_12m = carteira_summary.get("cdi_12_meses")
+        spread = carteira_summary.get("spread_vs_cdi_12m")
+
+        st.subheader("📈 Rentabilidade carteira vs CDI (12m)")
+        st.write({
+            "Rentabilidade_12_meses": rent_12m,
+            "CDI_12_Meses": cdi_12m,
+            "Spread_vs_CDI": spread
+        })
+
+        # Justificativa curta
+        if step4_result.get("reasoning_short"):
+            st.caption(f"Racional do agente: {step4_result['reasoning_short']}")
+
+# ---------------------------
+# PASSO 5 - Estruturar opções para o pitch (com RAG)
+# ---------------------------
+if "step4_result" in st.session_state and st.session_state["step4_result"]:
+
+    st.divider()
+    st.header("5️⃣ Estruturar opções do pitch (RAG + LLM)")
+
+    step4 = st.session_state["step4_result"]
+
+    # Recarrega bases
+    investimentos_cliente_df = get_investimentos_by_cliente(cliente_id)
+    produtos_df = load_produtos()
+
+    # Produtos selecionados no passo 4
+    selected_ids = step4.get("products_selected_ids", [])
+    produtos_selecionados_df = produtos_df[produtos_df["Produto_ID"].isin(selected_ids)].copy()
+
+    kb_files_selected = step4.get("kb_files_selected", [])
+
+    # Summary (inclui rentabilidade vs CDI)
+    carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
+
+    if st.button("➡️ Executar Passo 5: Gerar opções estruturadas", key="btn_step5"):
+        with st.spinner("Gerando diagnóstico, pontos e opções do pitch..."):
+            step5_result = build_pitch_options_step5(
+                cliente_info=cliente_info,
+                prompt_assessor=prompt_assessor,
+                jornada_selecionada=st.session_state["jornada_selecionada"],
+                carteira_summary=carteira_summary,
+                investimentos_cliente_df=investimentos_cliente_df,
+                produtos_selecionados_df=produtos_selecionados_df,
+                kb_files_selected=kb_files_selected,
+                model="gpt-4o-mini"
+            )
+
+        st.session_state["step5_result"] = step5_result
+        st.session_state.etapa = 5
+
+    # Renderizar resultados e checkboxes
+    if "step5_result" in st.session_state and st.session_state["step5_result"]:
+        step5 = st.session_state["step5_result"]
+        st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
+
+        # Helpers
+        def _checkbox_list(title, items, key_prefix):
+            st.subheader(title)
+            selected = []
+            for item in items:
+                cid = item.get("id")
+                txt = item.get("texto", "")
+                k = f"{key_prefix}_{cid}"
+                checked = st.checkbox(txt, value=True, key=k)  # default True: começa com tudo selecionado
+                if checked:
+                    selected.append(item)
+            return selected
+
+        # 1) Diagnóstico
+        selected_diagnostico = _checkbox_list(
+            "📌 Diagnóstico (carteira / perfil / rendimento)",
+            step5.get("diagnostico", []),
+            "chk_diag"
+        )
+
+        # 2) Pontos prioritários
+        selected_pontos = _checkbox_list(
+            "🎯 Pontos prioritários para abordar",
+            step5.get("pontos_prioritarios", []),
+            "chk_pontos"
+        )
+
+        # 3) Gatilhos comerciais
+        selected_gatilhos = _checkbox_list(
+            "⚡ Gatilhos comerciais (opcional)",
+            step5.get("gatilhos_comerciais", []),
+            "chk_gatilhos"
+        )
+
+        # 4) Objeções e respostas
+        st.subheader("🛡 Possíveis objeções e respostas (pré-tratadas)")
+        selected_obj = []
+        for item in step5.get("objecoes_e_respostas", []):
+            oid = item.get("id")
+            obj = item.get("objecao", "")
+            resp_txt = item.get("resposta", "")
+            label = f"Objeção: {obj}\nResposta sugerida: {resp_txt}"
+            k = f"chk_obj_{oid}"
+            checked = st.checkbox(label, value=True, key=k)
+            if checked:
+                selected_obj.append(item)
+
+        # 5) Produtos sugeridos
+        st.subheader("💼 Sugestões de produtos (candidatos)")
+        selected_prod = []
+        for item in step5.get("produtos_sugeridos", []):
+            pid = item.get("id")
+            prod_id = item.get("produto_id")
+            txt = item.get("texto", "")
+            label = f"[{prod_id}] {txt}" if prod_id else txt
+            k = f"chk_prod_{pid}"
+            checked = st.checkbox(label, value=True, key=k)
+            if checked:
+                selected_prod.append(item)
+
+        # 6) Tom sugerido (radio faz mais sentido)
+        st.subheader("🗣 Tom do pitch")
+        tom_options = []
+        if step5.get("tom_sugerido", {}).get("principal"):
+            tom_options.append(step5["tom_sugerido"]["principal"]["texto"])
+        for alt in step5.get("tom_sugerido", {}).get("alternativas", []):
+            tom_options.append(alt["texto"])
+
+        tom_escolhido = None
+        if tom_options:
+            tom_escolhido = st.radio(
+                "Escolha o tom:",
+                options=tom_options,
+                index=0,
+                key="radio_tom"
+            )
+
+        # 7) Tamanho do pitch (radio)
+        st.subheader("📏 Tamanho do pitch")
+        size_options = []
+        if step5.get("tamanho_pitch", {}).get("principal"):
+            size_options.append(step5["tamanho_pitch"]["principal"]["texto"])
+        for alt in step5.get("tamanho_pitch", {}).get("alternativas", []):
+            size_options.append(alt["texto"])
+
+        tamanho_escolhido = None
+        if size_options:
+            tamanho_escolhido = st.radio(
+                "Escolha o tamanho:",
+                options=size_options,
+                index=0,
+                key="radio_tamanho"
+            )
+
+        st.divider()
+
+        if st.button("💾 Salvar seleção (Passo 6)", key="btn_save_step5"):
+            st.session_state["step5_selection"] = {
+                "diagnostico": selected_diagnostico,
+                "pontos_prioritarios": selected_pontos,
+                "gatilhos_comerciais": selected_gatilhos,
+                "objecoes_e_respostas": selected_obj,
+                "produtos_sugeridos": selected_prod,
+                "tom_escolhido": tom_escolhido,
+                "tamanho_escolhido": tamanho_escolhido
+            }
+            st.session_state.etapa = 6
+            st.success("✅ Seleção salva. Pronto para o Passo 6/7 (pitch final).")
+
+
+# ---------------------------
+# PASSO 7/8 - Pitch (rascunho + ajustes + finalizar)
+# ---------------------------
+if "step5_selection" in st.session_state and st.session_state["step5_selection"]:
+
+    st.divider()
+    st.header("7️⃣ Gerar pitch")
+
+    model_writer = "gpt-5-mini"  # ou "gpt-5" se quiser mais qualidade
+
+    # Estado inicial
+    if "pitch_draft" not in st.session_state:
+        st.session_state["pitch_draft"] = ""
+    if "pitch_final_text" not in st.session_state:
+        st.session_state["pitch_final_text"] = None
+    if "pitch_version" not in st.session_state:
+        st.session_state["pitch_version"] = 0
+
+    if st.button("📝 Gerar pitch (rascunho)", key="btn_step7"):
+        with st.spinner("Escrevendo pitch..."):
+            pitch = generate_final_pitch_step7(
+                cliente_info=cliente_info,
+                prompt_assessor=prompt_assessor,
+                jornada_selecionada=st.session_state["jornada_selecionada"],
+                step5_selection=st.session_state["step5_selection"],
+                model=model_writer
+            )
+        st.session_state["pitch_draft"] = pitch
+        st.session_state["pitch_final_text"] = None
+        st.session_state["pitch_version"] += 1
+        st.success("✅ Rascunho gerado")
+
+    if st.session_state["pitch_draft"]:
+
+        st.subheader("🧾 Pitch (rascunho)")
+        st.caption("Você pode ajustar quantas vezes quiser. Ao finalizar, o texto fica pronto para copiar/colar.")
+
+        # Key dinâmica para o text_area refletir atualizações
+        draft_key = f"pitch_draft_box_{st.session_state['pitch_version']}"
+
+        pitch_in_ui = st.text_area(
+            "Rascunho atual:",
+            value=st.session_state["pitch_draft"],
+            height=240,
+            key=draft_key
+        )
+
+        # Se o usuário editar manualmente, salvamos no draft
+        st.session_state["pitch_draft"] = pitch_in_ui
+
+        st.subheader("8️⃣ Ajustar pitch (opcional)")
+        target_excerpt = st.text_input(
+            "Trecho específico (opcional):",
+            key="edit_excerpt"
+        )
+        edit_instruction = st.text_area(
+            "Instrução de ajuste (ex: encurtar, deixar mais consultivo, trocar tom, remover produto, etc.):",
+            height=110,
+            key="edit_instruction"
+        )
+
+        colA, colB = st.columns(2)
+
+        with colA:
+            if st.button("🔁 Aplicar ajuste", key="btn_step8") and edit_instruction.strip():
+                with st.spinner("Aplicando ajuste..."):
+                    revised = revise_pitch_step8(
+                        current_pitch=st.session_state["pitch_draft"],
+                        edit_instruction=edit_instruction.strip(),
+                        target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
+                        model=model_writer
+                    )
+                # Atualiza draft e força re-render do widget
+                st.session_state["pitch_draft"] = revised
+                st.session_state["pitch_version"] += 1
+                st.success("✅ Ajuste aplicado. Veja o pitch atualizado acima.")
+                st.rerun()
+
+        with colB:
+            if st.button("✅ Finalizar pitch", key="btn_finalize"):
+                st.session_state["pitch_final_text"] = st.session_state["pitch_draft"]
+                st.success("✅ Pitch finalizado")
+
+        if st.session_state["pitch_final_text"]:
+            st.divider()
+            st.subheader("📨 Pitch final (copiar e colar)")
+            st.text_area(
+                "Texto final:",
+                value=st.session_state["pitch_final_text"],
+                height=240,
+                key="pitch_final_box"
+            )
+
+            if st.button("↩️ Voltar para ajustes", key="btn_back_to_edit"):
+                st.session_state["pitch_final_text"] = None

@@ -1,0 +1,13 @@
+TÍTULO: Tributação de Fundos de Investimento
+
+Fundos de renda fixa e multimercado seguem tabela regressiva de IR:
+- 22,5% até 180 dias
+- 20% até 360 dias
+- 17,5% até 720 dias
+- 15% acima de 720 dias
+
+Possuem mecanismo de come-cotas semestral.
+
+Fundos de ações possuem alíquota fixa de 15% e não têm come-cotas.
+
+Importante alinhar horizonte de investimento ao impacto tributário.

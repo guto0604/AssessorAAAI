@@ -1,0 +1,95 @@
+import json
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+client = OpenAI()
+
+def generate_final_pitch_step7(
+    cliente_info: dict,
+    prompt_assessor: str,
+    jornada_selecionada: dict,
+    step5_selection: dict,
+    model: str = "gpt-5.1"
+):
+    """
+    Gera o pitch final com base na seleção do assessor.
+    """
+    system_prompt = """
+Você é um assessor de investimentos escrevendo uma mensagem para um cliente.
+
+Objetivo:
+- Escrever um pitch final pronto para envio (WhatsApp/Email curto), em português do Brasil.
+- Seguir o tom e o tamanho selecionados.
+- Usar somente os pontos aprovados (seleção do assessor).
+- Ser claro, humano e direto, sem agressividade.
+
+Regras:
+- Não invente dados numéricos de rentabilidade de produtos que não estejam explicitamente nos insumos.
+- Se houver produtos sugeridos com Produto_ID, cite o nome do produto de forma natural (não precisa mencionar o ID).
+- Evite jargões excessivos e excesso de promessas.
+- Se existirem objeções/respostas selecionadas, incorpore de forma sutil (uma ou duas frases) para reduzir fricção.
+- Responda APENAS com o texto final do pitch (sem JSON, sem markdown, sem explicações).
+"""
+
+    user_payload = {
+        "cliente": {
+            "nome": cliente_info.get("Nome"),
+            "perfil": cliente_info.get("Perfil_Suitability"),
+            "patrimonio_conosco": cliente_info.get("Patrimonio_Investido_Conosco"),
+            "dinheiro_para_investir": cliente_info.get("Dinheiro_Disponivel_Para_Investir"),
+            "rentabilidade_12_meses": cliente_info.get("Rentabilidade_12_meses"),
+            "cdi_12_meses": cliente_info.get("CDI_12_Meses"),
+        },
+        "prompt_inicial_assessor": prompt_assessor,
+        "jornada_escolhida": jornada_selecionada,  # contém jornada_id + descricao_editada
+        "selecoes_aprovadas": step5_selection
+    }
+
+    resp = client.chat.completions.create(
+        model=model,
+        temperature=1,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+        ],
+    )
+
+    return resp.choices[0].message.content.strip()
+
+
+def revise_pitch_step8(
+    current_pitch: str,
+    edit_instruction: str,
+    target_excerpt: str | None = None,
+    model: str = "gpt-5-mini"
+):
+    """
+    Ajuste iterativo do pitch (Passo 8 simples).
+    Se target_excerpt vier preenchido, o modelo prioriza editar aquele trecho.
+    """
+    system_prompt = """
+Você é um revisor de texto comercial para assessoria de investimentos.
+
+Regras:
+- Mantenha o mesmo objetivo e contexto do pitch.
+- Preserve o restante do texto o máximo possível.
+- Aplique exatamente a instrução do assessor.
+- Retorne APENAS o pitch revisado (sem markdown, sem explicações).
+"""
+
+    user_prompt = {
+        "pitch_atual": current_pitch,
+        "trecho_alvo": target_excerpt,
+        "instrucao_de_edicao": edit_instruction
+    }
+
+    resp = client.chat.completions.create(
+        model=model,
+        temperature=1,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
+        ],
+    )
+    return resp.choices[0].message.content.strip()

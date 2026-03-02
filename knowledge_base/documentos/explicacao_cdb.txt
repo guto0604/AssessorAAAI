@@ -1,0 +1,15 @@
+TÍTULO: Explicação – CDB (Certificado de Depósito Bancário)
+
+CDB é um título de renda fixa emitido por bancos para captar recursos. Ao investir em um CDB, o cliente está emprestando dinheiro para o banco e recebe uma rentabilidade em troca.
+
+A rentabilidade pode ser pós-fixada atrelada ao CDI, prefixada com taxa definida no momento da aplicação ou híbrida, normalmente IPCA mais uma taxa fixa.
+
+É indicado para investidores conservadores e moderados que buscam previsibilidade e segurança.
+
+Possui cobertura do FGC até o limite de 250 mil reais por CPF por instituição financeira.
+
+A tributação segue a tabela regressiva de renda fixa.
+
+Pontos comerciais: segurança, previsibilidade, alternativa ao CDI, diversificação entre bancos.
+
+Riscos: risco de crédito da instituição emissora e possível baixa liquidez em casos de carência.

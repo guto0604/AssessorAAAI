@@ -1,0 +1,15 @@
+TÍTULO: Explicação – Tesouro Direto
+
+Tesouro Direto são títulos públicos emitidos pelo Governo Federal e considerados de baixo risco de crédito.
+
+Os principais tipos são Tesouro Selic, Tesouro Prefixado e Tesouro IPCA+.
+
+Podem ser utilizados para reserva de emergência, objetivos de médio prazo e planejamento de aposentadoria.
+
+Possuem liquidez diária em D+1, porém estão sujeitos à marcação a mercado antes do vencimento.
+
+A tributação segue a tabela regressiva de renda fixa.
+
+Pontos comerciais: baixo risco de crédito, acessibilidade, planejamento de longo prazo, transparência.
+
+Riscos: oscilação de preço antes do vencimento devido à marcação a mercado.
