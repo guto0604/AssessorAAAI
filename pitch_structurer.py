@@ -113,7 +113,7 @@ Formato obrigatório:
 
     resp = client.chat.completions.create(
         model=model,
-        temperature=0.7,
+        temperature=1,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": system_prompt},

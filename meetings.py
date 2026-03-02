@@ -100,7 +100,7 @@ Próximos passos sugeridos para o assessor:
 
     resp = client.chat.completions.create(
         model="gpt-5-mini",
-        temperature=0.3,
+        temperature=1,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
