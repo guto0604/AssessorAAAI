@@ -261,7 +261,7 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         with st.expander("🔎 Resumo do Cliente e Carteira (inputs do passo 4)", expanded=False):
             st.json(carteira_summary)
-            st.dataframe(investimentos_cliente_df, use_container_width=True)
+            st.dataframe(investimentos_cliente_df, width="stretch")
 
         if st.button("➡️ Executar Passo 4: Selecionar fontes e produtos", key="pitch_btn_step4"):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
@@ -316,10 +316,10 @@ def render_pitch_tab(cliente_id, cliente_info):
             produtos_selecionados_df = produtos_df[produtos_df["Produto_ID"].isin(selected_ids)].copy()
 
             st.subheader("🧩 Produtos candidatos selecionados")
-            st.dataframe(produtos_selecionados_df, use_container_width=True)
+            st.dataframe(produtos_selecionados_df, width="stretch")
 
             st.subheader("👤 Investimentos atuais do cliente (filtrados)")
-            st.dataframe(investimentos_cliente_df, use_container_width=True)
+            st.dataframe(investimentos_cliente_df, width="stretch")
 
             rent_12m = carteira_summary.get("rentabilidade_12_meses")
             cdi_12m = carteira_summary.get("cdi_12_meses")
