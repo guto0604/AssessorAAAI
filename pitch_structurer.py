@@ -1,39 +1,17 @@
 import json
-from datetime import datetime, timezone
-from time import perf_counter
 
-from openai_client import get_openai_client
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda
+from langchain_core.tools import tool
 
-
-def _usage_dict(response):
-    usage = getattr(response, "usage", None)
-    if not usage:
-        return {}
-    prompt_tokens = getattr(usage, "prompt_tokens", None)
-    completion_tokens = getattr(usage, "completion_tokens", None)
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
-
-    if input_tokens is None:
-        input_tokens = prompt_tokens
-    if output_tokens is None:
-        output_tokens = completion_tokens
-
-    return {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": getattr(usage, "total_tokens", None),
-    }
+from langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _read_kb_files(file_paths, max_chars_each=3500):
+@tool("read_kb_files")
+def read_kb_files_tool(payload: dict) -> list[dict]:
     """Lê conteúdo dos .txt selecionados (RAG simples)."""
+    file_paths = payload.get("file_paths", [])
+    max_chars_each = payload.get("max_chars_each", 3500)
     docs = []
     for path in file_paths:
         try:
@@ -58,11 +36,7 @@ def build_pitch_options_step5(
     model: str = "gpt-5.1",
     trace_context: dict | None = None,
 ):
-    """
-    Gera opções estruturadas por categoria para o assessor selecionar (Passo 6).
-    Retorna JSON com listas priorizadas (ordem importa).
-    """
-    kb_docs = _read_kb_files(kb_files_selected)
+    kb_docs = read_kb_files_tool.invoke({"file_paths": kb_files_selected, "max_chars_each": 3500})
 
     investimentos_list = investimentos_cliente_df[["Produto", "Categoria", "Valor_Investido"]].to_dict(orient="records")
 
@@ -140,47 +114,20 @@ Formato obrigatório:
         "kb_context": kb_docs,
     }
 
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
-    resp = get_openai_client().chat.completions.create(
-        model=model,
-        temperature=1,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{user_payload}")]
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
+    llm = get_chat_model(model=model, temperature=1, response_format={"type": "json_object"})
+    chain = prompt | llm | str_output_parser | RunnableLambda(parse_json_output)
 
-    parsed = json.loads(resp.choices[0].message.content)
+    config = build_runnable_config(
+        run_name="pitch_step_5_structurer",
+        tags=["pitch", "step_5", "langchain"],
+        metadata={
+            "feature": "pitch",
+            "step": "step_5",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="pitch_step_5_structurer_llm",
-                run_type="llm",
-                inputs={
-                    "model": model,
-                    "temperature": 1,
-                    "response_format": {"type": "json_object"},
-                    "system_prompt": system_prompt,
-                    "user_payload": user_payload,
-                },
-                outputs={
-                    "response": parsed,
-                    "model_used": getattr(resp, "model", model),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(resp),
-                },
-                metadata={"step": "step_5"},
-                tags=["pitch", "llm", "step_5"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
-
-    return parsed
+    return chain.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)

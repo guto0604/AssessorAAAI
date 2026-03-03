@@ -1,37 +1,12 @@
 import json
-from datetime import datetime, timezone
-from time import perf_counter
-from openai_client import get_openai_client
 
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda
 
-def _usage_dict(response):
-    usage = getattr(response, "usage", None)
-    if not usage:
-        return {}
-    prompt_tokens = getattr(usage, "prompt_tokens", None)
-    completion_tokens = getattr(usage, "completion_tokens", None)
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
+from langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
-    if input_tokens is None:
-        input_tokens = prompt_tokens
-    if output_tokens is None:
-        output_tokens = completion_tokens
-
-    return {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": getattr(usage, "total_tokens", None),
-    }
-
-
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 def rank_journeys(cliente_info, prompt_assessor, jornadas_df, trace_context: dict | None = None):
-    
     jornadas_texto = ""
     for _, row in jornadas_df.iterrows():
         jornadas_texto += f"""
@@ -72,7 +47,7 @@ Formato obrigatório:
 }
 """
 
-    user_prompt = f"""
+    user_prompt = """
 Cliente:
 {cliente_info}
 
@@ -85,46 +60,28 @@ Jornadas disponíveis:
 Rankeie as 5 jornadas mais adequadas.
 """
 
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
-    response = get_openai_client().chat.completions.create(
-        model="gpt-5-mini",  # modelo rápido para classificação
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=1,
-        response_format={"type": "json_object"}
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", user_prompt)]
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
+    model = get_chat_model(model="gpt-5-mini", temperature=1, response_format={"type": "json_object"})
 
-    content = response.choices[0].message.content
+    chain = prompt | model | str_output_parser | RunnableLambda(parse_json_output)
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="pitch_step_1_rank_journeys_llm",
-                run_type="llm",
-                inputs={
-                    "model": "gpt-5-mini",
-                    "temperature": 1,
-                    "system_prompt": system_prompt,
-                    "user_prompt": user_prompt,
-                },
-                outputs={
-                    "raw_response": content,
-                    "model_used": getattr(response, "model", "gpt-5-mini"),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(response),
-                },
-                metadata={"step": "step_1"},
-                tags=["pitch", "llm", "step_1"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
+    config = build_runnable_config(
+        run_name="pitch_step_1_rank_journeys",
+        tags=["pitch", "step_1", "langchain"],
+        metadata={
+            "feature": "pitch",
+            "step": "step_1",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
 
-    return json.loads(content)
+    return chain.invoke(
+        {
+            "cliente_info": cliente_info,
+            "prompt_assessor": prompt_assessor,
+            "jornadas_texto": jornadas_texto,
+        },
+        config=config,
+    )

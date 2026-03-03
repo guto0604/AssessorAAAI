@@ -1,8 +1,25 @@
 import os
 
-from dotenv import load_dotenv
-from openai import OpenAI
-import streamlit as st
+try:
+    from dotenv import load_dotenv
+except Exception:
+    def load_dotenv():
+        return None
+
+try:
+    from openai import OpenAI
+except Exception:
+    class OpenAI:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("openai package is required to execute real LLM calls")
+try:
+    import streamlit as st
+except Exception:
+    class _DummyState(dict):
+        pass
+    class _DummyStreamlit:
+        session_state = _DummyState()
+    st = _DummyStreamlit()
 
 load_dotenv()
 
