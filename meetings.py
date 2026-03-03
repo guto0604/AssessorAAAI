@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 import json
+from time import perf_counter
 
 from openai_client import get_openai_client
 BASE_DIR = Path(__file__).resolve().parent
@@ -14,11 +15,27 @@ def _usage_dict(response):
     usage = getattr(response, "usage", None)
     if not usage:
         return {}
+    prompt_tokens = getattr(usage, "prompt_tokens", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    input_tokens = getattr(usage, "input_tokens", None)
+    output_tokens = getattr(usage, "output_tokens", None)
+
+    if input_tokens is None:
+        input_tokens = prompt_tokens
+    if output_tokens is None:
+        output_tokens = completion_tokens
+
     return {
-        "prompt_tokens": getattr(usage, "prompt_tokens", None),
-        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
         "total_tokens": getattr(usage, "total_tokens", None),
     }
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def ensure_client_meetings_dir(cliente_id) -> Path:
@@ -71,11 +88,15 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
     audio_stream = BytesIO(file_bytes)
     audio_stream.name = filename or "audio_reuniao.wav"
 
+    call_start_iso = _iso_now()
+    call_start_perf = perf_counter()
     transcription = get_openai_client().audio.transcriptions.create(
         model="gpt-4o-mini-transcribe",
         file=audio_stream,
         language="pt"
     )
+    call_end_iso = _iso_now()
+    call_duration_s = perf_counter() - call_start_perf
 
     text = transcription.text.strip()
 
@@ -94,9 +115,16 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
                     "mime_type": mime_type,
                     "audio_bytes": len(file_bytes),
                 },
-                outputs={"transcript_chars": len(text)},
+                outputs={
+                    "transcript_chars": len(text),
+                    "model_used": getattr(transcription, "model", "gpt-4o-mini-transcribe"),
+                    "openai_latency_seconds": round(call_duration_s, 4),
+                    "usage": _usage_dict(transcription),
+                },
                 metadata={"step": "meeting_transcription"},
                 tags=["meeting", "llm", "transcription"],
+                start_time=call_start_iso,
+                end_time=call_end_iso,
             )
 
     return text
@@ -126,6 +154,8 @@ Próximos passos sugeridos para o assessor:
         "transcricao": transcript,
     }
 
+    call_start_iso = _iso_now()
+    call_start_perf = perf_counter()
     resp = get_openai_client().chat.completions.create(
         model="gpt-5-mini",
         temperature=1,
@@ -134,6 +164,8 @@ Próximos passos sugeridos para o assessor:
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ],
     )
+    call_end_iso = _iso_now()
+    call_duration_s = perf_counter() - call_start_perf
 
     summary = resp.choices[0].message.content.strip()
 
@@ -151,9 +183,16 @@ Próximos passos sugeridos para o assessor:
                     "system_prompt": system_prompt,
                     "user_payload": payload,
                 },
-                outputs={"summary": summary, "usage": _usage_dict(resp)},
+                outputs={
+                    "summary": summary,
+                    "model_used": getattr(resp, "model", "gpt-5-mini"),
+                    "openai_latency_seconds": round(call_duration_s, 4),
+                    "usage": _usage_dict(resp),
+                },
                 metadata={"step": "meeting_summary"},
                 tags=["meeting", "llm", "summary"],
+                start_time=call_start_iso,
+                end_time=call_end_iso,
             )
 
     return summary

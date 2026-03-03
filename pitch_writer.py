@@ -1,4 +1,6 @@
 import json
+from datetime import datetime, timezone
+from time import perf_counter
 
 from openai_client import get_openai_client
 
@@ -7,11 +9,27 @@ def _usage_dict(response):
     usage = getattr(response, "usage", None)
     if not usage:
         return {}
+    prompt_tokens = getattr(usage, "prompt_tokens", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    input_tokens = getattr(usage, "input_tokens", None)
+    output_tokens = getattr(usage, "output_tokens", None)
+
+    if input_tokens is None:
+        input_tokens = prompt_tokens
+    if output_tokens is None:
+        output_tokens = completion_tokens
+
     return {
-        "prompt_tokens": getattr(usage, "prompt_tokens", None),
-        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
         "total_tokens": getattr(usage, "total_tokens", None),
     }
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def generate_final_pitch_step7(
@@ -56,6 +74,8 @@ Regras:
         "selecoes_aprovadas": step5_selection,
     }
 
+    call_start_iso = _iso_now()
+    call_start_perf = perf_counter()
     resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
@@ -64,6 +84,8 @@ Regras:
             {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
         ],
     )
+    call_end_iso = _iso_now()
+    call_duration_s = perf_counter() - call_start_perf
 
     content = resp.choices[0].message.content.strip()
 
@@ -81,9 +103,16 @@ Regras:
                     "system_prompt": system_prompt,
                     "user_payload": user_payload,
                 },
-                outputs={"response": content, "usage": _usage_dict(resp)},
+                outputs={
+                    "response": content,
+                    "model_used": getattr(resp, "model", model),
+                    "openai_latency_seconds": round(call_duration_s, 4),
+                    "usage": _usage_dict(resp),
+                },
                 metadata={"step": "step_7"},
                 tags=["pitch", "llm", "step_7"],
+                start_time=call_start_iso,
+                end_time=call_end_iso,
             )
 
     return content
@@ -116,6 +145,8 @@ Regras:
         "instrucao_de_edicao": edit_instruction
     }
 
+    call_start_iso = _iso_now()
+    call_start_perf = perf_counter()
     resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
@@ -124,6 +155,8 @@ Regras:
             {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
         ],
     )
+    call_end_iso = _iso_now()
+    call_duration_s = perf_counter() - call_start_perf
     revised = resp.choices[0].message.content.strip()
 
     if trace_context:
@@ -140,9 +173,16 @@ Regras:
                     "system_prompt": system_prompt,
                     "user_payload": user_prompt,
                 },
-                outputs={"response": revised, "usage": _usage_dict(resp)},
+                outputs={
+                    "response": revised,
+                    "model_used": getattr(resp, "model", model),
+                    "openai_latency_seconds": round(call_duration_s, 4),
+                    "usage": _usage_dict(resp),
+                },
                 metadata={"step": "step_8"},
                 tags=["pitch", "llm", "step_8"],
+                start_time=call_start_iso,
+                end_time=call_end_iso,
             )
 
     return revised
