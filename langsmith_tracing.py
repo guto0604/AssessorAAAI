@@ -84,6 +84,48 @@ class LangSmithTracer:
         except Exception:
             return
 
+    def log_child_run(
+        self,
+        parent_run_id: str | None,
+        *,
+        name: str,
+        run_type: str,
+        inputs: dict[str, Any] | None = None,
+        outputs: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        error: str | None = None,
+        tags: list[str] | None = None,
+    ) -> str | None:
+        if not self.enabled or not parent_run_id:
+            return None
+
+        child_id = str(uuid.uuid4())
+        payload = {
+            "id": child_id,
+            "name": name,
+            "run_type": run_type,
+            "parent_run_id": parent_run_id,
+            "inputs": inputs or {},
+            "outputs": outputs or {},
+            "start_time": _iso_now(),
+            "end_time": _iso_now(),
+            "tags": tags or [],
+            "extra": {"metadata": metadata or {}},
+        }
+        if error:
+            payload["error"] = error
+
+        try:
+            requests.post(
+                f"{self.base_url}/runs",
+                json=payload,
+                headers=self._headers(),
+                timeout=8,
+            ).raise_for_status()
+            return child_id
+        except Exception:
+            return None
+
     def end_run(
         self,
         run_id: str | None,

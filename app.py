@@ -54,14 +54,14 @@ def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str
         tracer.end_run(active_trace["run_id"], status="interrupted", outputs={"status": "interrupted"})
 
     run_id = tracer.start_run(
-        name="fluxo_geracao_pitch",
+        name=f"pitch_cliente_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         run_type="chain",
         inputs={
             "cliente_id": cliente_id,
             "prompt_assessor": prompt_assessor,
         },
         tags=["pitch", "streamlit"],
-        metadata={"started_at": _iso_now()},
+        metadata={"started_at": _iso_now(), "cliente_id": cliente_id, "prompt_preview": prompt_assessor[:180]},
     )
     st.session_state[SESSION_PITCH_TRACE] = {
         "run_id": run_id,
@@ -73,11 +73,11 @@ def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str
 
 def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
     run_id = tracer.start_run(
-        name="fluxo_resumo_reuniao",
+        name=f"meeting_cliente_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         run_type="chain",
         inputs={"cliente_id": cliente_id, "audio_name": audio_name},
         tags=["meeting", "streamlit"],
-        metadata={"started_at": _iso_now()},
+        metadata={"started_at": _iso_now(), "cliente_id": cliente_id, "audio_name": audio_name},
     )
     st.session_state[SESSION_MEETING_TRACE] = {
         "run_id": run_id,
@@ -175,7 +175,12 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         try:
             with st.spinner("Analisando e ranqueando jornadas..."):
-                resultado = rank_journeys(cliente_info, prompt_assessor, jornadas_df)
+                resultado = rank_journeys(
+                    cliente_info,
+                    prompt_assessor,
+                    jornadas_df,
+                    trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                )
             tracer.log_event(pitch_run_id, "pitch_step_1_completed", {
                 "ranking_count": len(resultado.get("ranking", []))
             })
@@ -272,7 +277,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                         produtos_df=produtos_df,
                         investimentos_cliente_df=investimentos_cliente_df,
                         kb_dir="knowledge_base",
-                        model="gpt-4o-mini"
+                        model="gpt-4o-mini",
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                     )
                 tracer.log_event(pitch_run_id, "pitch_step_4_completed", {
                     "kb_files_count": len(step4_result.get("kb_files_selected", [])),
@@ -363,7 +369,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                         investimentos_cliente_df=investimentos_cliente_df,
                         produtos_selecionados_df=produtos_selecionados_df,
                         kb_files_selected=kb_files_selected,
-                        model="gpt-4o-mini"
+                        model="gpt-4o-mini",
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                     )
                 tracer.log_event(pitch_run_id, "pitch_step_5_completed", {
                     "diagnostico_count": len(step5_result.get("diagnostico", [])),
@@ -520,7 +527,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                         prompt_assessor=prompt_assessor,
                         jornada_selecionada=st.session_state["jornada_selecionada"],
                         step5_selection=st.session_state["step5_selection"],
-                        model=model_writer
+                        model=model_writer,
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                     )
                 tracer.log_event(pitch_run_id, "pitch_step_7_completed", {"draft_chars": len(pitch)})
                 st.session_state["pitch_draft"] = pitch
@@ -576,7 +584,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                                 current_pitch=st.session_state["pitch_draft"],
                                 edit_instruction=edit_instruction.strip(),
                                 target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
-                                model=model_writer
+                                model=model_writer,
+                                trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                             )
                         tracer.log_event(pitch_run_id, "pitch_step_8_completed", {"draft_chars": len(revised)})
                         st.session_state["pitch_draft"] = revised
@@ -673,11 +682,20 @@ def render_meetings_tab(cliente_id, cliente_info):
             tracer.log_event(meeting_run_id, "meeting_transcription_started", {"audio_type": audio_type})
             try:
                 with st.spinner("Transcrevendo áudio..."):
-                    transcript = transcribe_audio(audio_bytes, audio_name, audio_type)
+                    transcript = transcribe_audio(
+                        audio_bytes,
+                        audio_name,
+                        audio_type,
+                        trace_context={"tracer": tracer, "parent_run_id": meeting_run_id},
+                    )
                 tracer.log_event(meeting_run_id, "meeting_transcription_completed", {"transcript_chars": len(transcript)})
 
                 with st.spinner("Gerando resumo da reunião..."):
-                    summary = summarize_transcript(cliente_info, transcript)
+                    summary = summarize_transcript(
+                        cliente_info,
+                        transcript,
+                        trace_context={"tracer": tracer, "parent_run_id": meeting_run_id},
+                    )
                 tracer.log_event(meeting_run_id, "meeting_summary_completed", {"summary_chars": len(summary)})
 
                 meeting_path = save_meeting(

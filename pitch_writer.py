@@ -2,12 +2,25 @@ import json
 
 from openai_client import get_openai_client
 
+
+def _usage_dict(response):
+    usage = getattr(response, "usage", None)
+    if not usage:
+        return {}
+    return {
+        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "total_tokens": getattr(usage, "total_tokens", None),
+    }
+
+
 def generate_final_pitch_step7(
     cliente_info: dict,
     prompt_assessor: str,
     jornada_selecionada: dict,
     step5_selection: dict,
-    model: str = "gpt-5.1"
+    model: str = "gpt-5.1",
+    trace_context: dict | None = None,
 ):
     """
     Gera o pitch final com base na seleção do assessor.
@@ -39,8 +52,8 @@ Regras:
             "cdi_12_meses": cliente_info.get("CDI_12_Meses"),
         },
         "prompt_inicial_assessor": prompt_assessor,
-        "jornada_escolhida": jornada_selecionada,  # contém jornada_id + descricao_editada
-        "selecoes_aprovadas": step5_selection
+        "jornada_escolhida": jornada_selecionada,
+        "selecoes_aprovadas": step5_selection,
     }
 
     resp = get_openai_client().chat.completions.create(
@@ -52,13 +65,36 @@ Regras:
         ],
     )
 
-    return resp.choices[0].message.content.strip()
+    content = resp.choices[0].message.content.strip()
+
+    if trace_context:
+        tracer = trace_context.get("tracer")
+        parent_run_id = trace_context.get("parent_run_id")
+        if tracer and parent_run_id:
+            tracer.log_child_run(
+                parent_run_id,
+                name="pitch_step_7_writer_llm",
+                run_type="llm",
+                inputs={
+                    "model": model,
+                    "temperature": 1,
+                    "system_prompt": system_prompt,
+                    "user_payload": user_payload,
+                },
+                outputs={"response": content, "usage": _usage_dict(resp)},
+                metadata={"step": "step_7"},
+                tags=["pitch", "llm", "step_7"],
+            )
+
+    return content
+
 
 def revise_pitch_step8(
     current_pitch: str,
     edit_instruction: str,
     target_excerpt: str | None = None,
-    model: str = "gpt-5-mini"
+    model: str = "gpt-5-mini",
+    trace_context: dict | None = None,
 ):
     """
     Ajuste iterativo do pitch (Passo 8 simples).
@@ -88,4 +124,25 @@ Regras:
             {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
         ],
     )
-    return resp.choices[0].message.content.strip()
+    revised = resp.choices[0].message.content.strip()
+
+    if trace_context:
+        tracer = trace_context.get("tracer")
+        parent_run_id = trace_context.get("parent_run_id")
+        if tracer and parent_run_id:
+            tracer.log_child_run(
+                parent_run_id,
+                name="pitch_step_8_reviser_llm",
+                run_type="llm",
+                inputs={
+                    "model": model,
+                    "temperature": 1,
+                    "system_prompt": system_prompt,
+                    "user_payload": user_prompt,
+                },
+                outputs={"response": revised, "usage": _usage_dict(resp)},
+                metadata={"step": "step_8"},
+                tags=["pitch", "llm", "step_8"],
+            )
+
+    return revised

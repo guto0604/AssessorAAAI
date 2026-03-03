@@ -2,6 +2,18 @@ import json
 
 from openai_client import get_openai_client
 
+
+def _usage_dict(response):
+    usage = getattr(response, "usage", None)
+    if not usage:
+        return {}
+    return {
+        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "total_tokens": getattr(usage, "total_tokens", None),
+    }
+
+
 def _read_kb_files(file_paths, max_chars_each=3500):
     """Lê conteúdo dos .txt selecionados (RAG simples)."""
     docs = []
@@ -16,6 +28,7 @@ def _read_kb_files(file_paths, max_chars_each=3500):
             docs.append({"path": path, "content": f"[ERRO AO LER: {e}]"})
     return docs
 
+
 def build_pitch_options_step5(
     cliente_info: dict,
     prompt_assessor: str,
@@ -24,7 +37,8 @@ def build_pitch_options_step5(
     investimentos_cliente_df,
     produtos_selecionados_df,
     kb_files_selected: list[str],
-    model: str = "gpt-5.1"
+    model: str = "gpt-5.1",
+    trace_context: dict | None = None,
 ):
     """
     Gera opções estruturadas por categoria para o assessor selecionar (Passo 6).
@@ -118,4 +132,29 @@ Formato obrigatório:
         ],
     )
 
-    return json.loads(resp.choices[0].message.content)
+    parsed = json.loads(resp.choices[0].message.content)
+
+    if trace_context:
+        tracer = trace_context.get("tracer")
+        parent_run_id = trace_context.get("parent_run_id")
+        if tracer and parent_run_id:
+            tracer.log_child_run(
+                parent_run_id,
+                name="pitch_step_5_structurer_llm",
+                run_type="llm",
+                inputs={
+                    "model": model,
+                    "temperature": 1,
+                    "response_format": {"type": "json_object"},
+                    "system_prompt": system_prompt,
+                    "user_payload": user_payload,
+                },
+                outputs={
+                    "response": parsed,
+                    "usage": _usage_dict(resp),
+                },
+                metadata={"step": "step_5"},
+                tags=["pitch", "llm", "step_5"],
+            )
+
+    return parsed
