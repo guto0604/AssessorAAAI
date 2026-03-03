@@ -1,7 +1,9 @@
 import os
+from datetime import datetime, timezone
 
 import streamlit as st
 from openai_client import SESSION_OPENAI_KEY
+from langsmith_tracing import LangSmithTracer
 from data_loader import (
     load_clientes, load_jornadas, get_cliente_by_id,
     load_investimentos, load_produtos,
@@ -26,6 +28,62 @@ st.set_page_config(page_title="POC Jornada Comercial", layout="wide")
 
 SESSION_LANGSMITH_KEY = "user_langsmith_api_key"
 SESSION_LANGSMITH_TRACING_ENABLED = "user_langsmith_tracing_enabled"
+SESSION_PITCH_TRACE = "pitch_trace_run"
+SESSION_MEETING_TRACE = "meeting_trace_run"
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def get_tracer() -> LangSmithTracer:
+    return LangSmithTracer(
+        api_key=st.session_state.get(SESSION_LANGSMITH_KEY, ""),
+        enabled=bool(st.session_state.get(SESSION_LANGSMITH_TRACING_ENABLED, False))
+    )
+
+
+def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str) -> str | None:
+    active_trace = st.session_state.get(SESSION_PITCH_TRACE)
+    if active_trace and active_trace.get("run_id") and active_trace.get("status") == "in_progress":
+        tracer.log_event(active_trace["run_id"], "pitch_interrupted", {
+            "reason": "Novo fluxo iniciado antes da finalização",
+            "at": _iso_now(),
+        })
+        tracer.end_run(active_trace["run_id"], status="interrupted", outputs={"status": "interrupted"})
+
+    run_id = tracer.start_run(
+        name="fluxo_geracao_pitch",
+        run_type="chain",
+        inputs={
+            "cliente_id": cliente_id,
+            "prompt_assessor": prompt_assessor,
+        },
+        tags=["pitch", "streamlit"],
+        metadata={"started_at": _iso_now()},
+    )
+    st.session_state[SESSION_PITCH_TRACE] = {
+        "run_id": run_id,
+        "status": "in_progress",
+        "started_at": _iso_now(),
+    }
+    return run_id
+
+
+def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
+    run_id = tracer.start_run(
+        name="fluxo_resumo_reuniao",
+        run_type="chain",
+        inputs={"cliente_id": cliente_id, "audio_name": audio_name},
+        tags=["meeting", "streamlit"],
+        metadata={"started_at": _iso_now()},
+    )
+    st.session_state[SESSION_MEETING_TRACE] = {
+        "run_id": run_id,
+        "status": "in_progress",
+        "started_at": _iso_now(),
+    }
+    return run_id
 
 
 def init_session_state():
@@ -48,6 +106,12 @@ def init_session_state():
     if SESSION_LANGSMITH_TRACING_ENABLED not in st.session_state:
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = False
 
+    if SESSION_PITCH_TRACE not in st.session_state:
+        st.session_state[SESSION_PITCH_TRACE] = None
+
+    if SESSION_MEETING_TRACE not in st.session_state:
+        st.session_state[SESSION_MEETING_TRACE] = None
+
 
 def render_pitch_tab(cliente_id, cliente_info):
     st.header("1️⃣ Definir intenção do contato")
@@ -58,15 +122,32 @@ def render_pitch_tab(cliente_id, cliente_info):
         key="pitch_prompt_assessor"
     )
 
+    tracer = get_tracer()
+
     if st.button("🔎 Sugerir Jornadas", key="pitch_btn_sugerir_jornadas"):  # Gerar jornadas
 
+        pitch_run_id = _start_pitch_trace(tracer, cliente_id, prompt_assessor)
+        tracer.log_event(pitch_run_id, "pitch_step_1_started", {"action": "sugerir_jornadas"})
         jornadas_df = load_jornadas()
 
-        with st.spinner("Analisando e ranqueando jornadas..."):
-            resultado = rank_journeys(cliente_info, prompt_assessor, jornadas_df)
+        try:
+            with st.spinner("Analisando e ranqueando jornadas..."):
+                resultado = rank_journeys(cliente_info, prompt_assessor, jornadas_df)
+            tracer.log_event(pitch_run_id, "pitch_step_1_completed", {
+                "ranking_count": len(resultado.get("ranking", []))
+            })
 
-        st.session_state.ranking_resultado = resultado
-        st.session_state.etapa = 2
+            st.session_state.ranking_resultado = resultado
+            st.session_state.etapa = 2
+        except Exception as exc:
+            tracer.log_event(pitch_run_id, "pitch_error", {"step": "rank_journeys", "error": str(exc)})
+            tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "rank_journeys"})
+            st.session_state[SESSION_PITCH_TRACE] = {
+                "run_id": pitch_run_id,
+                "status": "error",
+                "ended_at": _iso_now(),
+            }
+            st.error(f"Erro ao sugerir jornadas: {exc}")
 
     if st.session_state.etapa >= 2 and st.session_state.ranking_resultado:  # Jornadas já foram geradas
 
@@ -136,21 +217,36 @@ def render_pitch_tab(cliente_id, cliente_info):
             st.dataframe(investimentos_cliente_df, use_container_width=True)
 
         if st.button("➡️ Executar Passo 4: Selecionar fontes e produtos", key="pitch_btn_step4"):
+            pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+            tracer.log_event(pitch_run_id, "pitch_step_4_started")
+            try:
+                with st.spinner("Selecionando fontes da Knowledge-Base e produtos candidatos..."):
+                    step4_result = select_sources_step4(
+                        cliente_info=cliente_info,
+                        prompt_assessor=prompt_assessor,
+                        jornada_selecionada=st.session_state["jornada_selecionada"],
+                        carteira_summary=carteira_summary,
+                        produtos_df=produtos_df,
+                        investimentos_cliente_df=investimentos_cliente_df,
+                        kb_dir="knowledge_base",
+                        model="gpt-4o-mini"
+                    )
+                tracer.log_event(pitch_run_id, "pitch_step_4_completed", {
+                    "kb_files_count": len(step4_result.get("kb_files_selected", [])),
+                    "products_count": len(step4_result.get("products_selected_ids", [])),
+                })
 
-            with st.spinner("Selecionando fontes da Knowledge-Base e produtos candidatos..."):
-                step4_result = select_sources_step4(
-                    cliente_info=cliente_info,
-                    prompt_assessor=prompt_assessor,
-                    jornada_selecionada=st.session_state["jornada_selecionada"],
-                    carteira_summary=carteira_summary,
-                    produtos_df=produtos_df,
-                    investimentos_cliente_df=investimentos_cliente_df,
-                    kb_dir="knowledge_base",
-                    model="gpt-4o-mini"
-                )
-
-            st.session_state["step4_result"] = step4_result
-            st.session_state.etapa = 4
+                st.session_state["step4_result"] = step4_result
+                st.session_state.etapa = 4
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "step4", "error": str(exc)})
+                tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step4"})
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro no Passo 4: {exc}")
 
         if "step4_result" in st.session_state and st.session_state["step4_result"]:
 
@@ -212,20 +308,36 @@ def render_pitch_tab(cliente_id, cliente_info):
         carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
 
         if st.button("➡️ Executar Passo 5: Gerar opções estruturadas", key="pitch_btn_step5"):
-            with st.spinner("Gerando diagnóstico, pontos e opções do pitch..."):
-                step5_result = build_pitch_options_step5(
-                    cliente_info=cliente_info,
-                    prompt_assessor=prompt_assessor,
-                    jornada_selecionada=st.session_state["jornada_selecionada"],
-                    carteira_summary=carteira_summary,
-                    investimentos_cliente_df=investimentos_cliente_df,
-                    produtos_selecionados_df=produtos_selecionados_df,
-                    kb_files_selected=kb_files_selected,
-                    model="gpt-4o-mini"
-                )
+            pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+            tracer.log_event(pitch_run_id, "pitch_step_5_started")
+            try:
+                with st.spinner("Gerando diagnóstico, pontos e opções do pitch..."):
+                    step5_result = build_pitch_options_step5(
+                        cliente_info=cliente_info,
+                        prompt_assessor=prompt_assessor,
+                        jornada_selecionada=st.session_state["jornada_selecionada"],
+                        carteira_summary=carteira_summary,
+                        investimentos_cliente_df=investimentos_cliente_df,
+                        produtos_selecionados_df=produtos_selecionados_df,
+                        kb_files_selected=kb_files_selected,
+                        model="gpt-4o-mini"
+                    )
+                tracer.log_event(pitch_run_id, "pitch_step_5_completed", {
+                    "diagnostico_count": len(step5_result.get("diagnostico", [])),
+                    "products_count": len(step5_result.get("produtos_sugeridos", [])),
+                })
 
-            st.session_state["step5_result"] = step5_result
-            st.session_state.etapa = 5
+                st.session_state["step5_result"] = step5_result
+                st.session_state.etapa = 5
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "step5", "error": str(exc)})
+                tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step5"})
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro no Passo 5: {exc}")
 
         if "step5_result" in st.session_state and st.session_state["step5_result"]:
             step5 = st.session_state["step5_result"]
@@ -320,6 +432,12 @@ def render_pitch_tab(cliente_id, cliente_info):
             st.divider()
 
             if st.button("💾 Salvar seleção (Passo 6)", key="pitch_btn_save_step5"):
+                pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+                tracer.log_event(pitch_run_id, "pitch_step_6_selection_saved", {
+                    "diagnostico_selected": len(selected_diagnostico),
+                    "pontos_selected": len(selected_pontos),
+                    "produtos_selected": len(selected_prod),
+                })
                 st.session_state["step5_selection"] = {
                     "diagnostico": selected_diagnostico,
                     "pontos_prioritarios": selected_pontos,
@@ -350,18 +468,31 @@ def render_pitch_tab(cliente_id, cliente_info):
             st.session_state["pitch_version"] = 0
 
         if st.button("📝 Gerar pitch (rascunho)", key="pitch_btn_step7"):
-            with st.spinner("Escrevendo pitch..."):
-                pitch = generate_final_pitch_step7(
-                    cliente_info=cliente_info,
-                    prompt_assessor=prompt_assessor,
-                    jornada_selecionada=st.session_state["jornada_selecionada"],
-                    step5_selection=st.session_state["step5_selection"],
-                    model=model_writer
-                )
-            st.session_state["pitch_draft"] = pitch
-            st.session_state["pitch_final_text"] = None
-            st.session_state["pitch_version"] += 1
-            st.success("✅ Rascunho gerado")
+            pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+            tracer.log_event(pitch_run_id, "pitch_step_7_started")
+            try:
+                with st.spinner("Escrevendo pitch..."):
+                    pitch = generate_final_pitch_step7(
+                        cliente_info=cliente_info,
+                        prompt_assessor=prompt_assessor,
+                        jornada_selecionada=st.session_state["jornada_selecionada"],
+                        step5_selection=st.session_state["step5_selection"],
+                        model=model_writer
+                    )
+                tracer.log_event(pitch_run_id, "pitch_step_7_completed", {"draft_chars": len(pitch)})
+                st.session_state["pitch_draft"] = pitch
+                st.session_state["pitch_final_text"] = None
+                st.session_state["pitch_version"] += 1
+                st.success("✅ Rascunho gerado")
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "step7", "error": str(exc)})
+                tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step7"})
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro ao gerar rascunho: {exc}")
 
         if st.session_state["pitch_draft"]:
 
@@ -394,21 +525,49 @@ def render_pitch_tab(cliente_id, cliente_info):
 
             with colA:
                 if st.button("🔁 Aplicar ajuste", key="pitch_btn_step8") and edit_instruction.strip():
-                    with st.spinner("Aplicando ajuste..."):
-                        revised = revise_pitch_step8(
-                            current_pitch=st.session_state["pitch_draft"],
-                            edit_instruction=edit_instruction.strip(),
-                            target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
-                            model=model_writer
-                        )
-                    st.session_state["pitch_draft"] = revised
-                    st.session_state["pitch_version"] += 1
-                    st.success("✅ Ajuste aplicado. Veja o pitch atualizado acima.")
-                    st.rerun()
+                    pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+                    tracer.log_event(pitch_run_id, "pitch_step_8_started", {"has_target_excerpt": bool(target_excerpt.strip())})
+                    try:
+                        with st.spinner("Aplicando ajuste..."):
+                            revised = revise_pitch_step8(
+                                current_pitch=st.session_state["pitch_draft"],
+                                edit_instruction=edit_instruction.strip(),
+                                target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
+                                model=model_writer
+                            )
+                        tracer.log_event(pitch_run_id, "pitch_step_8_completed", {"draft_chars": len(revised)})
+                        st.session_state["pitch_draft"] = revised
+                        st.session_state["pitch_version"] += 1
+                        st.success("✅ Ajuste aplicado. Veja o pitch atualizado acima.")
+                        st.rerun()
+                    except Exception as exc:
+                        tracer.log_event(pitch_run_id, "pitch_error", {"step": "step8", "error": str(exc)})
+                        tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step8"})
+                        st.session_state[SESSION_PITCH_TRACE] = {
+                            "run_id": pitch_run_id,
+                            "status": "error",
+                            "ended_at": _iso_now(),
+                        }
+                        st.error(f"Erro ao aplicar ajuste: {exc}")
 
             with colB:
                 if st.button("✅ Finalizar pitch", key="pitch_btn_finalize"):
+                    pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
                     st.session_state["pitch_final_text"] = st.session_state["pitch_draft"]
+                    tracer.log_event(pitch_run_id, "pitch_finalized", {"final_chars": len(st.session_state["pitch_final_text"] or "")})
+                    tracer.end_run(
+                        pitch_run_id,
+                        status="completed",
+                        outputs={
+                            "status": "completed",
+                            "final_chars": len(st.session_state["pitch_final_text"] or ""),
+                        },
+                    )
+                    st.session_state[SESSION_PITCH_TRACE] = {
+                        "run_id": pitch_run_id,
+                        "status": "completed",
+                        "ended_at": _iso_now(),
+                    }
                     st.success("✅ Pitch finalizado")
 
             if st.session_state["pitch_final_text"]:
@@ -427,6 +586,8 @@ def render_pitch_tab(cliente_id, cliente_info):
 
 def render_meetings_tab(cliente_id, cliente_info):
     st.title("Reuniões")
+
+    tracer = get_tracer()
 
     if "meetings_last_saved_path" not in st.session_state:
         st.session_state.meetings_last_saved_path = None
@@ -465,20 +626,48 @@ def render_meetings_tab(cliente_id, cliente_info):
         if not audio_bytes:
             st.warning("Grave ou envie um áudio antes de transcrever.")
         else:
-            with st.spinner("Transcrevendo áudio..."):
-                transcript = transcribe_audio(audio_bytes, audio_name, audio_type)
-            with st.spinner("Gerando resumo da reunião..."):
-                summary = summarize_transcript(cliente_info, transcript)
+            meeting_run_id = _start_meeting_trace(tracer, cliente_id, audio_name)
+            tracer.log_event(meeting_run_id, "meeting_transcription_started", {"audio_type": audio_type})
+            try:
+                with st.spinner("Transcrevendo áudio..."):
+                    transcript = transcribe_audio(audio_bytes, audio_name, audio_type)
+                tracer.log_event(meeting_run_id, "meeting_transcription_completed", {"transcript_chars": len(transcript)})
 
-            meeting_path = save_meeting(
-                cliente_id=cliente_id,
-                cliente_nome=cliente_info.get("Nome", "Cliente"),
-                cliente_info=cliente_info,
-                transcript=transcript,
-                summary=summary,
-            )
-            st.session_state.meetings_last_saved_path = str(meeting_path)
-            st.success(f"Resumo salvo em: {meeting_path}")
+                with st.spinner("Gerando resumo da reunião..."):
+                    summary = summarize_transcript(cliente_info, transcript)
+                tracer.log_event(meeting_run_id, "meeting_summary_completed", {"summary_chars": len(summary)})
+
+                meeting_path = save_meeting(
+                    cliente_id=cliente_id,
+                    cliente_nome=cliente_info.get("Nome", "Cliente"),
+                    cliente_info=cliente_info,
+                    transcript=transcript,
+                    summary=summary,
+                )
+                st.session_state.meetings_last_saved_path = str(meeting_path)
+                tracer.end_run(
+                    meeting_run_id,
+                    status="completed",
+                    outputs={
+                        "status": "completed",
+                        "meeting_path": str(meeting_path),
+                    },
+                )
+                st.session_state[SESSION_MEETING_TRACE] = {
+                    "run_id": meeting_run_id,
+                    "status": "completed",
+                    "ended_at": _iso_now(),
+                }
+                st.success(f"Resumo salvo em: {meeting_path}")
+            except Exception as exc:
+                tracer.log_event(meeting_run_id, "meeting_error", {"error": str(exc)})
+                tracer.end_run(meeting_run_id, status="error", error=str(exc), outputs={"status": "error"})
+                st.session_state[SESSION_MEETING_TRACE] = {
+                    "run_id": meeting_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro ao processar reunião: {exc}")
 
     if st.session_state.meetings_last_saved_path:
         st.caption(f"Último arquivo salvo: {st.session_state.meetings_last_saved_path}")
@@ -546,7 +735,7 @@ def render_settings_tab():
         "Ativar tracing (LangSmith)",
         value=current_tracing_enabled,
         key="settings_langsmith_tracing_toggle",
-        help="Apenas preferência salva na sessão por enquanto; ainda não conecta com o pipeline."
+        help="Quando ativado, registra no LangSmith os fluxos de pitch e resumo de reunião."
     )
 
     if st.button("💾 Salvar configurações", key="settings_save_keys"):
