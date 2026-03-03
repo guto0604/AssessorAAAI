@@ -1,7 +1,7 @@
 import os
 
 import streamlit as st
-from openai_client import SESSION_OPENAI_KEY, has_env_openai_api_key
+from openai_client import SESSION_OPENAI_KEY
 from data_loader import (
     load_clientes, load_jornadas, get_cliente_by_id,
     load_investimentos, load_produtos,
@@ -520,18 +520,13 @@ def render_insights_tab():
 
 def render_settings_tab():
     st.title("Configurações")
-    st.caption("Registre as chaves usadas na sessão e prepare o tracing do LangSmith (integração ainda não implementada).")
-
-    env_openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
-    env_langsmith_key = (os.getenv("LANGSMITH_API_KEY") or "").strip()
-    env_langsmith_tracing = (os.getenv("LANGSMITH_TRACING") or "").strip().lower() in {"1", "true", "yes", "on"}
+    st.caption("Preencha apenas as credenciais essenciais da sessão.")
 
     current_openai_key = st.session_state.get(SESSION_OPENAI_KEY, "")
     current_langsmith_key = st.session_state.get(SESSION_LANGSMITH_KEY, "")
     current_tracing_enabled = bool(st.session_state.get(SESSION_LANGSMITH_TRACING_ENABLED, False))
 
-    st.subheader("Chaves e tracing")
-    st.write("A chave de ambiente tem prioridade. Se existir `OPENAI_API_KEY` no ambiente do processo, ela será usada antes da chave salva na sessão.")
+    st.subheader("Integrações")
 
     openai_api_key_input = st.text_input(
         "OPENAI_API_KEY (sessão)",
@@ -559,20 +554,6 @@ def render_settings_tab():
         st.session_state[SESSION_LANGSMITH_KEY] = langsmith_api_key_input.strip()
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = tracing_toggle
         st.success("Configurações salvas na sessão.")
-
-    with st.expander("Diagnóstico de origem das chaves"):
-        st.write({
-            "OPENAI_API_KEY_no_ambiente": bool(env_openai_key),
-            "OPENAI_API_KEY_na_sessao": bool(current_openai_key),
-            "OPENAI_fonte_ativa": "ambiente" if env_openai_key else "sessão" if current_openai_key else "não definida",
-            "LANGSMITH_API_KEY_no_ambiente": bool(env_langsmith_key),
-            "LANGSMITH_API_KEY_na_sessao": bool(current_langsmith_key),
-            "LANGSMITH_TRACING_no_ambiente": env_langsmith_tracing,
-            "LANGSMITH_TRACING_na_sessao": current_tracing_enabled,
-        })
-
-        if has_env_openai_api_key():
-            st.info("`OPENAI_API_KEY` já está disponível no ambiente do processo. Isso explica por que a chave continua ativa mesmo sem o arquivo `.env` na pasta.")
 
 
 def main():
