@@ -3,11 +3,24 @@ from pathlib import Path
 
 from openai_client import get_openai_client
 
+
+def _usage_dict(response):
+    usage = getattr(response, "usage", None)
+    if not usage:
+        return {}
+    return {
+        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "total_tokens": getattr(usage, "total_tokens", None),
+    }
+
+
 def list_kb_files(kb_dir: str = "knowledge_base"):
     kb_path = Path(kb_dir)
     if not kb_path.exists():
         return []
     return sorted([str(p.as_posix()) for p in kb_path.rglob("*.txt")])
+
 
 def select_sources_step4(
     cliente_info: dict,
@@ -17,7 +30,8 @@ def select_sources_step4(
     produtos_df,
     investimentos_cliente_df,
     kb_dir: str = "knowledge_base",
-    model: str = "gpt-5-mini"
+    model: str = "gpt-5-mini",
+    trace_context: dict | None = None,
 ):
     kb_files = list_kb_files(kb_dir)
 
@@ -77,6 +91,29 @@ Formato obrigatório:
     )
 
     parsed = json.loads(resp.choices[0].message.content)
+
+    if trace_context:
+        tracer = trace_context.get("tracer")
+        parent_run_id = trace_context.get("parent_run_id")
+        if tracer and parent_run_id:
+            tracer.log_child_run(
+                parent_run_id,
+                name="pitch_step_4_source_selector_llm",
+                run_type="llm",
+                inputs={
+                    "model": model,
+                    "temperature": 1,
+                    "system_prompt": system_prompt,
+                    "user_payload": user_payload,
+                    "response_format": {"type": "json_object"},
+                },
+                outputs={
+                    "response": parsed,
+                    "usage": _usage_dict(resp),
+                },
+                metadata={"step": "step_4"},
+                tags=["pitch", "llm", "step_4"],
+            )
 
     # saneamento
     parsed["data_sources"] = parsed.get("data_sources", [])

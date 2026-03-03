@@ -1,7 +1,18 @@
 import json
 from openai_client import get_openai_client
 
-def rank_journeys(cliente_info, prompt_assessor, jornadas_df):
+
+def _usage_dict(response):
+    usage = getattr(response, "usage", None)
+    if not usage:
+        return {}
+    return {
+        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+        "completion_tokens": getattr(usage, "completion_tokens", None),
+        "total_tokens": getattr(usage, "total_tokens", None),
+    }
+
+def rank_journeys(cliente_info, prompt_assessor, jornadas_df, trace_context: dict | None = None):
     
     jornadas_texto = ""
     for _, row in jornadas_df.iterrows():
@@ -67,5 +78,27 @@ Rankeie as 5 jornadas mais adequadas.
     )
 
     content = response.choices[0].message.content
+
+    if trace_context:
+        tracer = trace_context.get("tracer")
+        parent_run_id = trace_context.get("parent_run_id")
+        if tracer and parent_run_id:
+            tracer.log_child_run(
+                parent_run_id,
+                name="pitch_step_1_rank_journeys_llm",
+                run_type="llm",
+                inputs={
+                    "model": "gpt-5-mini",
+                    "temperature": 1,
+                    "system_prompt": system_prompt,
+                    "user_prompt": user_prompt,
+                },
+                outputs={
+                    "raw_response": content,
+                    "usage": _usage_dict(response),
+                },
+                metadata={"step": "step_1"},
+                tags=["pitch", "llm", "step_1"],
+            )
 
     return json.loads(content)
