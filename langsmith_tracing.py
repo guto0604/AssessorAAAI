@@ -12,9 +12,10 @@ def _iso_now() -> str:
 
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
-        self.api_key = (api_key or "").strip()
+        self.api_key = (api_key or os.getenv("LANGSMITH_API_KEY") or "").strip()
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
+        self.project_name = (os.getenv("LANGSMITH_PROJECT") or "contato-assessor").strip()
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -30,7 +31,7 @@ class LangSmithTracer:
         inputs: dict[str, Any],
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
-        project_name: str = "contato-assessor",
+        project_name: str | None = None,
     ) -> str | None:
         if not self.enabled:
             return None
@@ -42,7 +43,7 @@ class LangSmithTracer:
             "run_type": run_type,
             "inputs": inputs,
             "start_time": _iso_now(),
-            "session_name": project_name,
+            "session_name": project_name or self.project_name,
             "tags": tags or [],
             "extra": {"metadata": metadata or {}},
         }

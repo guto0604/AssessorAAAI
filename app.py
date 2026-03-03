@@ -40,7 +40,7 @@ def _iso_now() -> str:
 def get_tracer() -> LangSmithTracer:
     return LangSmithTracer(
         api_key=st.session_state.get(SESSION_LANGSMITH_KEY, ""),
-        enabled=bool(st.session_state.get(SESSION_LANGSMITH_TRACING_ENABLED, False))
+        enabled=True,
     )
 
 
@@ -127,7 +127,7 @@ def init_session_state():
         st.session_state[SESSION_LANGSMITH_KEY] = ""
 
     if SESSION_LANGSMITH_TRACING_ENABLED not in st.session_state:
-        st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = False
+        st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True
 
     if SESSION_PITCH_TRACE not in st.session_state:
         st.session_state[SESSION_PITCH_TRACE] = None
@@ -756,7 +756,6 @@ def render_settings_tab():
 
     current_openai_key = st.session_state.get(SESSION_OPENAI_KEY, "")
     current_langsmith_key = st.session_state.get(SESSION_LANGSMITH_KEY, "")
-    current_tracing_enabled = bool(st.session_state.get(SESSION_LANGSMITH_TRACING_ENABLED, False))
 
     st.subheader("Integrações")
 
@@ -774,17 +773,12 @@ def render_settings_tab():
         key="settings_langsmith_api_key_input"
     )
 
-    tracing_toggle = st.toggle(
-        "Ativar tracing (LangSmith)",
-        value=current_tracing_enabled,
-        key="settings_langsmith_tracing_toggle",
-        help="Quando ativado, registra no LangSmith os fluxos de pitch e resumo de reunião."
-    )
+    st.info("Tracing no LangSmith está sempre ativo para esta sessão.")
 
     if st.button("💾 Salvar configurações", key="settings_save_keys"):
         st.session_state[SESSION_OPENAI_KEY] = openai_api_key_input.strip()
         st.session_state[SESSION_LANGSMITH_KEY] = langsmith_api_key_input.strip()
-        st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = tracing_toggle
+        st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True
         st.success("Configurações salvas na sessão.")
 
 
