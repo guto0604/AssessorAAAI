@@ -1,4 +1,5 @@
 import streamlit as st
+from openai_client import SESSION_OPENAI_KEY, has_env_openai_api_key
 from data_loader import (
     load_clientes, load_jornadas, get_cliente_by_id,
     load_investimentos, load_produtos,
@@ -31,6 +32,9 @@ def init_session_state():
     if "selected_cliente_id" not in st.session_state:
         clientes_df = load_clientes()
         st.session_state.selected_cliente_id = clientes_df["Cliente_ID"].iloc[0]
+
+    if SESSION_OPENAI_KEY not in st.session_state:
+        st.session_state[SESSION_OPENAI_KEY] = ""
 
 
 def render_pitch_tab(cliente_id, cliente_info):
@@ -504,7 +508,31 @@ def render_insights_tab():
 
 def render_settings_tab():
     st.title("Configurações")
-    st.write("Em breve")
+
+    st.subheader("OpenAI")
+    env_has_key = has_env_openai_api_key()
+
+    if env_has_key:
+        st.success("✅ Chave OPENAI_API_KEY detectada no .env/ambiente. Essa chave terá prioridade.")
+    else:
+        st.warning("⚠️ Nenhuma OPENAI_API_KEY encontrada no .env/ambiente. Use a chave abaixo.")
+
+    current_session_key = st.session_state.get(SESSION_OPENAI_KEY, "")
+
+    api_key_input = st.text_input(
+        "Chave de API (fallback)",
+        value=current_session_key,
+        type="password",
+        help="Essa chave será usada apenas quando OPENAI_API_KEY não estiver definida no .env/ambiente.",
+        key="settings_openai_api_key_input"
+    )
+
+    if st.button("💾 Salvar chave", key="settings_save_openai_api_key"):
+        st.session_state[SESSION_OPENAI_KEY] = api_key_input.strip()
+        if st.session_state[SESSION_OPENAI_KEY]:
+            st.success("Chave salva para uso como fallback nesta sessão.")
+        else:
+            st.info("Chave de fallback removida.")
 
 
 def main():

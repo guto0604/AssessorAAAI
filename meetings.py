@@ -5,26 +5,18 @@ from io import BytesIO
 from pathlib import Path
 import json
 
-from dotenv import load_dotenv
-from openai import OpenAI
-
-load_dotenv()
-client = OpenAI()
-
+from openai_client import get_openai_client
 BASE_DIR = Path(__file__).resolve().parent
 MEETINGS_DIR = BASE_DIR / "meetings"
-
 
 def ensure_client_meetings_dir(cliente_id) -> Path:
     client_dir = MEETINGS_DIR / str(cliente_id)
     client_dir.mkdir(parents=True, exist_ok=True)
     return client_dir
 
-
 def list_client_meetings(cliente_id) -> list[Path]:
     client_dir = ensure_client_meetings_dir(cliente_id)
     return sorted(client_dir.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
-
 
 def _build_cliente_context(cliente_info: dict) -> str:
     perfil = cliente_info.get("Perfil_Suitability", "não mencionado")
@@ -39,7 +31,6 @@ def _build_cliente_context(cliente_info: dict) -> str:
         f"Dinheiro disponível para investir: {disponivel}. "
         f"Rentabilidade 12m: {rent}. CDI 12m: {cdi}."
     )
-
 
 def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary) -> Path:
     client_dir = ensure_client_meetings_dir(cliente_id)
@@ -60,19 +51,17 @@ def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary) ->
     file_path.write_text(body, encoding="utf-8")
     return file_path
 
-
 def transcribe_audio(file_bytes, filename, mime_type) -> str:
     audio_stream = BytesIO(file_bytes)
     audio_stream.name = filename or "audio_reuniao.wav"
 
-    transcription = client.audio.transcriptions.create(
+    transcription = get_openai_client().audio.transcriptions.create(
         model="gpt-4o-mini-transcribe",
         file=audio_stream,
         language="pt"
     )
 
     return transcription.text.strip()
-
 
 def summarize_transcript(cliente_info, transcript) -> str:
     system_prompt = """
@@ -98,7 +87,7 @@ Próximos passos sugeridos para o assessor:
         "transcricao": transcript,
     }
 
-    resp = client.chat.completions.create(
+    resp = get_openai_client().chat.completions.create(
         model="gpt-5-mini",
         temperature=1,
         messages=[

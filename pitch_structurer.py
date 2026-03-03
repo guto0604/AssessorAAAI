@@ -1,9 +1,6 @@
 import json
-from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
-client = OpenAI()
+from openai_client import get_openai_client
 
 def _read_kb_files(file_paths, max_chars_each=3500):
     """Lê conteúdo dos .txt selecionados (RAG simples)."""
@@ -111,7 +108,7 @@ Formato obrigatório:
         "kb_context": kb_docs,
     }
 
-    resp = client.chat.completions.create(
+    resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
         response_format={"type": "json_object"},

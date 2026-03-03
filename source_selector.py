@@ -1,11 +1,7 @@
-import os
 import json
 from pathlib import Path
-from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
-client = OpenAI()
+from openai_client import get_openai_client
 
 def list_kb_files(kb_dir: str = "knowledge_base"):
     kb_path = Path(kb_dir)
@@ -70,7 +66,7 @@ Formato obrigatório:
         "kb_files_available": kb_files
     }
 
-    resp = client.chat.completions.create(
+    resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
         response_format={"type": "json_object"},
