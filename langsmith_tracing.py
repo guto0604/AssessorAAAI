@@ -16,6 +16,19 @@ class LangSmithTracer:
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
         self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
+        self._dotted_order_by_run_id: dict[str, str] = {}
+        self._trace_id_by_run_id: dict[str, str] = {}
+
+    def _build_dotted_order(self, run_id: str, parent_run_id: str | None = None) -> str:
+        order_token = f"{_iso_now()}_{run_id}"
+        if not parent_run_id:
+            return order_token
+
+        parent_dotted_order = self._dotted_order_by_run_id.get(parent_run_id)
+        if parent_dotted_order:
+            return f"{parent_dotted_order}.{order_token}"
+
+        return order_token
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -41,12 +54,14 @@ class LangSmithTracer:
             "id": run_id,
             "name": name,
             "run_type": run_type,
+            "trace_id": run_id,
             "inputs": inputs,
             "start_time": _iso_now(),
             "session_name": project_name or self.project_name,
             "tags": tags or [],
             "extra": {"metadata": metadata or {}},
         }
+        payload["dotted_order"] = self._build_dotted_order(run_id)
 
         try:
             requests.post(
@@ -55,6 +70,8 @@ class LangSmithTracer:
                 headers=self._headers(),
                 timeout=8,
             ).raise_for_status()
+            self._dotted_order_by_run_id[run_id] = payload["dotted_order"]
+            self._trace_id_by_run_id[run_id] = run_id
             return run_id
         except Exception:
             return None
@@ -68,13 +85,14 @@ class LangSmithTracer:
             "name": event_name,
             "run_type": "tool",
             "parent_run_id": run_id,
-            "trace_id": run_id,
+            "trace_id": self._trace_id_by_run_id.get(run_id, run_id),
             "session_name": self.project_name,
             "inputs": details or {},
             "start_time": _iso_now(),
             "end_time": _iso_now(),
             "outputs": {"status": "logged"},
         }
+        payload["dotted_order"] = self._build_dotted_order(payload["id"], run_id)
 
         try:
             requests.post(
@@ -109,7 +127,7 @@ class LangSmithTracer:
             "name": name,
             "run_type": run_type,
             "parent_run_id": parent_run_id,
-            "trace_id": parent_run_id,
+            "trace_id": self._trace_id_by_run_id.get(parent_run_id, parent_run_id),
             "session_name": self.project_name,
             "inputs": inputs or {},
             "outputs": outputs or {},
@@ -118,6 +136,7 @@ class LangSmithTracer:
             "tags": tags or [],
             "extra": {"metadata": metadata or {}},
         }
+        payload["dotted_order"] = self._build_dotted_order(child_id, parent_run_id)
         if error:
             payload["error"] = error
 
@@ -128,6 +147,8 @@ class LangSmithTracer:
                 headers=self._headers(),
                 timeout=8,
             ).raise_for_status()
+            self._dotted_order_by_run_id[child_id] = payload["dotted_order"]
+            self._trace_id_by_run_id[child_id] = payload["trace_id"]
             return child_id
         except Exception:
             return None
@@ -157,5 +178,7 @@ class LangSmithTracer:
                 headers=self._headers(),
                 timeout=8,
             ).raise_for_status()
+            self._dotted_order_by_run_id.pop(run_id, None)
+            self._trace_id_by_run_id.pop(run_id, None)
         except Exception:
             return
