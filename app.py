@@ -30,6 +30,7 @@ SESSION_LANGSMITH_KEY = "user_langsmith_api_key"
 SESSION_LANGSMITH_TRACING_ENABLED = "user_langsmith_tracing_enabled"
 SESSION_PITCH_TRACE = "pitch_trace_run"
 SESSION_MEETING_TRACE = "meeting_trace_run"
+SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 
 
 def _iso_now() -> str:
@@ -86,6 +87,28 @@ def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | 
     return run_id
 
 
+def _reset_pitch_flow_state():
+    st.session_state.etapa = 1
+    st.session_state.ranking_resultado = None
+
+    keys_to_reset = [
+        "editar_descricao",
+        "jornada_selecionada",
+        "step4_result",
+        "step5_result",
+        "step5_selection",
+        "pitch_draft",
+        "pitch_final_text",
+        "pitch_version",
+    ]
+    for key in keys_to_reset:
+        st.session_state.pop(key, None)
+
+    for key in list(st.session_state.keys()):
+        if key.startswith("pitch_chk_") or key.startswith("pitch_draft_box_"):
+            st.session_state.pop(key, None)
+
+
 def init_session_state():
     if "etapa" not in st.session_state:
         st.session_state.etapa = 1
@@ -112,9 +135,12 @@ def init_session_state():
     if SESSION_MEETING_TRACE not in st.session_state:
         st.session_state[SESSION_MEETING_TRACE] = None
 
+    if SESSION_PITCH_FLOW_STARTED not in st.session_state:
+        st.session_state[SESSION_PITCH_FLOW_STARTED] = False
+
 
 def render_pitch_tab(cliente_id, cliente_info):
-    st.header("1️⃣ Definir intenção do contato")
+    st.header("🚀 Iniciar fluxo de pitch")
 
     prompt_assessor = st.text_area(
         "Escreva o objetivo do contato:",
@@ -124,9 +150,26 @@ def render_pitch_tab(cliente_id, cliente_info):
 
     tracer = get_tracer()
 
-    if st.button("🔎 Sugerir Jornadas", key="pitch_btn_sugerir_jornadas"):  # Gerar jornadas
-
+    start_label = "▶️ Iniciar pitch" if not st.session_state.get(SESSION_PITCH_FLOW_STARTED) else "🔄 Iniciar novo pitch"
+    if st.button(start_label, key="pitch_btn_start_new_flow"):
+        _reset_pitch_flow_state()
         pitch_run_id = _start_pitch_trace(tracer, cliente_id, prompt_assessor)
+        tracer.log_event(pitch_run_id, "pitch_flow_initialized", {
+            "action": "start_new_flow",
+            "at": _iso_now(),
+            "prompt_chars": len(prompt_assessor.strip()),
+        })
+        st.session_state[SESSION_PITCH_FLOW_STARTED] = True
+        st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
+
+    if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
+        st.info("Clique em **Iniciar pitch** para começar o fluxo e registrar no LangSmith.")
+        return
+
+    st.header("1️⃣ Definir intenção do contato")
+
+    if st.button("🔎 Sugerir Jornadas", key="pitch_btn_sugerir_jornadas"):  # Gerar jornadas
+        pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
         tracer.log_event(pitch_run_id, "pitch_step_1_started", {"action": "sugerir_jornadas"})
         jornadas_df = load_jornadas()
 
