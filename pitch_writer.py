@@ -1,35 +1,8 @@
 import json
-from datetime import datetime, timezone
-from time import perf_counter
 
-from openai_client import get_openai_client
+from langchain_core.prompts import ChatPromptTemplate
 
-
-def _usage_dict(response):
-    usage = getattr(response, "usage", None)
-    if not usage:
-        return {}
-    prompt_tokens = getattr(usage, "prompt_tokens", None)
-    completion_tokens = getattr(usage, "completion_tokens", None)
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
-
-    if input_tokens is None:
-        input_tokens = prompt_tokens
-    if output_tokens is None:
-        output_tokens = completion_tokens
-
-    return {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": getattr(usage, "total_tokens", None),
-    }
-
-
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+from langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
 
 
 def generate_final_pitch_step7(
@@ -40,9 +13,6 @@ def generate_final_pitch_step7(
     model: str = "gpt-5.1",
     trace_context: dict | None = None,
 ):
-    """
-    Gera o pitch final com base na seleção do assessor.
-    """
     system_prompt = """
 Você é um assessor de investimentos escrevendo uma mensagem para um cliente.
 
@@ -74,48 +44,23 @@ Regras:
         "selecoes_aprovadas": step5_selection,
     }
 
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
-    resp = get_openai_client().chat.completions.create(
-        model=model,
-        temperature=1,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{user_payload}")]
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
+    llm = get_chat_model(model=model, temperature=1)
+    chain = prompt | llm | str_output_parser
 
-    content = resp.choices[0].message.content.strip()
+    config = build_runnable_config(
+        run_name="pitch_step_7_writer",
+        tags=["pitch", "step_7", "langchain"],
+        metadata={
+            "feature": "pitch",
+            "step": "step_7",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="pitch_step_7_writer_llm",
-                run_type="llm",
-                inputs={
-                    "model": model,
-                    "temperature": 1,
-                    "system_prompt": system_prompt,
-                    "user_payload": user_payload,
-                },
-                outputs={
-                    "response": content,
-                    "model_used": getattr(resp, "model", model),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(resp),
-                },
-                metadata={"step": "step_7"},
-                tags=["pitch", "llm", "step_7"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
-
-    return content
+    return chain.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config).strip()
 
 
 def revise_pitch_step8(
@@ -125,10 +70,6 @@ def revise_pitch_step8(
     model: str = "gpt-5-mini",
     trace_context: dict | None = None,
 ):
-    """
-    Ajuste iterativo do pitch (Passo 8 simples).
-    Se target_excerpt vier preenchido, o modelo prioriza editar aquele trecho.
-    """
     system_prompt = """
 Você é um revisor de texto comercial para assessoria de investimentos.
 
@@ -142,47 +83,23 @@ Regras:
     user_prompt = {
         "pitch_atual": current_pitch,
         "trecho_alvo": target_excerpt,
-        "instrucao_de_edicao": edit_instruction
+        "instrucao_de_edicao": edit_instruction,
     }
 
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
-    resp = get_openai_client().chat.completions.create(
-        model=model,
-        temperature=1,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
-        ],
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{user_payload}")]
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
-    revised = resp.choices[0].message.content.strip()
+    llm = get_chat_model(model=model, temperature=1)
+    chain = prompt | llm | str_output_parser
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="pitch_step_8_reviser_llm",
-                run_type="llm",
-                inputs={
-                    "model": model,
-                    "temperature": 1,
-                    "system_prompt": system_prompt,
-                    "user_payload": user_prompt,
-                },
-                outputs={
-                    "response": revised,
-                    "model_used": getattr(resp, "model", model),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(resp),
-                },
-                metadata={"step": "step_8"},
-                tags=["pitch", "llm", "step_8"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
+    config = build_runnable_config(
+        run_name="pitch_step_8_reviser",
+        tags=["pitch", "step_8", "langchain"],
+        metadata={
+            "feature": "pitch",
+            "step": "step_8",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
 
-    return revised
+    return chain.invoke({"user_payload": json.dumps(user_prompt, ensure_ascii=False)}, config=config).strip()

@@ -4,34 +4,16 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 import json
-from time import perf_counter
 
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.tools import tool
+
+from langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
 from openai_client import get_openai_client
+
 BASE_DIR = Path(__file__).resolve().parent
 MEETINGS_DIR = BASE_DIR / "meetings"
-
-
-def _usage_dict(response):
-    usage = getattr(response, "usage", None)
-    if not usage:
-        return {}
-    prompt_tokens = getattr(usage, "prompt_tokens", None)
-    completion_tokens = getattr(usage, "completion_tokens", None)
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
-
-    if input_tokens is None:
-        input_tokens = prompt_tokens
-    if output_tokens is None:
-        output_tokens = completion_tokens
-
-    return {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": getattr(usage, "total_tokens", None),
-    }
 
 
 def _iso_now() -> str:
@@ -84,50 +66,32 @@ def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary) ->
     return file_path
 
 
-def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None) -> str:
+@tool("transcribe_meeting_audio")
+def transcribe_audio_tool(payload: dict) -> str:
+    """Transcreve o áudio de uma reunião em português."""
+    file_bytes = payload["file_bytes"]
+    filename = payload.get("filename")
     audio_stream = BytesIO(file_bytes)
     audio_stream.name = filename or "audio_reuniao.wav"
-
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
     transcription = get_openai_client().audio.transcriptions.create(
         model="gpt-4o-mini-transcribe",
         file=audio_stream,
-        language="pt"
+        language="pt",
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
+    return transcription.text.strip()
 
-    text = transcription.text.strip()
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="meeting_transcription_llm",
-                run_type="llm",
-                inputs={
-                    "model": "gpt-4o-mini-transcribe",
-                    "language": "pt",
-                    "filename": audio_stream.name,
-                    "mime_type": mime_type,
-                    "audio_bytes": len(file_bytes),
-                },
-                outputs={
-                    "transcript_chars": len(text),
-                    "model_used": getattr(transcription, "model", "gpt-4o-mini-transcribe"),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(transcription),
-                },
-                metadata={"step": "meeting_transcription"},
-                tags=["meeting", "llm", "transcription"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
-
-    return text
+def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None) -> str:
+    config = build_runnable_config(
+        run_name="meeting_transcription",
+        tags=["meeting", "transcription", "langchain"],
+        metadata={
+            "feature": "meeting",
+            "mime_type": mime_type,
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
+    return transcribe_audio_tool.invoke({"file_bytes": file_bytes, "filename": filename}, config=config)
 
 
 def summarize_transcript(cliente_info, transcript, trace_context: dict | None = None) -> str:
@@ -149,50 +113,55 @@ Próximos passos sugeridos para o assessor:
 - ...
 """
 
-    payload = {
-        "cliente_info": cliente_info,
-        "transcricao": transcript,
-    }
-
-    call_start_iso = _iso_now()
-    call_start_perf = perf_counter()
-    resp = get_openai_client().chat.completions.create(
-        model="gpt-5-mini",
-        temperature=1,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-        ],
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{payload}")]
     )
-    call_end_iso = _iso_now()
-    call_duration_s = perf_counter() - call_start_perf
+    llm = get_chat_model(model="gpt-5-mini", temperature=1)
+    chain = prompt | llm | str_output_parser
 
-    summary = resp.choices[0].message.content.strip()
+    config = build_runnable_config(
+        run_name="meeting_summary",
+        tags=["meeting", "summary", "langchain"],
+        metadata={
+            "feature": "meeting",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
 
-    if trace_context:
-        tracer = trace_context.get("tracer")
-        parent_run_id = trace_context.get("parent_run_id")
-        if tracer and parent_run_id:
-            tracer.log_child_run(
-                parent_run_id,
-                name="meeting_summary_llm",
-                run_type="llm",
-                inputs={
-                    "model": "gpt-5-mini",
-                    "temperature": 1,
-                    "system_prompt": system_prompt,
-                    "user_payload": payload,
-                },
-                outputs={
-                    "summary": summary,
-                    "model_used": getattr(resp, "model", "gpt-5-mini"),
-                    "openai_latency_seconds": round(call_duration_s, 4),
-                    "usage": _usage_dict(resp),
-                },
-                metadata={"step": "meeting_summary"},
-                tags=["meeting", "llm", "summary"],
-                start_time=call_start_iso,
-                end_time=call_end_iso,
-            )
+    return chain.invoke(
+        {"payload": json.dumps({"cliente_info": cliente_info, "transcricao": transcript}, ensure_ascii=False)},
+        config=config,
+    ).strip()
 
-    return summary
+
+def process_meeting_with_langchain(cliente_info, audio_bytes, audio_name, audio_type, trace_context: dict | None = None) -> dict:
+    config = build_runnable_config(
+        run_name="meeting_end_to_end",
+        tags=["meeting", "langchain", "e2e"],
+        metadata={
+            "feature": "meeting",
+            "audio_type": audio_type,
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
+
+    chain = (
+        RunnablePassthrough()
+        | RunnableLambda(lambda x: {
+            "transcript": transcribe_audio(x["audio_bytes"], x["audio_name"], x["audio_type"], trace_context=trace_context),
+            "cliente_info": x["cliente_info"],
+        })
+        | RunnableLambda(lambda x: {
+            "transcript": x["transcript"],
+            "summary": summarize_transcript(x["cliente_info"], x["transcript"], trace_context=trace_context),
+        })
+    )
+    return chain.invoke(
+        {
+            "cliente_info": cliente_info,
+            "audio_bytes": audio_bytes,
+            "audio_name": audio_name,
+            "audio_type": audio_type,
+        },
+        config=config,
+    )

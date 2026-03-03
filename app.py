@@ -18,8 +18,7 @@ from pitch_writer import generate_final_pitch_step7, revise_pitch_step8
 from meetings import (
     list_client_meetings,
     save_meeting,
-    summarize_transcript,
-    transcribe_audio,
+    process_meeting_with_langchain,
 )
 
 
@@ -681,21 +680,17 @@ def render_meetings_tab(cliente_id, cliente_info):
             meeting_run_id = _start_meeting_trace(tracer, cliente_id, audio_name)
             tracer.log_event(meeting_run_id, "meeting_transcription_started", {"audio_type": audio_type})
             try:
-                with st.spinner("Transcrevendo áudio..."):
-                    transcript = transcribe_audio(
-                        audio_bytes,
-                        audio_name,
-                        audio_type,
+                with st.spinner("Transcrevendo áudio e gerando resumo da reunião..."):
+                    meeting_result = process_meeting_with_langchain(
+                        cliente_info=cliente_info,
+                        audio_bytes=audio_bytes,
+                        audio_name=audio_name,
+                        audio_type=audio_type,
                         trace_context={"tracer": tracer, "parent_run_id": meeting_run_id},
                     )
+                transcript = meeting_result["transcript"]
+                summary = meeting_result["summary"]
                 tracer.log_event(meeting_run_id, "meeting_transcription_completed", {"transcript_chars": len(transcript)})
-
-                with st.spinner("Gerando resumo da reunião..."):
-                    summary = summarize_transcript(
-                        cliente_info,
-                        transcript,
-                        trace_context={"tracer": tracer, "parent_run_id": meeting_run_id},
-                    )
                 tracer.log_event(meeting_run_id, "meeting_summary_completed", {"summary_chars": len(summary)})
 
                 meeting_path = save_meeting(
