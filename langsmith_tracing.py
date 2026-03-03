@@ -15,7 +15,7 @@ class LangSmithTracer:
         self.api_key = (api_key or os.getenv("LANGSMITH_API_KEY") or "").strip()
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
-        self.project_name = (os.getenv("LANGSMITH_PROJECT") or "contato-assessor").strip()
+        self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
 
     def _headers(self) -> dict[str, str]:
         return {
