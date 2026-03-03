@@ -1,11 +1,5 @@
-import os
-from openai import OpenAI
-from dotenv import load_dotenv
 import json
-
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from openai_client import get_openai_client
 
 def rank_journeys(cliente_info, prompt_assessor, jornadas_df):
     
@@ -62,7 +56,7 @@ Jornadas disponíveis:
 Rankeie as 5 jornadas mais adequadas.
 """
 
-    response = client.chat.completions.create(
+    response = get_openai_client().chat.completions.create(
         model="gpt-5-mini",  # modelo rápido para classificação
         messages=[
             {"role": "system", "content": system_prompt},

@@ -1,9 +1,6 @@
 import json
-from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
-client = OpenAI()
+from openai_client import get_openai_client
 
 def generate_final_pitch_step7(
     cliente_info: dict,
@@ -46,7 +43,7 @@ Regras:
         "selecoes_aprovadas": step5_selection
     }
 
-    resp = client.chat.completions.create(
+    resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
         messages=[
@@ -56,7 +53,6 @@ Regras:
     )
 
     return resp.choices[0].message.content.strip()
-
 
 def revise_pitch_step8(
     current_pitch: str,
@@ -84,7 +80,7 @@ Regras:
         "instrucao_de_edicao": edit_instruction
     }
 
-    resp = client.chat.completions.create(
+    resp = get_openai_client().chat.completions.create(
         model=model,
         temperature=1,
         messages=[
