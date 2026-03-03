@@ -1,8 +1,10 @@
 import os
+import json
 from datetime import datetime, timezone
 
 import streamlit as st
 from openai_client import SESSION_OPENAI_KEY
+from openai_client import get_effective_openai_api_key
 from langsmith_tracing import LangSmithTracer
 from data_loader import (
     load_clientes, load_jornadas, get_cliente_by_id,
@@ -38,8 +40,12 @@ def _iso_now() -> str:
 
 
 def get_tracer() -> LangSmithTracer:
+    env_langsmith_key = (os.getenv("LANGSMITH_API_KEY") or "").strip()
+    session_langsmith_key = (st.session_state.get(SESSION_LANGSMITH_KEY, "") or "").strip()
+    effective_langsmith_key = env_langsmith_key or session_langsmith_key
+
     return LangSmithTracer(
-        api_key=st.session_state.get(SESSION_LANGSMITH_KEY, ""),
+        api_key=effective_langsmith_key,
         enabled=True,
     )
 
@@ -166,7 +172,6 @@ def render_pitch_tab(cliente_id, cliente_info):
         st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
 
     if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
-        st.info("Clique em **Iniciar pitch** para começar o fluxo e registrar no LangSmith.")
         return
 
     st.header("1️⃣ Definir intenção do contato")
@@ -769,47 +774,59 @@ def render_insights_tab():
 
 def render_settings_tab():
     st.title("Configurações")
-    st.caption("Preencha apenas as credenciais essenciais da sessão.")
+    st.caption("Preencha apenas as credenciais essenciais da sessão (quando necessário).")
 
-    current_openai_key = st.session_state.get(SESSION_OPENAI_KEY, "")
-    current_langsmith_key = st.session_state.get(SESSION_LANGSMITH_KEY, "")
+    env_openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
+    env_langsmith_key = (os.getenv("LANGSMITH_API_KEY") or "").strip()
+    current_openai_key = (st.session_state.get(SESSION_OPENAI_KEY, "") or "").strip()
+    current_langsmith_key = (st.session_state.get(SESSION_LANGSMITH_KEY, "") or "").strip()
+
+    effective_openai_key = (get_effective_openai_api_key() or "").strip()
+    effective_langsmith_key = env_langsmith_key or current_langsmith_key
 
     st.subheader("Integrações")
 
-    openai_is_configured = bool(current_openai_key.strip())
-    langsmith_is_configured = bool(current_langsmith_key.strip())
-
-    st.markdown("### Status da sessão")
-    st.markdown(f"- {'✅' if openai_is_configured else '⚠️'} OPENAI_API_KEY configurada")
-    st.markdown(f"- {'✅' if langsmith_is_configured else '⚠️'} LANGSMITH_API_KEY configurada")
+    openai_is_configured = bool(effective_openai_key)
+    langsmith_is_configured = bool(effective_langsmith_key)
 
     tracing_health_status = st.session_state.get(SESSION_TRACING_HEALTH_STATUS)
-    if tracing_health_status == "ok":
-        st.success("Tracing LangSmith operacional.")
-    elif tracing_health_status == "error":
-        st.error("Tracing LangSmith indisponível. Verifique a chave e conectividade.")
-    else:
-        st.info("Tracing LangSmith ainda não validado nesta sessão.")
+    tracing_is_ok = tracing_health_status == "ok"
+
+    st.markdown("### Status")
+    st.code(
+        json.dumps(
+            {
+                "openai_api_key_configurada": openai_is_configured,
+                "langsmith_api_key_configurada": langsmith_is_configured,
+                "tracing_langsmith_ok": tracing_is_ok,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        language="json",
+    )
 
     openai_api_key_input = st.text_input(
         "OPENAI_API_KEY (sessão)",
-        value=current_openai_key,
+        value="" if env_openai_key else current_openai_key,
         type="password",
-        key="settings_openai_api_key_input"
+        key="settings_openai_api_key_input",
+        disabled=bool(env_openai_key),
     )
 
     langsmith_api_key_input = st.text_input(
         "LANGSMITH_API_KEY (sessão)",
-        value=current_langsmith_key,
+        value="" if env_langsmith_key else current_langsmith_key,
         type="password",
-        key="settings_langsmith_api_key_input"
+        key="settings_langsmith_api_key_input",
+        disabled=bool(env_langsmith_key),
     )
 
-    st.info("Tracing no LangSmith está sempre ativo para esta sessão.")
-
     if st.button("💾 Salvar configurações", key="settings_save_keys"):
-        st.session_state[SESSION_OPENAI_KEY] = openai_api_key_input.strip()
-        st.session_state[SESSION_LANGSMITH_KEY] = langsmith_api_key_input.strip()
+        if not env_openai_key:
+            st.session_state[SESSION_OPENAI_KEY] = openai_api_key_input.strip()
+        if not env_langsmith_key:
+            st.session_state[SESSION_LANGSMITH_KEY] = langsmith_api_key_input.strip()
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
         st.success("Configurações salvas na sessão.")

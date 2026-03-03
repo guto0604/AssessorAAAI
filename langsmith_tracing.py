@@ -12,7 +12,7 @@ def _iso_now() -> str:
 
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
-        self.api_key = (api_key or os.getenv("LANGSMITH_API_KEY") or "").strip()
+        self.api_key = (os.getenv("LANGSMITH_API_KEY") or api_key or "").strip()
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
         self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
