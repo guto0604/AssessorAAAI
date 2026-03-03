@@ -68,6 +68,8 @@ class LangSmithTracer:
             "name": event_name,
             "run_type": "tool",
             "parent_run_id": run_id,
+            "trace_id": run_id,
+            "session_name": self.project_name,
             "inputs": details or {},
             "start_time": _iso_now(),
             "end_time": _iso_now(),
@@ -95,6 +97,8 @@ class LangSmithTracer:
         metadata: dict[str, Any] | None = None,
         error: str | None = None,
         tags: list[str] | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
     ) -> str | None:
         if not self.enabled or not parent_run_id:
             return None
@@ -105,10 +109,12 @@ class LangSmithTracer:
             "name": name,
             "run_type": run_type,
             "parent_run_id": parent_run_id,
+            "trace_id": parent_run_id,
+            "session_name": self.project_name,
             "inputs": inputs or {},
             "outputs": outputs or {},
-            "start_time": _iso_now(),
-            "end_time": _iso_now(),
+            "start_time": start_time or _iso_now(),
+            "end_time": end_time or _iso_now(),
             "tags": tags or [],
             "extra": {"metadata": metadata or {}},
         }
