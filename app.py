@@ -33,6 +33,7 @@ SESSION_PITCH_TRACE = "pitch_trace_run"
 SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
+SESSION_TRACING_LAST_ERROR = "langsmith_tracing_last_error"
 
 
 def _iso_now() -> str:
@@ -146,6 +147,9 @@ def init_session_state():
 
     if SESSION_TRACING_HEALTH_STATUS not in st.session_state:
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
+
+    if SESSION_TRACING_LAST_ERROR not in st.session_state:
+        st.session_state[SESSION_TRACING_LAST_ERROR] = None
 
 
 def render_pitch_tab(cliente_id, cliente_info):
@@ -791,6 +795,7 @@ def render_settings_tab():
 
     tracing_health_status = st.session_state.get(SESSION_TRACING_HEALTH_STATUS)
     tracing_is_ok = tracing_health_status == "ok"
+    tracing_last_error = st.session_state.get(SESSION_TRACING_LAST_ERROR)
 
     st.markdown("### Status")
     st.code(
@@ -799,6 +804,8 @@ def render_settings_tab():
                 "openai_api_key_configurada": openai_is_configured,
                 "langsmith_api_key_configurada": langsmith_is_configured,
                 "tracing_langsmith_ok": tracing_is_ok,
+                "langsmith_endpoint": os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com",
+                "tracing_last_error": tracing_last_error,
             },
             ensure_ascii=False,
             indent=2,
@@ -829,12 +836,14 @@ def render_settings_tab():
             st.session_state[SESSION_LANGSMITH_KEY] = langsmith_api_key_input.strip()
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
+        st.session_state[SESSION_TRACING_LAST_ERROR] = None
         st.success("Configurações salvas na sessão.")
 
     if st.button("🩺 Testar tracing LangSmith", key="settings_test_tracing"):
         tracer = get_tracer()
         if not tracer.enabled:
             st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
+            st.session_state[SESSION_TRACING_LAST_ERROR] = "LANGSMITH_API_KEY ausente ou vazia"
             st.error("Tracing inativo: informe a LANGSMITH_API_KEY para validar.")
         else:
             healthcheck_run_id = tracer.start_run(
@@ -852,10 +861,14 @@ def render_settings_tab():
                     outputs={"status": "ok", "message": "healthcheck_passed"},
                 )
                 st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
+                st.session_state[SESSION_TRACING_LAST_ERROR] = None
                 st.success("Tracing validado com sucesso no LangSmith.")
             else:
                 st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
-                st.error("Falha ao criar run de teste no LangSmith.")
+                st.session_state[SESSION_TRACING_LAST_ERROR] = tracer.last_error
+                st.error(
+                    f"Falha ao criar run de teste no LangSmith. Detalhe: {tracer.last_error or 'erro desconhecido'}"
+                )
 
 
 def main():
