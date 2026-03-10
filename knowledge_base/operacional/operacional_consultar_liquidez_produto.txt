@@ -1,0 +1,15 @@
+TÍTULO: Operacional – Como verificar liquidez de um produto
+
+Antes de recomendar um produto é necessário verificar sua liquidez.
+
+Passos
+- Consultar ficha técnica do produto
+- Verificar prazo de resgate
+- Confirmar existência de mercado secundário
+
+Tipos comuns
+- Liquidez diária
+- D+30
+- Liquidez apenas no vencimento
+
+Liquidez deve sempre estar alinhada ao objetivo do cliente.

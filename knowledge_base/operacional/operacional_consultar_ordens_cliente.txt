@@ -1,0 +1,16 @@
+TÍTULO: Operacional – Como consultar histórico de ordens do cliente
+
+O histórico de ordens permite visualizar todas as operações realizadas.
+
+Passos
+
+- Acessar sistema da plataforma
+- Buscar cliente pelo CPF
+- Abrir aba de ordens executadas
+
+Informações disponíveis
+
+- Data da operação
+- Produto negociado
+- Quantidade
+- Preço de execução

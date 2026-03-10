@@ -1,0 +1,11 @@
+TÍTULO: Política Interna – Proteção de Dados Sensíveis do Cliente
+
+Informações de clientes devem ser tratadas com confidencialidade.
+
+É proibido:
+
+- Compartilhar dados sem autorização
+- Utilizar informações para fins não relacionados ao atendimento
+- Armazenar dados sensíveis fora dos sistemas autorizados
+
+Essa política está alinhada com a LGPD.

@@ -1,0 +1,15 @@
+TÍTULO: Operacional – Como verificar perfil de investimento do cliente
+
+O perfil do cliente deve sempre ser consultado antes de qualquer recomendação.
+
+Passos
+- Acessar cadastro do cliente
+- Abrir aba de suitability
+- Verificar perfil atual
+
+Perfis comuns
+- Conservador
+- Moderado
+- Arrojado
+
+Produtos recomendados devem respeitar esse perfil.

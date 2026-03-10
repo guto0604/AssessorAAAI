@@ -1,0 +1,19 @@
+TÍTULO: Política Interna – Limites de Alocação por Perfil
+
+A política de alocação define limites máximos de exposição por classe de ativo de acordo com o perfil do cliente.
+
+Perfil Conservador
+- Renda fixa: predominante
+- Renda variável: até 20%
+- Alternativos: até 10%
+
+Perfil Moderado
+- Renda fixa: relevante
+- Renda variável: até 40%
+- Alternativos: até 20%
+
+Perfil Arrojado
+- Renda variável: até 70%
+- Alternativos: até 30%
+
+Esses limites garantem adequação ao perfil de risco e proteção ao cliente.

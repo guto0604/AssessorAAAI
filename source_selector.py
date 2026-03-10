@@ -62,9 +62,9 @@ Você é um agente de seleção de fontes para um copiloto de assessoria de inve
 
 IMPORTANTE: Fluxo em duas etapas dentro desta mesma resposta:
 1) Selecionar PRODUTOS candidatos (por Produto_ID) com base em jornada, prompt, perfil e momento (rentabilidade vs CDI, liquidez, gaps), selecione pelo menos 3 produtos.
-2) Com base nos PRODUTOS selecionados (categoria/subcategoria/risco), escolher quais documentos .txt da knowledge_base fazem sentido CONSULTAR NO PRÓXIMO PASSO.
+2) Com base na jornada, prompt, cliente e produtos, escolher quais documentos .txt da knowledge_base fazem sentido CONSULTAR NO PRÓXIMO PASSO.
    - Você NÃO deve ler conteúdo dos documentos; selecione APENAS PELO NOME do arquivo.
-   - Selecione no máximo 5 arquivos da knowledge_base.
+   - Selecione exatamente 5 arquivos da knowledge_base.
 
 Regras:
 - Retorne APENAS JSON válido (sem markdown).

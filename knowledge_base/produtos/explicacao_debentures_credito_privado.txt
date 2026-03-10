@@ -1,0 +1,19 @@
+TÍTULO: Explicação – Debêntures (Crédito Privado)
+
+Debêntures são títulos de dívida emitidos por empresas para financiar suas atividades.
+
+Investidor empresta recursos para a empresa e recebe juros em troca.
+
+Podem ser:
+- Prefixadas
+- Atreladas ao CDI
+- Atreladas à inflação (IPCA)
+
+Pontos comerciais
+- Taxas geralmente superiores à renda fixa bancária
+- Diversificação de crédito
+- Possibilidade de isenção fiscal em debêntures incentivadas
+
+Riscos
+- Risco de crédito da empresa
+- Liquidez variável no mercado secundário

@@ -1,0 +1,11 @@
+TÍTULO: Operacional – Como registrar interação com cliente
+
+Toda interação com cliente deve ser registrada no CRM.
+
+Informações recomendadas
+- Tema da conversa
+- Produto discutido
+- Próximos passos
+- Possíveis oportunidades
+
+Registro adequado permite histórico completo de relacionamento.

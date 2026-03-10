@@ -1,0 +1,18 @@
+TÍTULO: Explicação – ETF (Exchange Traded Fund)
+
+ETF é um fundo negociado em bolsa que busca replicar o desempenho de um índice.
+
+Exemplos:
+- Ibovespa
+- S&P 500
+- Nasdaq
+- Índices de commodities
+
+Pontos comerciais
+- Baixo custo de gestão
+- Diversificação automática
+- Alta liquidez
+
+Riscos
+- Volatilidade de mercado
+- Exposição direta ao índice

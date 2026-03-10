@@ -1,0 +1,15 @@
+TÍTULO: Operacional – Como consultar posição consolidada do cliente
+
+A posição consolidada permite visualizar todos os investimentos do cliente.
+
+Passos gerais
+- Acessar sistema da plataforma
+- Buscar cliente pelo CPF
+- Abrir aba de posição consolidada
+
+Informações disponíveis
+- Valor total investido
+- Alocação por classe de ativo
+- Performance histórica
+
+Essa consulta é essencial antes de qualquer recomendação.
