@@ -142,6 +142,6 @@ class LangSmithTracer:
             )
             self.last_error = None
             return True
-        except Exception:
-            self.last_error = "Falha ao enviar tracing para o LangSmith."
+        except Exception as e:
+            self.last_error = f"Falha ao enviar tracing para o LangSmith. \n\n{e}"
             return False
