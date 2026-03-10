@@ -128,7 +128,7 @@ class LangSmithTracer:
         try:
             self._client.create_run(
                 id=run_state["id"],
-                trace_id=run_state["id"],
+                #trace_id=run_state["id"],
                 name=run_state["name"],
                 run_type=run_state["run_type"],
                 project_name=run_state["project_name"],
