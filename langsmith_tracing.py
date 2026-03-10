@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-import requests
+from langsmith import Client
 
 
 def _iso_now() -> str:
@@ -16,25 +16,8 @@ class LangSmithTracer:
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
         self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
-        self._dotted_order_by_run_id: dict[str, str] = {}
-        self._trace_id_by_run_id: dict[str, str] = {}
-
-    def _build_dotted_order(self, run_id: str, parent_run_id: str | None = None) -> str:
-        order_token = f"{_iso_now()}_{run_id}"
-        if not parent_run_id:
-            return order_token
-
-        parent_dotted_order = self._dotted_order_by_run_id.get(parent_run_id)
-        if parent_dotted_order:
-            return f"{parent_dotted_order}.{order_token}"
-
-        return order_token
-
-    def _headers(self) -> dict[str, str]:
-        return {
-            "x-api-key": self.api_key,
-            "Content-Type": "application/json",
-        }
+        self._client = Client(api_key=self.api_key, api_url=self.base_url) if self.enabled else None
+        self._runs: dict[str, dict[str, Any]] = {}
 
     def start_run(
         self,
@@ -50,59 +33,33 @@ class LangSmithTracer:
             return None
 
         run_id = str(uuid.uuid4())
-        payload = {
+        self._runs[run_id] = {
             "id": run_id,
             "name": name,
             "run_type": run_type,
-            "trace_id": run_id,
             "inputs": inputs,
             "start_time": _iso_now(),
-            "session_name": project_name or self.project_name,
+            "project_name": project_name or self.project_name,
             "tags": tags or [],
-            "extra": {"metadata": metadata or {}},
+            "metadata": metadata or {},
+            "events": [],
         }
-        payload["dotted_order"] = self._build_dotted_order(run_id)
-
-        try:
-            requests.post(
-                f"{self.base_url}/runs",
-                json=payload,
-                headers=self._headers(),
-                timeout=8,
-            ).raise_for_status()
-            self._dotted_order_by_run_id[run_id] = payload["dotted_order"]
-            self._trace_id_by_run_id[run_id] = run_id
-            return run_id
-        except Exception:
-            return None
+        return run_id
 
     def log_event(self, run_id: str | None, event_name: str, details: dict[str, Any] | None = None) -> None:
         if not self.enabled or not run_id:
             return
-
-        payload = {
-            "id": str(uuid.uuid4()),
-            "name": event_name,
-            "run_type": "tool",
-            "parent_run_id": run_id,
-            "trace_id": self._trace_id_by_run_id.get(run_id, run_id),
-            "session_name": self.project_name,
-            "inputs": details or {},
-            "start_time": _iso_now(),
-            "end_time": _iso_now(),
-            "outputs": {"status": "logged"},
-        }
-        payload["dotted_order"] = self._build_dotted_order(payload["id"], run_id)
-
-        try:
-            requests.post(
-                f"{self.base_url}/runs",
-                json=payload,
-                headers=self._headers(),
-                timeout=8,
-            ).raise_for_status()
-        except Exception:
+        run_state = self._runs.get(run_id)
+        if not run_state:
             return
+
+        run_state["events"].append(
+            {
+                "name": event_name,
+                "details": details or {},
+                "time": _iso_now(),
+            }
+        )
 
     def log_child_run(
         self,
@@ -121,37 +78,21 @@ class LangSmithTracer:
         if not self.enabled or not parent_run_id:
             return None
 
-        child_id = str(uuid.uuid4())
-        payload = {
-            "id": child_id,
-            "name": name,
-            "run_type": run_type,
-            "parent_run_id": parent_run_id,
-            "trace_id": self._trace_id_by_run_id.get(parent_run_id, parent_run_id),
-            "session_name": self.project_name,
-            "inputs": inputs or {},
-            "outputs": outputs or {},
-            "start_time": start_time or _iso_now(),
-            "end_time": end_time or _iso_now(),
-            "tags": tags or [],
-            "extra": {"metadata": metadata or {}},
-        }
-        payload["dotted_order"] = self._build_dotted_order(child_id, parent_run_id)
-        if error:
-            payload["error"] = error
-
-        try:
-            requests.post(
-                f"{self.base_url}/runs",
-                json=payload,
-                headers=self._headers(),
-                timeout=8,
-            ).raise_for_status()
-            self._dotted_order_by_run_id[child_id] = payload["dotted_order"]
-            self._trace_id_by_run_id[child_id] = payload["trace_id"]
-            return child_id
-        except Exception:
-            return None
+        self.log_event(
+            parent_run_id,
+            event_name=f"child_run:{name}",
+            details={
+                "run_type": run_type,
+                "inputs": inputs or {},
+                "outputs": outputs or {},
+                "metadata": metadata or {},
+                "error": error,
+                "tags": tags or [],
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+        )
+        return None
 
     def end_run(
         self,
@@ -164,21 +105,35 @@ class LangSmithTracer:
         if not self.enabled or not run_id:
             return
 
-        payload = {
-            "end_time": _iso_now(),
-            "outputs": outputs or {"status": status},
-        }
+        run_state = self._runs.pop(run_id, None)
+        if not run_state or not self._client:
+            return
+
+        final_outputs = outputs or {"status": status}
+        if run_state["events"]:
+            final_outputs = {
+                **final_outputs,
+                "events": run_state["events"],
+            }
+
+        extra = {"metadata": run_state["metadata"]}
         if error:
-            payload["error"] = error
+            extra["metadata"]["error"] = error
 
         try:
-            requests.patch(
-                f"{self.base_url}/runs/{run_id}",
-                json=payload,
-                headers=self._headers(),
-                timeout=8,
-            ).raise_for_status()
-            self._dotted_order_by_run_id.pop(run_id, None)
-            self._trace_id_by_run_id.pop(run_id, None)
+            self._client.create_run(
+                id=run_state["id"],
+                trace_id=run_state["id"],
+                name=run_state["name"],
+                run_type=run_state["run_type"],
+                project_name=run_state["project_name"],
+                inputs=run_state["inputs"],
+                outputs=final_outputs,
+                start_time=run_state["start_time"],
+                end_time=_iso_now(),
+                error=error,
+                tags=run_state["tags"],
+                extra=extra,
+            )
         except Exception:
             return
