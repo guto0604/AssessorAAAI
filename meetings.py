@@ -56,22 +56,10 @@ def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary, ap
     title = f"Reunião com {cliente_nome} ({cliente_id}) – {now.strftime('%Y-%m-%d %H:%M')}"
     contexto = _build_cliente_context(cliente_info)
 
-    metrics_section = ""
-    if api_calls:
-        metrics_section = "Métricas de chamadas de API:\n"
-        for idx, call in enumerate(api_calls, start=1):
-            metrics_section += (
-                f"{idx}. etapa={call.get('step')} | provider={call.get('provider')} | modelo={call.get('model')} | "
-                f"latencia_ms={call.get('latency_ms')} | input_tokens={call.get('input_tokens')} | "
-                f"output_tokens={call.get('output_tokens')} | total_tokens={call.get('total_tokens')} | "
-                f"response_id={call.get('response_id')}\n"
-            )
-        metrics_section += "\n"
 
     body = (
         f"{title}\n\n"
         f"Contexto do cliente:\n{contexto}\n\n"
-        f"{metrics_section}"
         f"{summary.strip()}\n\n"
         f"Transcrição:\n{transcript.strip()}\n"
     )
