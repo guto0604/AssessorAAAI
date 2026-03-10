@@ -7,6 +7,19 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
 
+def _build_api_metrics(response, *, provider: str = "openai") -> dict:
+    usage = getattr(response, "usage", {}) or {}
+    return {
+        "provider": provider,
+        "model": getattr(response, "model", None),
+        "latency_ms": getattr(response, "elapsed_ms", None),
+        "input_tokens": usage.get("prompt_tokens"),
+        "output_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "response_id": getattr(response, "response_id", None),
+    }
+
+
 def list_kb_files(kb_dir: str = "knowledge_base"):
     kb_path = Path(kb_dir)
     if not kb_path.exists():
@@ -32,6 +45,7 @@ def select_sources_step4(
     kb_dir: str = "knowledge_base",
     model: str = "gpt-5-mini",
     trace_context: dict | None = None,
+    include_api_metrics: bool = False,
 ):
     kb_files = list_kb_files(kb_dir)
 
@@ -79,15 +93,6 @@ Formato obrigatório:
         user_payload=RunnablePassthrough() | RunnableLambda(lambda x: json.dumps(x, ensure_ascii=False))
     )
 
-    chain = (
-        payload_builder
-        | prompt
-        | llm
-        | str_output_parser
-        | RunnableLambda(parse_json_output)
-        | RunnableLambda(_sanitize_step4_output)
-    )
-
     config = build_runnable_config(
         run_name="pitch_step_4_source_selector",
         tags=["pitch", "step_4", "langchain"],
@@ -98,15 +103,23 @@ Formato obrigatório:
         },
     )
 
-    return chain.invoke(
-        {
-            "cliente_info": cliente_info,
-            "prompt_assessor": prompt_assessor,
-            "jornada_selecionada": jornada_selecionada,
-            "carteira_summary": carteira_summary,
-            "investimentos_atuais": investimentos_list,
-            "produtos_catalogo": produtos_catalogo,
-            "kb_files_available": kb_files,
-        },
-        config=config,
-    )
+    payload = {
+        "cliente_info": cliente_info,
+        "prompt_assessor": prompt_assessor,
+        "jornada_selecionada": jornada_selecionada,
+        "carteira_summary": carteira_summary,
+        "investimentos_atuais": investimentos_list,
+        "produtos_catalogo": produtos_catalogo,
+        "kb_files_available": kb_files,
+    }
+    messages = (payload_builder | prompt).invoke(payload, config=config)
+    response = llm.invoke(messages, config=config)
+    parsed = _sanitize_step4_output(parse_json_output(str_output_parser.invoke(response, config=config)))
+
+    if include_api_metrics:
+        return {
+            "result": parsed,
+            "api_metrics": _build_api_metrics(response),
+        }
+
+    return parsed
