@@ -33,6 +33,7 @@ SESSION_PITCH_TRACE = "pitch_trace_run"
 SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
+SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
 
 
 def _iso_now() -> str:
@@ -44,10 +45,17 @@ def get_tracer() -> LangSmithTracer:
     session_langsmith_key = (st.session_state.get(SESSION_LANGSMITH_KEY, "") or "").strip()
     effective_langsmith_key = env_langsmith_key or session_langsmith_key
 
-    return LangSmithTracer(
+    cached_tracer = st.session_state.get(SESSION_LANGSMITH_TRACER)
+    if isinstance(cached_tracer, LangSmithTracer):
+        if cached_tracer.api_key == effective_langsmith_key:
+            return cached_tracer
+
+    tracer = LangSmithTracer(
         api_key=effective_langsmith_key,
         enabled=True,
     )
+    st.session_state[SESSION_LANGSMITH_TRACER] = tracer
+    return tracer
 
 
 def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str) -> str | None:
@@ -146,6 +154,9 @@ def init_session_state():
 
     if SESSION_TRACING_HEALTH_STATUS not in st.session_state:
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
+
+    if SESSION_LANGSMITH_TRACER not in st.session_state:
+        st.session_state[SESSION_LANGSMITH_TRACER] = None
 
 
 def render_pitch_tab(cliente_id, cliente_info):
