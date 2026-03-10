@@ -541,14 +541,18 @@ def render_pitch_tab(cliente_id, cliente_info):
             tracer.log_event(pitch_run_id, "pitch_step_7_started")
             try:
                 with st.spinner("Escrevendo pitch..."):
-                    pitch = generate_final_pitch_step7(
+                    pitch_result = generate_final_pitch_step7(
                         cliente_info=cliente_info,
                         prompt_assessor=prompt_assessor,
                         jornada_selecionada=st.session_state["jornada_selecionada"],
                         step5_selection=st.session_state["step5_selection"],
                         model=model_writer,
                         trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
                     )
+                pitch = pitch_result["text"]
+                api_metrics = {"step": "step_7", **pitch_result["api_metrics"]}
+                tracer.log_event(pitch_run_id, "pitch_api_call", api_metrics)
                 tracer.log_event(pitch_run_id, "pitch_step_7_completed", {"draft_chars": len(pitch)})
                 st.session_state["pitch_draft"] = pitch
                 st.session_state["pitch_final_text"] = None
@@ -599,13 +603,16 @@ def render_pitch_tab(cliente_id, cliente_info):
                     tracer.log_event(pitch_run_id, "pitch_step_8_started", {"has_target_excerpt": bool(target_excerpt.strip())})
                     try:
                         with st.spinner("Aplicando ajuste..."):
-                            revised = revise_pitch_step8(
+                            revised_result = revise_pitch_step8(
                                 current_pitch=st.session_state["pitch_draft"],
                                 edit_instruction=edit_instruction.strip(),
                                 target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
                                 model=model_writer,
                                 trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                                include_api_metrics=True,
                             )
+                        revised = revised_result["text"]
+                        tracer.log_event(pitch_run_id, "pitch_api_call", {"step": "step_8", **revised_result["api_metrics"]})
                         tracer.log_event(pitch_run_id, "pitch_step_8_completed", {"draft_chars": len(revised)})
                         st.session_state["pitch_draft"] = revised
                         st.session_state["pitch_version"] += 1
@@ -707,9 +714,13 @@ def render_meetings_tab(cliente_id, cliente_info):
                         audio_name=audio_name,
                         audio_type=audio_type,
                         trace_context={"tracer": tracer, "parent_run_id": meeting_run_id},
+                        include_api_metrics=True,
                     )
                 transcript = meeting_result["transcript"]
                 summary = meeting_result["summary"]
+                api_calls = meeting_result.get("api_calls", [])
+                for api_call in api_calls:
+                    tracer.log_event(meeting_run_id, "meeting_api_call", api_call)
                 tracer.log_event(meeting_run_id, "meeting_transcription_completed", {"transcript_chars": len(transcript)})
                 tracer.log_event(meeting_run_id, "meeting_summary_completed", {"summary_chars": len(summary)})
 
@@ -719,6 +730,7 @@ def render_meetings_tab(cliente_id, cliente_info):
                     cliente_info=cliente_info,
                     transcript=transcript,
                     summary=summary,
+                    api_calls=api_calls,
                 )
                 st.session_state.meetings_last_saved_path = str(meeting_path)
                 tracer.end_run(

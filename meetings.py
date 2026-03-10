@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 import json
+from time import perf_counter
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -46,7 +47,7 @@ def _build_cliente_context(cliente_info: dict) -> str:
     )
 
 
-def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary) -> Path:
+def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary, api_calls: list[dict] | None = None) -> Path:
     client_dir = ensure_client_meetings_dir(cliente_id)
     now = datetime.now()
     file_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_reuniao.txt"
@@ -55,9 +56,22 @@ def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary) ->
     title = f"Reunião com {cliente_nome} ({cliente_id}) – {now.strftime('%Y-%m-%d %H:%M')}"
     contexto = _build_cliente_context(cliente_info)
 
+    metrics_section = ""
+    if api_calls:
+        metrics_section = "Métricas de chamadas de API:\n"
+        for idx, call in enumerate(api_calls, start=1):
+            metrics_section += (
+                f"{idx}. etapa={call.get('step')} | provider={call.get('provider')} | modelo={call.get('model')} | "
+                f"latencia_ms={call.get('latency_ms')} | input_tokens={call.get('input_tokens')} | "
+                f"output_tokens={call.get('output_tokens')} | total_tokens={call.get('total_tokens')} | "
+                f"response_id={call.get('response_id')}\n"
+            )
+        metrics_section += "\n"
+
     body = (
         f"{title}\n\n"
         f"Contexto do cliente:\n{contexto}\n\n"
+        f"{metrics_section}"
         f"{summary.strip()}\n\n"
         f"Transcrição:\n{transcript.strip()}\n"
     )
@@ -81,7 +95,7 @@ def transcribe_audio_tool(payload: dict) -> str:
     return transcription.text.strip()
 
 
-def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None) -> str:
+def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None, include_api_metrics: bool = False):
     config = build_runnable_config(
         run_name="meeting_transcription",
         tags=["meeting", "transcription", "langchain"],
@@ -91,10 +105,28 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
             "parent_run_id": (trace_context or {}).get("parent_run_id"),
         },
     )
-    return transcribe_audio_tool.invoke({"file_bytes": file_bytes, "filename": filename}, config=config)
+    started = perf_counter()
+    transcript = transcribe_audio_tool.invoke({"file_bytes": file_bytes, "filename": filename}, config=config)
+    latency_ms = round((perf_counter() - started) * 1000, 2)
+
+    if include_api_metrics:
+        return {
+            "text": transcript,
+            "api_metrics": {
+                "step": "transcription",
+                "provider": "openai",
+                "model": "gpt-4o-mini-transcribe",
+                "latency_ms": latency_ms,
+                "input_tokens": None,
+                "output_tokens": None,
+                "total_tokens": None,
+                "response_id": None,
+            },
+        }
+    return transcript
 
 
-def summarize_transcript(cliente_info, transcript, trace_context: dict | None = None) -> str:
+def summarize_transcript(cliente_info, transcript, trace_context: dict | None = None, include_api_metrics: bool = False):
     system_prompt = """
 Você é um assistente para assessores de investimentos.
 
@@ -117,8 +149,6 @@ Próximos passos sugeridos para o assessor:
         [("system", system_prompt), ("user", "{payload}")]
     )
     llm = get_chat_model(model="gpt-5-mini", temperature=1)
-    chain = prompt | llm | str_output_parser
-
     config = build_runnable_config(
         run_name="meeting_summary",
         tags=["meeting", "summary", "langchain"],
@@ -128,13 +158,39 @@ Próximos passos sugeridos para o assessor:
         },
     )
 
-    return chain.invoke(
+    messages = prompt.invoke(
         {"payload": json.dumps({"cliente_info": cliente_info, "transcricao": transcript}, ensure_ascii=False)},
         config=config,
-    ).strip()
+    )
+    response = llm.invoke(messages, config=config)
+    summary = str_output_parser.invoke(response, config=config).strip()
+
+    if include_api_metrics:
+        usage = getattr(response, "usage", {}) or {}
+        return {
+            "text": summary,
+            "api_metrics": {
+                "step": "summary",
+                "provider": "openai",
+                "model": getattr(response, "model", None),
+                "latency_ms": getattr(response, "elapsed_ms", None),
+                "input_tokens": usage.get("prompt_tokens"),
+                "output_tokens": usage.get("completion_tokens"),
+                "total_tokens": usage.get("total_tokens"),
+                "response_id": getattr(response, "response_id", None),
+            },
+        }
+    return summary
 
 
-def process_meeting_with_langchain(cliente_info, audio_bytes, audio_name, audio_type, trace_context: dict | None = None) -> dict:
+def process_meeting_with_langchain(
+    cliente_info,
+    audio_bytes,
+    audio_name,
+    audio_type,
+    trace_context: dict | None = None,
+    include_api_metrics: bool = False,
+) -> dict:
     config = build_runnable_config(
         run_name="meeting_end_to_end",
         tags=["meeting", "langchain", "e2e"],
@@ -145,23 +201,44 @@ def process_meeting_with_langchain(cliente_info, audio_bytes, audio_name, audio_
         },
     )
 
-    chain = (
-        RunnablePassthrough()
-        | RunnableLambda(lambda x: {
-            "transcript": transcribe_audio(x["audio_bytes"], x["audio_name"], x["audio_type"], trace_context=trace_context),
-            "cliente_info": x["cliente_info"],
-        })
-        | RunnableLambda(lambda x: {
-            "transcript": x["transcript"],
-            "summary": summarize_transcript(x["cliente_info"], x["transcript"], trace_context=trace_context),
-        })
+    if not include_api_metrics:
+        chain = (
+            RunnablePassthrough()
+            | RunnableLambda(lambda x: {
+                "transcript": transcribe_audio(x["audio_bytes"], x["audio_name"], x["audio_type"], trace_context=trace_context),
+                "cliente_info": x["cliente_info"],
+            })
+            | RunnableLambda(lambda x: {
+                "transcript": x["transcript"],
+                "summary": summarize_transcript(x["cliente_info"], x["transcript"], trace_context=trace_context),
+            })
+        )
+        return chain.invoke(
+            {
+                "cliente_info": cliente_info,
+                "audio_bytes": audio_bytes,
+                "audio_name": audio_name,
+                "audio_type": audio_type,
+            },
+            config=config,
+        )
+
+    transcription_result = transcribe_audio(
+        audio_bytes,
+        audio_name,
+        audio_type,
+        trace_context=trace_context,
+        include_api_metrics=True,
     )
-    return chain.invoke(
-        {
-            "cliente_info": cliente_info,
-            "audio_bytes": audio_bytes,
-            "audio_name": audio_name,
-            "audio_type": audio_type,
-        },
-        config=config,
+    summary_result = summarize_transcript(
+        cliente_info,
+        transcription_result["text"],
+        trace_context=trace_context,
+        include_api_metrics=True,
     )
+
+    return {
+        "transcript": transcription_result["text"],
+        "summary": summary_result["text"],
+        "api_calls": [transcription_result["api_metrics"], summary_result["api_metrics"]],
+    }

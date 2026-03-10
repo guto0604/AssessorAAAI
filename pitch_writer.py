@@ -5,6 +5,19 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
 
 
+def _build_api_metrics(response, *, provider: str = "openai") -> dict:
+    usage = getattr(response, "usage", {}) or {}
+    return {
+        "provider": provider,
+        "model": getattr(response, "model", None),
+        "latency_ms": getattr(response, "elapsed_ms", None),
+        "input_tokens": usage.get("prompt_tokens"),
+        "output_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "response_id": getattr(response, "response_id", None),
+    }
+
+
 def generate_final_pitch_step7(
     cliente_info: dict,
     prompt_assessor: str,
@@ -12,6 +25,7 @@ def generate_final_pitch_step7(
     step5_selection: dict,
     model: str = "gpt-5.1",
     trace_context: dict | None = None,
+    include_api_metrics: bool = False,
 ):
     system_prompt = """
 Você é um assessor de investimentos escrevendo uma mensagem para um cliente.
@@ -48,8 +62,6 @@ Regras:
         [("system", system_prompt), ("user", "{user_payload}")]
     )
     llm = get_chat_model(model=model, temperature=1)
-    chain = prompt | llm | str_output_parser
-
     config = build_runnable_config(
         run_name="pitch_step_7_writer",
         tags=["pitch", "step_7", "langchain"],
@@ -60,7 +72,17 @@ Regras:
         },
     )
 
-    return chain.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config).strip()
+    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    response = llm.invoke(messages, config=config)
+    pitch_text = str_output_parser.invoke(response, config=config).strip()
+
+    if include_api_metrics:
+        return {
+            "text": pitch_text,
+            "api_metrics": _build_api_metrics(response),
+        }
+
+    return pitch_text
 
 
 def revise_pitch_step8(
@@ -69,6 +91,7 @@ def revise_pitch_step8(
     target_excerpt: str | None = None,
     model: str = "gpt-5-mini",
     trace_context: dict | None = None,
+    include_api_metrics: bool = False,
 ):
     system_prompt = """
 Você é um revisor de texto comercial para assessoria de investimentos.
@@ -90,8 +113,6 @@ Regras:
         [("system", system_prompt), ("user", "{user_payload}")]
     )
     llm = get_chat_model(model=model, temperature=1)
-    chain = prompt | llm | str_output_parser
-
     config = build_runnable_config(
         run_name="pitch_step_8_reviser",
         tags=["pitch", "step_8", "langchain"],
@@ -102,4 +123,14 @@ Regras:
         },
     )
 
-    return chain.invoke({"user_payload": json.dumps(user_prompt, ensure_ascii=False)}, config=config).strip()
+    messages = prompt.invoke({"user_payload": json.dumps(user_prompt, ensure_ascii=False)}, config=config)
+    response = llm.invoke(messages, config=config)
+    revised_text = str_output_parser.invoke(response, config=config).strip()
+
+    if include_api_metrics:
+        return {
+            "text": revised_text,
+            "api_metrics": _build_api_metrics(response),
+        }
+
+    return revised_text
