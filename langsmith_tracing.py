@@ -6,8 +6,12 @@ from typing import Any
 from langsmith import Client
 
 
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return _now_utc().isoformat()
 
 
 class LangSmithTracer:
@@ -18,6 +22,7 @@ class LangSmithTracer:
         self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
         self._client = Client(api_key=self.api_key, api_url=self.base_url) if self.enabled else None
         self._runs: dict[str, dict[str, Any]] = {}
+        self.last_error: str | None = None
 
     def start_run(
         self,
@@ -38,7 +43,7 @@ class LangSmithTracer:
             "name": name,
             "run_type": run_type,
             "inputs": inputs,
-            "start_time": _iso_now(),
+            "start_time": _now_utc(),
             "project_name": project_name or self.project_name,
             "tags": tags or [],
             "metadata": metadata or {},
@@ -101,13 +106,13 @@ class LangSmithTracer:
         status: str,
         outputs: dict[str, Any] | None = None,
         error: str | None = None,
-    ) -> None:
+    ) -> bool:
         if not self.enabled or not run_id:
-            return
+            return False
 
         run_state = self._runs.pop(run_id, None)
         if not run_state or not self._client:
-            return
+            return False
 
         final_outputs = outputs or {"status": status}
         if run_state["events"]:
@@ -130,10 +135,13 @@ class LangSmithTracer:
                 inputs=run_state["inputs"],
                 outputs=final_outputs,
                 start_time=run_state["start_time"],
-                end_time=_iso_now(),
+                end_time=_now_utc(),
                 error=error,
                 tags=run_state["tags"],
                 extra=extra,
             )
+            self.last_error = None
+            return True
         except Exception:
-            return
+            self.last_error = "Falha ao enviar tracing para o LangSmith."
+            return False
