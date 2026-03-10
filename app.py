@@ -846,13 +846,20 @@ def render_settings_tab():
             )
 
             if healthcheck_run_id:
-                tracer.end_run(
+                sent_ok = tracer.end_run(
                     healthcheck_run_id,
                     status="success",
                     outputs={"status": "ok", "message": "healthcheck_passed"},
                 )
-                st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
-                st.success("Tracing validado com sucesso no LangSmith.")
+                if sent_ok:
+                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
+                    st.success("Tracing validado com sucesso no LangSmith.")
+                else:
+                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
+                    st.error(
+                        "Run de teste criada, mas não foi enviada ao LangSmith. "
+                        f"{tracer.last_error or ''}".strip()
+                    )
             else:
                 st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
                 st.error("Falha ao criar run de teste no LangSmith.")
