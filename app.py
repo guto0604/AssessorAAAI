@@ -194,12 +194,15 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         try:
             with st.spinner("Analisando e ranqueando jornadas..."):
-                resultado = rank_journeys(
+                ranking_result = rank_journeys(
                     cliente_info,
                     prompt_assessor,
                     jornadas_df,
                     trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                    include_api_metrics=True,
                 )
+            resultado = ranking_result["result"]
+            tracer.log_event(pitch_run_id, "pitch_api_call", {"step": "step_1", **ranking_result["api_metrics"]})
             tracer.log_event(pitch_run_id, "pitch_step_1_completed", {
                 "ranking_count": len(resultado.get("ranking", []))
             })
@@ -288,7 +291,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             tracer.log_event(pitch_run_id, "pitch_step_4_started")
             try:
                 with st.spinner("Selecionando fontes da Knowledge-Base e produtos candidatos..."):
-                    step4_result = select_sources_step4(
+                    step4_response = select_sources_step4(
                         cliente_info=cliente_info,
                         prompt_assessor=prompt_assessor,
                         jornada_selecionada=st.session_state["jornada_selecionada"],
@@ -298,7 +301,10 @@ def render_pitch_tab(cliente_id, cliente_info):
                         kb_dir="knowledge_base",
                         model="gpt-4o-mini",
                         trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
                     )
+                step4_result = step4_response["result"]
+                tracer.log_event(pitch_run_id, "pitch_api_call", {"step": "step_4", **step4_response["api_metrics"]})
                 tracer.log_event(pitch_run_id, "pitch_step_4_completed", {
                     "kb_files_count": len(step4_result.get("kb_files_selected", [])),
                     "products_count": len(step4_result.get("products_selected_ids", [])),
@@ -380,7 +386,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             tracer.log_event(pitch_run_id, "pitch_step_5_started")
             try:
                 with st.spinner("Gerando diagnóstico, pontos e opções do pitch..."):
-                    step5_result = build_pitch_options_step5(
+                    step5_response = build_pitch_options_step5(
                         cliente_info=cliente_info,
                         prompt_assessor=prompt_assessor,
                         jornada_selecionada=st.session_state["jornada_selecionada"],
@@ -390,7 +396,10 @@ def render_pitch_tab(cliente_id, cliente_info):
                         kb_files_selected=kb_files_selected,
                         model="gpt-4o-mini",
                         trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
                     )
+                step5_result = step5_response["result"]
+                tracer.log_event(pitch_run_id, "pitch_api_call", {"step": "step_5", **step5_response["api_metrics"]})
                 tracer.log_event(pitch_run_id, "pitch_step_5_completed", {
                     "diagnostico_count": len(step5_result.get("diagnostico", [])),
                     "products_count": len(step5_result.get("produtos_sugeridos", [])),

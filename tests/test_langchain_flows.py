@@ -74,6 +74,10 @@ class FlowTests(unittest.TestCase):
         r1 = rank_journeys(cliente, "meta", jornadas_df)
         self.assertEqual(r1["ranking"][0]["jornada_id"], "J1")
 
+        r1m = rank_journeys(cliente, "meta", jornadas_df, include_api_metrics=True)
+        self.assertEqual(r1m["result"]["ranking"][0]["jornada_id"], "J1")
+        self.assertIn("model", r1m["api_metrics"])
+
         produtos_df = MiniDF([
             {"Produto_ID": "P1", "Nome_Produto": "Prod", "Categoria": "R", "Subcategoria": "S", "Risco_Nivel (1-5)": 2, "Suitability_Ideal": "Conservador"},
             {"Produto_ID": "P2", "Nome_Produto": "Prod2", "Categoria": "R", "Subcategoria": "S", "Risco_Nivel (1-5)": 2, "Suitability_Ideal": "Conservador"},
@@ -83,8 +87,16 @@ class FlowTests(unittest.TestCase):
         r4 = select_sources_step4(cliente, "meta", {"jornada_id": "J1"}, {}, produtos_df, inv_df)
         self.assertEqual(len(r4["products_selected_ids"]), 3)
 
+        r4m = select_sources_step4(cliente, "meta", {"jornada_id": "J1"}, {}, produtos_df, inv_df, include_api_metrics=True)
+        self.assertEqual(len(r4m["result"]["products_selected_ids"]), 3)
+        self.assertIn("total_tokens", r4m["api_metrics"])
+
         r5 = build_pitch_options_step5(cliente, "meta", {"jornada_id": "J1"}, {}, inv_df, produtos_df, [])
         self.assertIn("diagnostico", r5)
+
+        r5m = build_pitch_options_step5(cliente, "meta", {"jornada_id": "J1"}, {}, inv_df, produtos_df, [], include_api_metrics=True)
+        self.assertIn("diagnostico", r5m["result"])
+        self.assertIn("latency_ms", r5m["api_metrics"])
 
         r7 = generate_final_pitch_step7(cliente, "meta", {"jornada_id": "J1"}, {"diagnostico": []})
         self.assertEqual(r7, "pitch final")

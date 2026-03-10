@@ -7,6 +7,19 @@ from langchain_core.tools import tool
 from langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
 
+def _build_api_metrics(response, *, provider: str = "openai") -> dict:
+    usage = getattr(response, "usage", {}) or {}
+    return {
+        "provider": provider,
+        "model": getattr(response, "model", None),
+        "latency_ms": getattr(response, "elapsed_ms", None),
+        "input_tokens": usage.get("prompt_tokens"),
+        "output_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "response_id": getattr(response, "response_id", None),
+    }
+
+
 @tool("read_kb_files")
 def read_kb_files_tool(payload: dict) -> list[dict]:
     """Lê conteúdo dos .txt selecionados (RAG simples)."""
@@ -35,6 +48,7 @@ def build_pitch_options_step5(
     kb_files_selected: list[str],
     model: str = "gpt-5.1",
     trace_context: dict | None = None,
+    include_api_metrics: bool = False,
 ):
     kb_docs = read_kb_files_tool.invoke({"file_paths": kb_files_selected, "max_chars_each": 3500})
 
@@ -118,8 +132,6 @@ Formato obrigatório:
         [("system", system_prompt), ("user", "{user_payload}")]
     )
     llm = get_chat_model(model=model, temperature=1, response_format={"type": "json_object"})
-    chain = prompt | llm | str_output_parser | RunnableLambda(parse_json_output)
-
     config = build_runnable_config(
         run_name="pitch_step_5_structurer",
         tags=["pitch", "step_5", "langchain"],
@@ -130,4 +142,14 @@ Formato obrigatório:
         },
     )
 
-    return chain.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    response = llm.invoke(messages, config=config)
+    parsed = parse_json_output(str_output_parser.invoke(response, config=config))
+
+    if include_api_metrics:
+        return {
+            "result": parsed,
+            "api_metrics": _build_api_metrics(response),
+        }
+
+    return parsed
