@@ -12,12 +12,39 @@ def _iso_now() -> str:
 
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
-        self.api_key = (os.getenv("LANGSMITH_API_KEY") or api_key or "").strip()
-        self.enabled = bool(enabled and self.api_key)
-        self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
-        self.project_name = (os.getenv("LANGSMITH_PROJECT") or "poc_datamasters").strip()
+        self.api_key = (
+            os.getenv("LANGSMITH_API_KEY")
+            or os.getenv("LANGCHAIN_API_KEY")
+            or api_key
+            or ""
+        ).strip()
+        self.enabled = bool(enabled and self.api_key and self._is_tracing_enabled())
+        self.base_url = (
+            base_url
+            or os.getenv("LANGSMITH_ENDPOINT")
+            or os.getenv("LANGCHAIN_ENDPOINT")
+            or "https://api.smith.langchain.com"
+        ).rstrip("/")
+        self.project_name = (
+            os.getenv("LANGSMITH_PROJECT")
+            or os.getenv("LANGCHAIN_PROJECT")
+            or "poc_datamasters"
+        ).strip()
         self._dotted_order_by_run_id: dict[str, str] = {}
         self._trace_id_by_run_id: dict[str, str] = {}
+
+    @staticmethod
+    def _is_truthy(value: str | None) -> bool:
+        if value is None:
+            return False
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+
+    def _is_tracing_enabled(self) -> bool:
+        tracing_v2 = os.getenv("LANGCHAIN_TRACING_V2")
+        tracing = os.getenv("LANGSMITH_TRACING")
+        if tracing_v2 is None and tracing is None:
+            return True
+        return self._is_truthy(tracing_v2) or self._is_truthy(tracing)
 
     def _build_dotted_order(self, run_id: str, parent_run_id: str | None = None) -> str:
         order_token = f"{_iso_now()}_{run_id}"
