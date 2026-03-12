@@ -1,11 +1,15 @@
 import os
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
+import duckdb
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 from openai_client import SESSION_OPENAI_KEY
 from openai_client import get_effective_openai_api_key
+from openai_client import get_openai_client
 from langsmith_tracing import LangSmithTracer
 from data_loader import (
     load_clientes, load_jornadas, get_cliente_by_id,
@@ -35,6 +39,15 @@ SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+TALK_TO_DATA_FILES = {
+    "Informacoes_Cliente": DATA_DIR / "informacoes_cliente.parquet",
+    "Investimentos_Cliente": DATA_DIR / "investimentos_cliente.parquet",
+    "Produtos": DATA_DIR / "produtos.parquet",
+}
+REFERENCE_FILE_PATH = DATA_DIR / "referencia_base_dados.txt"
 
 
 def _iso_now() -> str:
@@ -838,9 +851,205 @@ def render_meetings_tab(cliente_id, cliente_info):
             )
 
 
-def render_portfolio_tab():
-    st.title("Carteira (Talk to Data)")
-    st.write("Em breve")
+def render_talk_to_your_data_page():
+    st.title("Talk to your Data")
+    st.caption("Faça perguntas em linguagem natural e consulte os dados com SQL via DuckDB.")
+
+    history = st.session_state.setdefault("talk_to_data_history", [])
+    for item in history[-4:]:
+        with st.container(border=True):
+            st.markdown(f"**Pergunta:** {item['question']}")
+            st.markdown(f"**Resposta:** {item['answer']}")
+
+    question = st.text_area(
+        "Pergunte sobre a base de assessoria:",
+        placeholder="Ex.: Quais clientes fazem aniversário neste mês?",
+        key="talk_to_data_question",
+        height=100,
+    )
+
+    if st.button("Enviar pergunta", key="talk_to_data_submit"):
+        if not question.strip():
+            st.warning("Escreva uma pergunta antes de enviar.")
+            return
+
+        try:
+            reference_text = load_reference_text()
+            prompt = build_llm_prompt(question=question.strip(), reference_text=reference_text)
+            llm_output = ask_talk_to_data_llm(prompt)
+        except Exception as exc:
+            st.error(f"Falha ao interpretar a pergunta com a LLM: {exc}")
+            return
+
+        can_answer = bool(llm_output.get("can_answer", False))
+        rationale = llm_output.get("rationale", "")
+        question_understanding = llm_output.get("question_understanding", "")
+        sql = (llm_output.get("sql") or "").strip()
+        answer = llm_output.get("answer") or "Não foi possível gerar uma resposta."
+        visualization = llm_output.get("visualization") or {"needed": False, "type": "none"}
+
+        st.subheader("Entendimento da pergunta")
+        st.write(question_understanding or "A LLM não retornou entendimento explícito.")
+
+        with st.expander("Racional curto", expanded=False):
+            st.write(rationale or "Sem racional informado.")
+            st.write({
+                "tables_used": llm_output.get("tables_used", []),
+                "fields_used": llm_output.get("fields_used", []),
+            })
+
+        if not can_answer:
+            st.info(answer)
+            history.append({"question": question.strip(), "answer": answer})
+            return
+
+        if not sql:
+            st.warning("A pergunta foi marcada como respondível, mas nenhum SQL foi retornado.")
+            history.append({"question": question.strip(), "answer": answer})
+            return
+
+        with st.expander("SQL gerado", expanded=True):
+            st.code(sql, language="sql")
+
+        result_df = pd.DataFrame()
+        query_error = None
+        try:
+            result_df = run_duckdb_query(sql)
+        except Exception as exc:
+            query_error = str(exc)
+
+        if query_error:
+            st.error(f"Erro ao executar SQL no DuckDB: {query_error}")
+            return
+
+        st.subheader("Resultado da consulta")
+        if result_df.empty:
+            st.info("A consulta foi executada, mas não retornou linhas.")
+        else:
+            st.dataframe(result_df, width="stretch")
+
+        st.subheader("Resposta final")
+        st.write(answer)
+        render_visual(result_df, visualization)
+
+        history.append({"question": question.strip(), "answer": answer})
+
+
+def load_reference_text() -> str:
+    return REFERENCE_FILE_PATH.read_text(encoding="utf-8")
+
+
+def build_llm_prompt(question: str, reference_text: str) -> str:
+    return f"""
+Você é um analista de dados de uma assessoria de investimentos.
+
+Regras:
+- Use apenas tabelas e campos descritos na referência.
+- Não invente campos.
+- Se não for possível responder, use can_answer=false, sql="", visualization.type="none".
+- Gere SQL compatível com DuckDB.
+- Prefira queries leves (agregações e LIMIT quando fizer sentido).
+- Nunca gere código Python para visualização.
+- Retorne APENAS JSON válido.
+
+Formato de saída JSON:
+{{
+  "can_answer": true/false,
+  "question_understanding": "texto curto",
+  "rationale": "texto curto",
+  "tables_used": ["..."],
+  "fields_used": ["..."],
+  "sql": "...",
+  "visualization": {{
+    "needed": true/false,
+    "type": "bar|line|pie|table|none",
+    "x": "campo ou vazio",
+    "y": "campo ou vazio",
+    "title": "título"
+  }},
+  "answer": "resposta executiva em português"
+}}
+
+Pergunta do usuário:
+{question}
+
+Referência completa da base:
+{reference_text}
+""".strip()
+
+
+def ask_talk_to_data_llm(prompt: str) -> dict:
+    client = get_openai_client()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "Você responde apenas com JSON válido."},
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    content = response.choices[0].message.content or "{}"
+    if content.startswith("```"):
+        content = content.strip("`")
+        content = content.replace("json\n", "", 1).strip()
+    return json.loads(content)
+
+
+def run_duckdb_query(sql: str) -> pd.DataFrame:
+    normalized_sql = sql.strip().rstrip(";")
+    if not normalized_sql.lower().startswith("select"):
+        raise ValueError("Apenas consultas SELECT são permitidas.")
+
+    with duckdb.connect(database=":memory:") as con:
+        for table_name, file_path in TALK_TO_DATA_FILES.items():
+            con.execute(
+                f'CREATE VIEW "{table_name}" AS SELECT * FROM read_parquet(?)',
+                [str(file_path)],
+            )
+        return con.execute(normalized_sql).fetchdf()
+
+
+def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
+    vis_type = str(visualization_spec.get("type", "none")).lower()
+    if not visualization_spec.get("needed") or vis_type == "none":
+        return
+
+    st.subheader("Visualização")
+    if result_df.empty:
+        st.info("Sem dados para visualizar.")
+        return
+
+    x = visualization_spec.get("x")
+    y = visualization_spec.get("y")
+    title = visualization_spec.get("title") or "Visual gerado"
+
+    if vis_type == "table":
+        st.dataframe(result_df, width="stretch")
+        return
+
+    if x and x not in result_df.columns:
+        st.info(f"Não foi possível renderizar o visual: coluna x '{x}' não encontrada no resultado.")
+        return
+
+    if vis_type in {"bar", "line", "pie"} and y and y not in result_df.columns:
+        st.info(f"Não foi possível renderizar o visual: coluna y '{y}' não encontrada no resultado.")
+        return
+
+    if vis_type == "bar":
+        st.bar_chart(result_df, x=x, y=y)
+    elif vis_type == "line":
+        st.line_chart(result_df, x=x, y=y)
+    elif vis_type == "pie":
+        if not x or not y:
+            st.info("Visual de pizza requer campos x e y válidos.")
+            return
+        fig = px.pie(result_df, names=x, values=y, title=title)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Tipo de visual não suportado; exibindo tabela.")
+        st.dataframe(result_df, width="stretch")
 
 
 def render_insights_tab():
@@ -971,7 +1180,7 @@ def main():
     tab_pitch, tab_meetings, tab_portfolio, tab_insights, tab_settings = st.tabs([
         "Voz do Assessor (Pitch)",
         "Resumo Reuniões",
-        "Carteira (Talk to your Data)",
+        "Talk to your Data",
         "Insights",
         "Configurações"
     ])
@@ -983,7 +1192,7 @@ def main():
         render_meetings_tab(st.session_state.selected_cliente_id, cliente_info)
 
     with tab_portfolio:
-        render_portfolio_tab()
+        render_talk_to_your_data_page()
 
     with tab_insights:
         render_insights_tab()

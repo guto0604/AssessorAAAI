@@ -9,3 +9,5 @@ langchain==0.3.27
 langchain-core==0.3.79
 langchain-openai==0.3.35
 langsmith==0.4.28
+duckdb==1.4.0
+plotly==6.3.1
