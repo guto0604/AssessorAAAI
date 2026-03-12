@@ -148,8 +148,34 @@ def _reset_talk_to_data_state() -> None:
     st.session_state.talk_to_data_can_generate = True
 
 
-def _apply_talk_to_data_template_question(question: str) -> None:
+def _reset_talk_to_data_page() -> None:
     _reset_talk_to_data_state()
+    st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
+
+
+def _render_talk_to_data_samples() -> None:
+    st.subheader("Amostras das tabelas disponíveis")
+    st.caption("Abra cada caixa para visualizar um sample(10) e entender melhor os dados disponíveis.")
+
+    for table_name, file_path in TALK_TO_DATA_FILES.items():
+        with st.expander(f"📦 {table_name} — sample(10)", expanded=False):
+            try:
+                table_df = pd.read_parquet(file_path)
+            except Exception as exc:
+                st.error(f"Não foi possível carregar {table_name}: {exc}")
+                continue
+
+            sample_size = min(10, len(table_df))
+            if sample_size == 0:
+                st.info("Tabela vazia.")
+                continue
+
+            sampled_df = table_df.sample(n=sample_size, random_state=42)
+            st.dataframe(sampled_df, width="stretch")
+
+
+def _apply_talk_to_data_template_question(question: str) -> None:
+    _reset_talk_to_data_page()
     st.session_state.talk_to_data_question = question
 
 
@@ -914,10 +940,9 @@ def render_talk_to_your_data_page():
     st.title("Talk to your Data")
     st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
 
-    st.subheader("Perguntas modelo")
-    if st.session_state.pop("talk_to_data_reset_template_dropdown", False):
-        st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
+    _render_talk_to_data_samples()
 
+    st.subheader("Perguntas modelo")
     dropdown_options = ["Selecione uma pergunta..."]
     for category, questions in sample_questions.items():
         for sample_question in questions:
@@ -944,10 +969,9 @@ def render_talk_to_your_data_page():
 
     controls_col_1, controls_col_2 = st.columns(2)
     with controls_col_1:
-        if st.button("🧹 Reiniciar pergunta", key="talk_to_data_reset_question"):
-            _reset_talk_to_data_state()
-            st.session_state.talk_to_data_reset_template_dropdown = True
-            st.success("Pergunta limpa. Você pode gerar uma nova consulta.")
+        if st.button("➡️ Próxima pergunta", key="talk_to_data_next_question"):
+            _reset_talk_to_data_page()
+            st.success("Tela reiniciada. Faça sua próxima pergunta.")
             st.rerun()
 
     with controls_col_2:
