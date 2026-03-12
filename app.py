@@ -923,9 +923,8 @@ def render_meetings_tab(cliente_id, cliente_info):
 def render_talk_to_your_data_page():
     sample_questions = {
         "Perguntas Cliente": [
-            "Quais clientes fazem aniversário neste mês?",
-            "Quais clientes estão há mais de 60 dias sem contato?",
-            "Mostre a distribuição de clientes por perfil de suitability.",
+            "Mostre a distribuição da carteira do cliente A_001.",
+            "Quais os clientes que resgataram mais que aportaram nos últimos 12 meses que não fazemos contato a mais de 60 dias",
             "Quais clientes têm dinheiro disponível para investir acima de 100 mil?",
         ],
         "Perguntas sobre investimentos": [
@@ -937,15 +936,14 @@ def render_talk_to_your_data_page():
         ],
         "Perguntas cruzando clientes + investimentos": [
             "Quais clientes conservadores possuem investimentos incompatíveis com seu perfil?",
-            "Quais clientes têm maior patrimônio investido conosco e também dinheiro disponível para investir?",
+            "Mostr"
         ],
         "Pergunta mais analítica / avançada": [
             "Quais clientes têm maior risco de churn e possuem mais de 50 mil disponíveis para investir?",
         ],
         "Perguntas com maior potencial para visualização": [
-            "Mostre a distribuição de clientes por perfil de suitability.",
-            "Qual é a distribuição da carteira total por categoria de investimento?",
-            "Qual é o patrimônio médio investido conosco por perfil de suitability?",
+            "Quero um gráfico de dispersão mostrando a relação de salário e total investido.",
+            "Mostre a distribuição da carteira dos clientes arrojados."
         ],
     }
 
