@@ -1,0 +1,479 @@
+Referencia Base de dados para LLM
+Base de Dados de Assessoria de Investimentos
+
+Este documento descreve os campos das tabelas Informacoes_Cliente, Investimentos_Cliente e Produtos, além de listar os valores possíveis para campos categóricos.
+
+O objetivo é permitir que um modelo de linguagem compreenda a estrutura da base de dados e consiga responder perguntas, gerar insights e interpretar corretamente os dados.
+
+------------------------------------------------
+REGRAS GERAIS
+------------------------------------------------
+
+Cliente_ID é a chave principal do cliente e conecta as tabelas Informacoes_Cliente e Investimentos_Cliente.
+
+Produto em Investimentos_Cliente representa o nome do produto que o cliente possui em carteira.
+
+Nome_Produto em Produtos representa o catálogo ou prateleira de produtos disponíveis.
+
+Valores monetários estão em reais (BRL).
+
+Datas podem ser usadas para calcular idade, tempo como cliente, dias desde último contato, prazo até vencimento e outros indicadores.
+
+Alguns campos são originais da base e outros são derivados ou sintéticos, criados para enriquecer análises de relacionamento, suitability e oportunidade comercial.
+
+------------------------------------------------
+TABELA: Informacoes_Cliente
+------------------------------------------------
+
+Descrição:
+Tabela principal de cadastro e contexto comercial do cliente.
+Contém dados patrimoniais, perfil de suitability, histórico de relacionamento, objetivos financeiros e indicadores de potencial comercial.
+
+Campos originais
+
+Cliente_ID
+Identificador único do cliente.
+
+Nome
+Nome completo do cliente.
+
+Patrimonio_Investido_Conosco
+Valor total investido pelo cliente na instituição.
+
+Patrimonio_Investido_Outros
+Valor estimado investido fora da instituição.
+
+Dinheiro_Disponivel_Para_Investir
+Recursos em caixa ou liquidez disponíveis para investimento.
+
+Perfil_Suitability
+Perfil de risco do cliente.
+
+Valores possíveis
+Conservador
+Moderado
+Arrojado
+
+Rentabilidade_12_meses
+Rentabilidade consolidada da carteira do cliente nos últimos 12 meses.
+
+CDI_12_Meses
+Referência de CDI acumulado em 12 meses para comparação de performance.
+
+------------------------------------------------
+Campos adicionais de enriquecimento
+------------------------------------------------
+
+Data_Nascimento
+Data de nascimento do cliente.
+
+Genero
+Valores possíveis
+Feminino
+Masculino
+
+Estado_Civil
+Valores possíveis
+Solteiro(a)
+Casado(a)
+Divorciado(a)
+
+Cidade
+Cidade do cliente.
+
+UF
+Estado do cliente.
+
+Valores comuns no dataset
+SP
+RJ
+MG
+PR
+RS
+DF
+BA
+
+Profissão
+Profissão principal do cliente.
+
+Possibilidades no dataset
+Empresário
+Médica
+Advogado
+Engenheira
+Executivo
+Dentista
+Arquiteta
+Servidor Público
+Consultora
+Diretor Comercial
+Professor Universitário
+Produtor Rural
+
+Tempo_Como_Cliente
+Tempo de relacionamento com a assessoria em anos.
+
+Data_Ultimo_Contato
+Data do contato mais recente com o cliente.
+
+Renda_Mensal_Estimada
+Estimativa de renda mensal do cliente.
+
+Capacidade_Mensal_Aporte
+Estimativa de quanto o cliente consegue aportar mensalmente.
+
+Endividamento_Relevante
+Valores possíveis
+Sim
+Não
+
+Objetivo_Principal
+Objetivo financeiro predominante do cliente.
+
+Valores possíveis
+Aposentadoria
+Compra de Imóvel
+Educação dos Filhos
+Reserva de Oportunidade
+Construção Patrimonial
+Renda Passiva
+
+Data_Objetivo_Financeiro
+Data estimada em que o cliente pretende atingir o objetivo.
+
+Valor_Objetivo_Financeiro
+Valor estimado necessário para atingir o objetivo.
+
+Horizonte_Investimento
+Valores possíveis
+Curto Prazo
+Médio Prazo
+Longo Prazo
+
+Necessidade_Liquidez_Curto_Prazo
+Valores possíveis
+Baixa
+Média
+Alta
+
+Data_Ultima_Atualizacao_Suitability
+Data da última atualização do suitability.
+
+Conhecimento_Financeiro
+Valores possíveis
+Básico
+Intermediário
+Avançado
+
+Score_Engajamento
+Score de engajamento do cliente (1 a 99).
+
+Score_Risco_Churn
+Score de risco de perda do cliente (1 a 99).
+
+Aportes_12M
+Total de aportes realizados pelo cliente nos últimos 12 meses.
+
+Resgates_12M
+Total de resgates realizados nos últimos 12 meses.
+
+Receita_Gerada_12M
+Receita estimada gerada pelo cliente para a instituição.
+
+------------------------------------------------
+Campos adicionais para analytics e IA
+------------------------------------------------
+
+Mes_Aniversario
+Mês de aniversário do cliente.
+
+Idade
+Idade do cliente.
+
+Data_Entrada_Base
+Data estimada de início do relacionamento.
+
+Assessor_Responsavel
+Possibilidades
+Marina Ramos
+Rafael Nogueira
+Juliana Prado
+Thiago Mota
+Bianca Faria
+
+Canal_Preferencial
+Valores possíveis
+WhatsApp
+Telefone
+Email
+
+Dias_Desde_Ultimo_Contato
+Número de dias desde o último contato.
+
+Percentual_Carteira_Conosco
+Percentual do patrimônio financeiro investido conosco.
+
+Gap_Rentabilidade_vs_CDI_12M
+Diferença entre rentabilidade da carteira e CDI.
+
+Classe_Cliente
+Segmentação baseada em patrimônio.
+
+Valores possíveis
+Varejo Alta Renda
+Alta Renda
+Private
+
+Status_Relacionamento
+Valores possíveis
+Ativo
+Morno
+Em Risco
+
+Prioridade_Comercial
+Valores possíveis
+Alta
+Média
+Baixa
+
+Potencial_Captacao
+Valores possíveis
+Alto
+Médio
+Baixo
+
+------------------------------------------------
+TABELA: Investimentos_Cliente
+------------------------------------------------
+
+Descrição
+Tabela de posições do cliente.
+Cada linha representa um investimento específico.
+
+Campos principais
+
+Cliente_ID
+Identificador do cliente.
+
+Produto
+Nome do produto investido.
+
+Possibilidades no dataset
+Poupança
+Tesouro Selic
+CDB Banco AAA
+Fundo DI
+CDB Banco BBB
+LCI Banco XYZ
+Fundo Multimercado Macro
+Ações Brasil Large Caps
+FII Shopping Centers
+CDB Banco Premium
+LCA Agro
+Fundo Multimercado Global
+Carteira Ações Growth
+ETF S&P 500
+FII Logística
+Bitcoin e Ethereum
+CDB Banco Local
+LCI Banco Regional
+CDB Banco Médio
+Debêntures Incentivadas
+Fundo Multimercado Estratégia
+Carteira Ações Dividendos
+ETF Nasdaq 100
+FII Corporativo
+CDB Banco High Yield
+Debêntures High Yield
+Fundo Multimercado Alavancado
+Carteira Ações Small Caps
+ETF Global Tech
+FII Desenvolvimento
+Criptoativos (BTC, ETH, SOL)
+
+Categoria
+
+Valores possíveis
+Renda Fixa
+Fundo Renda Fixa
+Fundo
+Renda Variável
+Fundo Imobiliário
+Criptoativos
+
+Valor_Investido
+Valor originalmente investido.
+
+Subcategoria
+
+Valores possíveis
+Pós-fixado
+Título Público
+CDB
+Fundo DI
+LCI
+LCA
+Multimercado
+Ações Brasil
+ETF Internacional
+FII
+Crédito Privado
+High Yield
+Cripto
+
+Valor_Atual
+Valor atual estimado da posição.
+
+Preco_Medio
+Preço médio de aquisição.
+
+Preco_Atual
+Preço atual estimado.
+
+Prazo_Remanescente_Dias
+Dias até o vencimento do produto.
+
+------------------------------------------------
+Campos adicionais da posição
+------------------------------------------------
+
+Posicao_ID
+Identificador da posição.
+
+Data_Aplicacao
+Data de aplicação inicial.
+
+Data_Vencimento
+Data de vencimento do produto.
+
+Liquidez
+
+Valores possíveis
+D+0
+D+1
+D+2
+D+15
+D+30
+No vencimento
+Mercado secundário
+
+Adequado_ao_Perfil
+Valores possíveis
+Sim
+Não
+
+Peso_na_Carteira
+Peso do investimento na carteira.
+
+PnL_Absoluto
+Lucro ou prejuízo absoluto.
+
+PnL_Percentual
+Lucro ou prejuízo percentual.
+
+Risco_Nivel
+Escala de risco de 1 a 5.
+
+Indexador
+
+Valores possíveis
+TR
+Selic
+CDI
+IPCA
+Ibovespa
+IFIX
+S&P 500
+Nasdaq 100
+Small Caps
+Global Tech
+Cripto Basket
+
+Exposicao_Internacional
+
+Valores possíveis
+Não
+Parcial
+Sim
+
+------------------------------------------------
+TABELA: Produtos
+------------------------------------------------
+
+Descrição
+Tabela de catálogo de produtos disponíveis para oferta.
+
+Produto_ID
+Identificador único do produto.
+
+Nome_Produto
+Nome do produto disponível.
+
+Categoria
+
+Valores possíveis
+Renda Fixa
+Fundo Renda Fixa
+Fundo
+Renda Variável
+Fundo Imobiliário
+Criptoativos
+
+Subcategoria
+
+Valores possíveis
+Pós-fixado
+Título Público
+CDB
+Fundo DI
+LCI
+LCA
+Multimercado
+Ações Brasil
+ETF Internacional
+FII
+Crédito Privado
+High Yield
+Cripto
+
+Risco_Nivel (1-5)
+Escala de risco.
+
+Suitability_Ideal
+
+Valores possíveis
+Conservador
+Moderado
+Arrojado
+Conservador/Moderado
+Moderado/Arrojado
+
+Prazo
+
+Valores possíveis
+Liquidez imediata
+Curto/Médio Prazo
+Médio Prazo
+Médio/Longo Prazo
+Longo Prazo
+Sem vencimento
+
+Aplicacao_Minima
+Valor mínimo de aplicação.
+
+Produto_em_Campanha
+Valores possíveis
+Sim
+Não
+
+Liquidez
+Prazo de resgate do produto.
+
+Indexador
+Benchmark principal.
+
+Exposicao_Internacional
+Valores possíveis
+Não
+Parcial
+Sim

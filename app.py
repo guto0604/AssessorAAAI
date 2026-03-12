@@ -924,9 +924,9 @@ def main():
     st.sidebar.json(cliente_info)
 
     tab_pitch, tab_meetings, tab_portfolio, tab_insights, tab_settings = st.tabs([
-        "Pitch (POC)",
-        "Reuniões",
-        "Carteira (Talk to Data)",
+        "Voz do Assessor (Pitch)",
+        "Resumo Reuniões",
+        "Carteira (Talk to your Data)",
         "Insights",
         "Configurações"
     ])
