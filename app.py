@@ -1113,7 +1113,7 @@ Formato de saída JSON:
   "sql": "...",
   "visualization": {{
     "needed": true/false,
-    "type": "bar|line|pie|table|none",
+    "type": "bar|line|pie|scatter|table|none",
     "x": "campo ou vazio",
     "y": "campo ou vazio",
     "title": "título"
@@ -1233,7 +1233,7 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
         st.info(f"Não foi possível renderizar o visual: coluna x '{x}' não encontrada no resultado.")
         return
 
-    if vis_type in {"bar", "line", "pie"} and y and y not in result_df.columns:
+    if vis_type in {"bar", "line", "pie", "scatter"} and y and y not in result_df.columns:
         st.info(f"Não foi possível renderizar o visual: coluna y '{y}' não encontrada no resultado.")
         return
 
@@ -1246,6 +1246,12 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
             st.info("Visual de pizza requer campos x e y válidos.")
             return
         fig = px.pie(result_df, names=x, values=y, title=title)
+        st.plotly_chart(fig, use_container_width=True)
+    elif vis_type == "scatter":
+        if not x or not y:
+            st.info("Visual de dispersão requer campos x e y válidos.")
+            return
+        fig = px.scatter(result_df, x=x, y=y, title=title)
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("Tipo de visual não suportado; exibindo tabela.")
