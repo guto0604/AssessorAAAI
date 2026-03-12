@@ -4,10 +4,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
-CLIENTES_PATH = Path("informacoes_cliente.parquet")
+CLIENTES_PATH = DATA_DIR / "informacoes_cliente.parquet"
 JORNADAS_PATH = DATA_DIR / "jornadas_comerciais_poc.xlsx"
-INVESTIMENTOS_PATH = Path("investimentos_cliente.parquet")
-PRODUTOS_PATH = Path("produtos.parquet")
+INVESTIMENTOS_PATH = DATA_DIR / "investimentos_cliente.parquet"
+PRODUTOS_PATH = DATA_DIR / "produtos.parquet"
 
 CLIENTES_COLUMNS = [
     "Cliente_ID",
