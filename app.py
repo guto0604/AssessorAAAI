@@ -1283,13 +1283,7 @@ def render_insights_tab():
 
 
 def render_home_tab():
-    st.title("🏠 Bem-vindo, assessor(a)!")
-    st.markdown(
-        """
-        Esta ferramenta foi criada para acelerar a preparação comercial do assessor,
-        centralizando dados de cliente, inteligência de abordagem e execução operacional.
-        """
-    )
+    st.title("Potencializando assessores com IA")
 
     st.subheader("🎯 Objetivo da ferramenta")
     st.markdown(
@@ -1303,18 +1297,17 @@ def render_home_tab():
     st.subheader("🧭 O que você encontra em cada aba")
     st.markdown(
         """
-        - **🏠 Início**: visão geral da plataforma e orientações rápidas.
-        - **🚀 Voz do Assessor (Pitch)**: fluxo guiado para estruturar argumentos, tom e narrativa de contato.
-        - **📝 Resumo Reuniões**: consolidação de reuniões e acompanhamento de interações com o cliente.
-        - **📊 Talk to your Data**: perguntas em linguagem natural para explorar dados com apoio de SQL + LLM.
-        - **🤖 Pergunte à IA**: (nova aba) canal para tirar dúvidas usando base documental interna via RAG.
-        - **💡 Insights**: espaço para recomendações e oportunidades de negócio (em evolução).
+        - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
+        - **📝 Resumo Reuniões**: Transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
+        - **📊 Talk to your Data**: pergunte e convesre em linguagem natural para explorar dados e visualizar dados.
+        - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando o IA.
+        - **💡 Insights**: espaço onde a IA pode fazer recomendações e oportunidades de negócio.
         - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
         """
     )
 
     st.info(
-        "Dica: selecione o cliente na barra lateral antes de iniciar uma análise para garantir contexto correto."
+        "Dica: para as abas de Voz do Assessor e Reuniões selecione o cliente na barra lateral antes de iniciar garantir o contexto correto."
     )
 
 
@@ -1446,7 +1439,7 @@ def render_settings_tab():
 def main():
     init_session_state()
 
-    st.title("Contato Assessor")
+    st.title("AssessorAAAI")
 
     st.sidebar.header("Selecionar Cliente")
     clientes_df = load_clientes()
