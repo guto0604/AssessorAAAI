@@ -41,6 +41,7 @@ SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
+TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -150,7 +151,6 @@ def _reset_talk_to_data_state() -> None:
 
 def _reset_talk_to_data_page() -> None:
     _reset_talk_to_data_state()
-    st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
 
 
 def _render_talk_to_data_samples() -> None:
@@ -270,7 +270,7 @@ def init_session_state():
         st.session_state.talk_to_data_can_generate = True
 
     if "talk_to_data_template_dropdown" not in st.session_state:
-        st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
+        st.session_state.talk_to_data_template_dropdown = TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION
 
 
 def render_pitch_tab(cliente_id, cliente_info):
@@ -943,7 +943,7 @@ def render_talk_to_your_data_page():
     _render_talk_to_data_samples()
 
     st.subheader("Perguntas modelo")
-    dropdown_options = ["Selecione uma pergunta..."]
+    dropdown_options = [TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION]
     for category, questions in sample_questions.items():
         for sample_question in questions:
             dropdown_options.append(f"{category} — {sample_question}")
@@ -954,7 +954,7 @@ def render_talk_to_your_data_page():
         key="talk_to_data_template_dropdown",
     )
 
-    if selected_template != "Selecione uma pergunta...":
+    if selected_template != TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION:
         selected_question = selected_template.split(" — ", 1)[1]
         if selected_question != st.session_state.get("talk_to_data_question", ""):
             _apply_talk_to_data_template_question(selected_question)
