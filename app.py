@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import duckdb
@@ -858,12 +858,6 @@ def render_talk_to_your_data_page():
     st.title("Talk to your Data")
     st.caption("Faça perguntas em linguagem natural e consulte os dados com SQL via DuckDB.")
 
-    history = st.session_state.setdefault("talk_to_data_history", [])
-    for item in history[-4:]:
-        with st.container(border=True):
-            st.markdown(f"**Pergunta:** {item['question']}")
-            st.markdown(f"**Resposta:** {item['answer']}")
-
     question = st.text_area(
         "Pergunte sobre a base de assessoria:",
         placeholder="Ex.: Quais clientes fazem aniversário neste mês?",
@@ -903,36 +897,31 @@ def render_talk_to_your_data_page():
 
         if not can_answer:
             st.info(answer)
-            history.append({"question": question.strip(), "answer": answer})
             return
 
         if not sql:
             st.warning("A pergunta foi marcada como respondível, mas nenhum SQL foi retornado.")
-            history.append({"question": question.strip(), "answer": answer})
             return
 
         with st.expander("SQL gerado pela LLM", expanded=True):
             st.code(sql, language="sql")
 
         result_df = pd.DataFrame()
-        query_error = None
+        query_error: Exception | None = None
         final_sql = ""
         try:
             final_sql = sanitize_duckdb_sql(sql)
             validate_read_only_sql(final_sql)
             result_df = run_duckdb_query(final_sql)
         except Exception as exc:
-            query_error = str(exc)
+            query_error = exc
 
         with st.expander("SQL final executada", expanded=True):
             st.code(final_sql or sql, language="sql")
 
         if query_error:
-            st.error(
-                "Erro ao executar SQL no DuckDB. Revise a sintaxe para DuckDB "
-                "(ex.: EXTRACT(MONTH FROM data), CURRENT_DATE)."
-            )
-            st.caption(f"Erro retornado pelo DuckDB: {query_error}")
+            st.error("Erro ao executar SQL no DuckDB.")
+            st.exception(query_error)
             return
 
         st.subheader("Resultado da consulta")
@@ -945,7 +934,6 @@ def render_talk_to_your_data_page():
         st.write(answer)
         render_visual(result_df, visualization)
 
-        history.append({"question": question.strip(), "answer": answer})
 
 
 def load_reference_text() -> str:
@@ -961,6 +949,8 @@ Regras:
 - Não invente campos.
 - Se não for possível responder, use can_answer=false, sql="", visualization.type="none".
 - Gere SQL compatível com DuckDB.
+- Sempre use uma data explícita no SQL no formato DATE 'YYYY-MM-DD'.
+- Nunca use funções de data/hora atual (CURRENT_DATE, NOW, CURRENT_TIMESTAMP, TODAY).
 - Prefira queries leves (agregações e LIMIT quando fizer sentido).
 - Nunca gere código Python para visualização.
 - Retorne APENAS JSON válido.
@@ -1014,15 +1004,22 @@ def sanitize_duckdb_sql(sql: str) -> str:
     normalized_sql = sql.strip()
     normalized_sql = re.sub(r";\s*$", "", normalized_sql)
     normalized_sql = normalized_sql.replace("`", "")
+    system_date_sql = f"DATE '{date.today().isoformat()}'"
     normalized_sql = re.sub(
         r"strftime\(\s*'%m'\s*,\s*([^)]+?)\s*\)\s*=\s*strftime\(\s*'%m'\s*,\s*'now'\s*\)",
-        r"EXTRACT(MONTH FROM \1) = EXTRACT(MONTH FROM CURRENT_DATE)",
+        rf"EXTRACT(MONTH FROM \1) = EXTRACT(MONTH FROM {system_date_sql})",
         normalized_sql,
         flags=re.IGNORECASE,
     )
     normalized_sql = re.sub(
         r"strftime\(\s*'%m'\s*,\s*'now'\s*\)",
-        "EXTRACT(MONTH FROM CURRENT_DATE)",
+        f"EXTRACT(MONTH FROM {system_date_sql})",
+        normalized_sql,
+        flags=re.IGNORECASE,
+    )
+    normalized_sql = re.sub(
+        r"\bCURRENT_DATE\b|\bCURRENT_TIMESTAMP\b|\bNOW\s*\(\s*\)|\bTODAY\s*\(\s*\)",
+        system_date_sql,
         normalized_sql,
         flags=re.IGNORECASE,
     )

@@ -1,4 +1,5 @@
 import unittest
+from datetime import date
 
 import duckdb
 
@@ -21,7 +22,7 @@ class DuckDBQueryRunnerTests(unittest.TestCase):
         sql = "SELECT Nome FROM Informacoes_Cliente WHERE strftime('%m', Data_Nascimento) = strftime('%m', 'now') LIMIT 10;"
         normalized = sanitize_duckdb_sql(sql)
         self.assertIn("EXTRACT(MONTH FROM Data_Nascimento)", normalized)
-        self.assertIn("EXTRACT(MONTH FROM CURRENT_DATE)", normalized)
+        self.assertIn(f"EXTRACT(MONTH FROM DATE '{date.today().isoformat()}')", normalized)
         df = run_duckdb_query(sql)
         self.assertIsNotNone(df)
 
