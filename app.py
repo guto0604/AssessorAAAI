@@ -936,7 +936,6 @@ def render_talk_to_your_data_page():
         ],
         "Perguntas cruzando clientes + investimentos": [
             "Quais clientes conservadores possuem investimentos incompatíveis com seu perfil?",
-            "Mostr"
         ],
         "Pergunta mais analítica / avançada": [
             "Quais clientes têm maior risco de churn e possuem mais de 50 mil disponíveis para investir?",
