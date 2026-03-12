@@ -986,16 +986,16 @@ def render_talk_to_your_data_page():
 
     controls_col_1, controls_col_2 = st.columns(2)
     with controls_col_1:
-        if st.button("➡️ Próxima pergunta", key="talk_to_data_next_question"):
-            _reset_talk_to_data_page()
-            st.rerun()
-
-    with controls_col_2:
         generate_pressed = st.button(
             "Gerar consulta",
             key="talk_to_data_submit",
             disabled=not st.session_state.get("talk_to_data_can_generate", True),
         )
+
+    with controls_col_2:
+        if st.button("➡️ Próxima pergunta", key="talk_to_data_next_question"):
+            _reset_talk_to_data_page()
+            st.rerun()
 
     if generate_pressed:
         if not question.strip():
