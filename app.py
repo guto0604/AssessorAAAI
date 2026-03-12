@@ -154,18 +154,16 @@ def _reset_talk_to_data_page() -> None:
 
 
 def _render_talk_to_data_samples() -> None:
-    st.subheader("Amostras das tabelas disponíveis")
-    st.caption("Abra cada caixa para visualizar um sample(10) e entender melhor os dados disponíveis.")
 
     for table_name, file_path in TALK_TO_DATA_FILES.items():
-        with st.expander(f"📦 {table_name} — sample(10)", expanded=False):
+        with st.expander(f"📦 Prévia tabela {table_name}", expanded=False):
             try:
                 table_df = pd.read_parquet(file_path)
             except Exception as exc:
                 st.error(f"Não foi possível carregar {table_name}: {exc}")
                 continue
 
-            sample_size = min(10, len(table_df))
+            sample_size = min(6, len(table_df))
             if sample_size == 0:
                 st.info("Tabela vazia.")
                 continue
@@ -938,18 +936,17 @@ def render_talk_to_your_data_page():
     }
 
     st.title("Talk to your Data")
-    st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
+    st.caption("Faça perguntas em linguagem natural, e visualize os resultados.")
 
     _render_talk_to_data_samples()
 
-    st.subheader("Perguntas modelo")
     dropdown_options = [TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION]
     for category, questions in sample_questions.items():
         for sample_question in questions:
             dropdown_options.append(f"{category} — {sample_question}")
 
     selected_template = st.selectbox(
-        "Escolha uma pergunta modelo",
+        "Escolha uma pergunta modelo ou escreva sua própria pergunta ",
         options=dropdown_options,
         key="talk_to_data_template_dropdown",
     )
