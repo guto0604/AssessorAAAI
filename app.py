@@ -146,7 +146,6 @@ def _reset_talk_to_data_state() -> None:
     st.session_state.talk_to_data_generated_sql = ""
     st.session_state.talk_to_data_saved_sql = ""
     st.session_state.talk_to_data_can_generate = True
-    st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
 
 
 def _apply_talk_to_data_template_question(question: str) -> None:
@@ -916,6 +915,9 @@ def render_talk_to_your_data_page():
     st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
 
     st.subheader("Perguntas modelo")
+    if st.session_state.pop("talk_to_data_reset_template_dropdown", False):
+        st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
+
     dropdown_options = ["Selecione uma pergunta..."]
     for category, questions in sample_questions.items():
         for sample_question in questions:
@@ -944,6 +946,7 @@ def render_talk_to_your_data_page():
     with controls_col_1:
         if st.button("🧹 Reiniciar pergunta", key="talk_to_data_reset_question"):
             _reset_talk_to_data_state()
+            st.session_state.talk_to_data_reset_template_dropdown = True
             st.success("Pergunta limpa. Você pode gerar uma nova consulta.")
             st.rerun()
 
