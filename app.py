@@ -218,6 +218,15 @@ def init_session_state():
     if SESSION_LANGSMITH_TRACER not in st.session_state:
         st.session_state[SESSION_LANGSMITH_TRACER] = None
 
+    if "talk_to_data_last_llm_output" not in st.session_state:
+        st.session_state.talk_to_data_last_llm_output = None
+
+    if "talk_to_data_generated_sql" not in st.session_state:
+        st.session_state.talk_to_data_generated_sql = ""
+
+    if "talk_to_data_saved_sql" not in st.session_state:
+        st.session_state.talk_to_data_saved_sql = ""
+
 
 def render_pitch_tab(cliente_id, cliente_info):
     st.header("🚀 Iniciar fluxo de pitch")
@@ -856,7 +865,7 @@ def render_meetings_tab(cliente_id, cliente_info):
 
 def render_talk_to_your_data_page():
     st.title("Talk to your Data")
-    st.caption("Faça perguntas em linguagem natural e consulte os dados com SQL via DuckDB.")
+    st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
 
     question = st.text_area(
         "Pergunte sobre a base de assessoria:",
@@ -865,7 +874,7 @@ def render_talk_to_your_data_page():
         height=100,
     )
 
-    if st.button("Enviar pergunta", key="talk_to_data_submit"):
+    if st.button("Gerar consulta", key="talk_to_data_submit"):
         if not question.strip():
             st.warning("Escreva uma pergunta antes de enviar.")
             return
@@ -878,46 +887,82 @@ def render_talk_to_your_data_page():
             st.error(f"Falha ao interpretar a pergunta com a LLM: {exc}")
             return
 
-        can_answer = bool(llm_output.get("can_answer", False))
-        rationale = llm_output.get("rationale", "")
-        question_understanding = llm_output.get("question_understanding", "")
-        sql = (llm_output.get("sql") or "").strip()
-        answer = llm_output.get("answer") or "Não foi possível gerar uma resposta."
-        visualization = llm_output.get("visualization") or {"needed": False, "type": "none"}
+        st.session_state.talk_to_data_last_llm_output = llm_output
 
-        st.subheader("Entendimento da pergunta")
-        st.write(question_understanding or "A LLM não retornou entendimento explícito.")
+    llm_output = st.session_state.get("talk_to_data_last_llm_output") or {}
+    if not llm_output:
+        return
 
-        with st.expander("Racional curto", expanded=False):
-            st.write(rationale or "Sem racional informado.")
-            st.write({
-                "tables_used": llm_output.get("tables_used", []),
-                "fields_used": llm_output.get("fields_used", []),
-            })
+    can_answer = bool(llm_output.get("can_answer", False))
+    rationale = llm_output.get("rationale", "")
+    question_understanding = llm_output.get("question_understanding", "")
+    sql = (llm_output.get("sql") or "").strip()
+    answer = llm_output.get("answer") or "Não foi possível gerar uma resposta."
+    visualization = llm_output.get("visualization") or {"needed": False, "type": "none"}
 
-        if not can_answer:
-            st.info(answer)
-            return
+    st.subheader("Entendimento da pergunta")
+    st.write(question_understanding or "A LLM não retornou entendimento explícito.")
 
-        if not sql:
-            st.warning("A pergunta foi marcada como respondível, mas nenhum SQL foi retornado.")
-            return
+    with st.expander("Racional curto", expanded=False):
+        st.write(rationale or "Sem racional informado.")
+        st.write({
+            "tables_used": llm_output.get("tables_used", []),
+            "fields_used": llm_output.get("fields_used", []),
+        })
 
-        with st.expander("SQL gerado pela LLM", expanded=True):
-            st.code(sql, language="sql")
+    if not can_answer:
+        st.info(answer)
+        return
 
+    if not sql:
+        st.warning("A pergunta foi marcada como respondível, mas nenhum SQL foi retornado.")
+        return
+
+    if not st.session_state.talk_to_data_generated_sql:
+        st.session_state.talk_to_data_generated_sql = sql
+
+    st.subheader("Consulta SQL (edite antes de salvar)")
+    generated_sql = st.text_area(
+        "SQL gerado",
+        key="talk_to_data_generated_sql",
+        height=220,
+    )
+
+    col_save, col_clear = st.columns([1, 1])
+    with col_save:
+        if st.button("💾 Salvar consulta", key="talk_to_data_save_sql"):
+            if not generated_sql.strip():
+                st.warning("Não é possível salvar uma consulta vazia.")
+            else:
+                st.session_state.talk_to_data_saved_sql = generated_sql.strip()
+                st.success("Consulta salva. Agora você pode executá-la quando quiser.")
+
+    with col_clear:
+        if st.button("🧹 Limpar consulta salva", key="talk_to_data_clear_saved_sql"):
+            st.session_state.talk_to_data_saved_sql = ""
+            st.info("Consulta salva removida.")
+
+    saved_sql = (st.session_state.get("talk_to_data_saved_sql") or "").strip()
+    if not saved_sql:
+        st.info("Salve a consulta para habilitar a execução.")
+        return
+
+    with st.expander("Consulta salva", expanded=True):
+        st.code(saved_sql, language="sql")
+
+    if st.button("▶️ Executar consulta salva", key="talk_to_data_execute_saved_sql"):
         result_df = pd.DataFrame()
         query_error: Exception | None = None
         final_sql = ""
         try:
-            final_sql = sanitize_duckdb_sql(sql)
+            final_sql = sanitize_duckdb_sql(saved_sql)
             validate_read_only_sql(final_sql)
             result_df = run_duckdb_query(final_sql)
         except Exception as exc:
             query_error = exc
 
         with st.expander("SQL final executada", expanded=True):
-            st.code(final_sql or sql, language="sql")
+            st.code(final_sql or saved_sql, language="sql")
 
         if query_error:
             st.error("Erro ao executar SQL no DuckDB.")
