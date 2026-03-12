@@ -140,7 +140,7 @@ def _format_cliente_value(campo: str, valor):
         return valor_formatado.replace(",", "X").replace(".", ",").replace("X", ".")
 
     if campo in campos_percentuais and isinstance(valor, (int, float)):
-        return f"{valor:.2f}%"
+        return f"{valor*100:.2f}%"
 
     return str(valor)
 
