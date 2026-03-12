@@ -1,5 +1,7 @@
 import os
 import json
+import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -48,6 +50,7 @@ TALK_TO_DATA_FILES = {
     "Produtos": DATA_DIR / "produtos.parquet",
 }
 REFERENCE_FILE_PATH = DATA_DIR / "referencia_base_dados.txt"
+LOGGER = logging.getLogger(__name__)
 
 
 def _iso_now() -> str:
@@ -908,18 +911,28 @@ def render_talk_to_your_data_page():
             history.append({"question": question.strip(), "answer": answer})
             return
 
-        with st.expander("SQL gerado", expanded=True):
+        with st.expander("SQL gerado pela LLM", expanded=True):
             st.code(sql, language="sql")
 
         result_df = pd.DataFrame()
         query_error = None
+        final_sql = ""
         try:
-            result_df = run_duckdb_query(sql)
+            final_sql = sanitize_duckdb_sql(sql)
+            validate_read_only_sql(final_sql)
+            result_df = run_duckdb_query(final_sql)
         except Exception as exc:
             query_error = str(exc)
 
+        with st.expander("SQL final executada", expanded=True):
+            st.code(final_sql or sql, language="sql")
+
         if query_error:
-            st.error(f"Erro ao executar SQL no DuckDB: {query_error}")
+            st.error(
+                "Erro ao executar SQL no DuckDB. Revise a sintaxe para DuckDB "
+                "(ex.: EXTRACT(MONTH FROM data), CURRENT_DATE)."
+            )
+            st.caption(f"Erro retornado pelo DuckDB: {query_error}")
             return
 
         st.subheader("Resultado da consulta")
@@ -997,17 +1010,59 @@ def ask_talk_to_data_llm(prompt: str) -> dict:
     return json.loads(content)
 
 
-def run_duckdb_query(sql: str) -> pd.DataFrame:
-    normalized_sql = sql.strip().rstrip(";")
-    if not normalized_sql.lower().startswith("select"):
-        raise ValueError("Apenas consultas SELECT são permitidas.")
+def sanitize_duckdb_sql(sql: str) -> str:
+    normalized_sql = sql.strip()
+    normalized_sql = re.sub(r";\s*$", "", normalized_sql)
+    normalized_sql = normalized_sql.replace("`", "")
+    normalized_sql = re.sub(
+        r"strftime\(\s*'%m'\s*,\s*([^)]+?)\s*\)\s*=\s*strftime\(\s*'%m'\s*,\s*'now'\s*\)",
+        r"EXTRACT(MONTH FROM \1) = EXTRACT(MONTH FROM CURRENT_DATE)",
+        normalized_sql,
+        flags=re.IGNORECASE,
+    )
+    normalized_sql = re.sub(
+        r"strftime\(\s*'%m'\s*,\s*'now'\s*\)",
+        "EXTRACT(MONTH FROM CURRENT_DATE)",
+        normalized_sql,
+        flags=re.IGNORECASE,
+    )
+    return normalized_sql.strip()
+
+
+def validate_read_only_sql(sql: str) -> None:
+    if not sql:
+        raise ValueError("A consulta SQL está vazia.")
+    if ";" in sql:
+        raise ValueError("Apenas uma instrução SQL é permitida.")
+    if not re.match(r"^(select|with)\b", sql, flags=re.IGNORECASE):
+        raise ValueError("Apenas consultas SELECT/CTE de leitura são permitidas.")
+
+    blocked_keywords = (
+        "insert", "update", "delete", "drop", "alter", "create", "replace", "truncate",
+        "attach", "detach", "copy", "call", "grant", "revoke", "merge", "execute", "prepare",
+    )
+    blocked_pattern = r"\b(" + "|".join(blocked_keywords) + r")\b"
+    if re.search(blocked_pattern, sql, flags=re.IGNORECASE):
+        raise ValueError("A consulta contém comandos bloqueados para segurança.")
+
+
+def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
+    for table_name, file_path in TALK_TO_DATA_FILES.items():
+        escaped_path = str(file_path).replace("'", "''")
+        con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
+
+
+def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) -> pd.DataFrame:
+    normalized_sql = sanitize_duckdb_sql(sql)
+    validate_read_only_sql(normalized_sql)
+    LOGGER.info("Executando SQL DuckDB: %s", normalized_sql)
+
+    if conn is not None:
+        _create_talk_to_data_views(conn)
+        return conn.execute(normalized_sql).fetchdf()
 
     with duckdb.connect(database=":memory:") as con:
-        for table_name, file_path in TALK_TO_DATA_FILES.items():
-            con.execute(
-                f'CREATE VIEW "{table_name}" AS SELECT * FROM read_parquet(?)',
-                [str(file_path)],
-            )
+        _create_talk_to_data_views(con)
         return con.execute(normalized_sql).fetchdf()
 
 
