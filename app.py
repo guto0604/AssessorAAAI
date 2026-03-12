@@ -1282,6 +1282,74 @@ def render_insights_tab():
     st.write("Em breve")
 
 
+def render_home_tab():
+    st.title("🏠 Bem-vindo, assessor(a)!")
+    st.markdown(
+        """
+        Esta ferramenta foi criada para acelerar a preparação comercial do assessor,
+        centralizando dados de cliente, inteligência de abordagem e execução operacional.
+        """
+    )
+
+    st.subheader("🎯 Objetivo da ferramenta")
+    st.markdown(
+        """
+        - Aumentar a qualidade e consistência dos contatos com clientes.
+        - Reduzir tempo operacional para montar abordagens e materiais.
+        - Transformar dados internos em ações comerciais práticas.
+        """
+    )
+
+    st.subheader("🧭 O que você encontra em cada aba")
+    st.markdown(
+        """
+        - **🏠 Início**: visão geral da plataforma e orientações rápidas.
+        - **🚀 Voz do Assessor (Pitch)**: fluxo guiado para estruturar argumentos, tom e narrativa de contato.
+        - **📝 Resumo Reuniões**: consolidação de reuniões e acompanhamento de interações com o cliente.
+        - **📊 Talk to your Data**: perguntas em linguagem natural para explorar dados com apoio de SQL + LLM.
+        - **🤖 Pergunte à IA**: (nova aba) canal para tirar dúvidas usando base documental interna via RAG.
+        - **💡 Insights**: espaço para recomendações e oportunidades de negócio (em evolução).
+        - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
+        """
+    )
+
+    st.info(
+        "Dica: selecione o cliente na barra lateral antes de iniciar uma análise para garantir contexto correto."
+    )
+
+
+def render_ask_ai_tab():
+    st.title("🤖 Pergunte à IA")
+    st.caption("Visão funcional da próxima etapa (placeholder — implementação ainda não iniciada).")
+
+    st.markdown(
+        """
+        Esta aba será dedicada a perguntas operacionais e de negócio com respostas baseadas
+        em **documentos internos**, políticas e materiais de apoio.
+        """
+    )
+
+    st.subheader("🔍 Como funcionará")
+    st.markdown(
+        """
+        1. O usuário faz uma pergunta em linguagem natural.
+        2. Um pipeline de **RAG** recupera trechos relevantes da base de conhecimento.
+        3. A IA responde com contexto operacional e referência do conteúdo encontrado.
+        """
+    )
+
+    st.subheader("📚 Base de conhecimento (planejado)")
+    st.markdown(
+        """
+        - Upload de novos documentos diretamente pela interface.
+        - Indexação dos arquivos com **modelo de embeddings**.
+        - Atualização incremental da base para ampliar cobertura de dúvidas.
+        """
+    )
+
+    st.warning("Tela adicionada como planejamento funcional. O fluxo completo ainda não foi desenvolvido.")
+
+
 def render_settings_tab():
     st.title("Configurações")
     st.caption("Preencha apenas as credenciais essenciais da sessão (quando necessário).")
@@ -1402,13 +1470,18 @@ def main():
     dados_cliente_df = _build_cliente_sidebar_table(cliente_info)
     st.sidebar.table(dados_cliente_df)
 
-    tab_pitch, tab_meetings, tab_portfolio, tab_insights, tab_settings = st.tabs([
-        "Voz do Assessor (Pitch)",
-        "Resumo Reuniões",
-        "Talk to your Data",
-        "Insights",
-        "Configurações"
+    tab_home, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_insights, tab_settings = st.tabs([
+        "🏠 Início",
+        "🚀 Voz do Assessor (Pitch)",
+        "📝 Resumo Reuniões",
+        "📊 Talk to your Data",
+        "🤖 Pergunte à IA",
+        "💡 Insights",
+        "⚙️ Configurações"
     ])
+
+    with tab_home:
+        render_home_tab()
 
     with tab_pitch:
         render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
@@ -1418,6 +1491,9 @@ def main():
 
     with tab_portfolio:
         render_talk_to_your_data_page()
+
+    with tab_ask_ai:
+        render_ask_ai_tab()
 
     with tab_insights:
         render_insights_tab()
