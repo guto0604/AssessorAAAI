@@ -950,7 +950,8 @@ Regras:
 - Se não for possível responder, use can_answer=false, sql="", visualization.type="none".
 - Gere SQL compatível com DuckDB.
 - Sempre use uma data explícita no SQL no formato DATE 'YYYY-MM-DD'.
-- Nunca use funções de data/hora atual (CURRENT_DATE, NOW, CURRENT_TIMESTAMP, TODAY).
+- Nunca use funções de data/hora atual (CURRENT_DATE, NOW, CURRENT_TIMESTAMP, TODAY), a data atual é "{date.today().isoformat()}"
+- Use DATE '{date.today().isoformat()}' como data atual.
 - Prefira queries leves (agregações e LIMIT quando fizer sentido).
 - Nunca gere código Python para visualização.
 - Retorne APENAS JSON válido.
@@ -984,7 +985,7 @@ Referência completa da base:
 def ask_talk_to_data_llm(prompt: str) -> dict:
     client = get_openai_client()
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.1",
         temperature=0,
         response_format={"type": "json_object"},
         messages=[
