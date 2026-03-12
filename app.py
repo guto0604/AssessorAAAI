@@ -150,7 +150,21 @@ def _reset_talk_to_data_state() -> None:
 
 
 def _reset_talk_to_data_page() -> None:
-    _reset_talk_to_data_state()
+    try:
+        _reset_talk_to_data_state()
+        st.session_state["talk_to_data_next_question_feedback"] = {
+            "status": "success",
+            "message": "Tela reiniciada. Faça sua próxima pergunta.",
+        }
+    except Exception as exc:
+        st.session_state["talk_to_data_next_question_feedback"] = {
+            "status": "error",
+            "message": (
+                "Erro ao atualizar para a próxima pergunta. "
+                "Selecione novamente a checkbox para funcionar."
+            ),
+            "details": str(exc),
+        }
 
 
 def _render_talk_to_data_samples() -> None:
@@ -938,6 +952,15 @@ def render_talk_to_your_data_page():
     st.title("Talk to your Data")
     st.caption("Faça perguntas em linguagem natural, e visualize os resultados.")
 
+    feedback = st.session_state.pop("talk_to_data_next_question_feedback", None)
+    if feedback:
+        if feedback.get("status") == "error":
+            st.error(feedback.get("message", "Erro ao atualizar a tela."))
+            if feedback.get("details"):
+                st.caption(f"Detalhes técnicos: {feedback['details']}")
+        else:
+            st.success(feedback.get("message", "Tela atualizada."))
+
     _render_talk_to_data_samples()
 
     dropdown_options = [TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION]
@@ -968,7 +991,6 @@ def render_talk_to_your_data_page():
     with controls_col_1:
         if st.button("➡️ Próxima pergunta", key="talk_to_data_next_question"):
             _reset_talk_to_data_page()
-            st.success("Tela reiniciada. Faça sua próxima pergunta.")
             st.rerun()
 
     with controls_col_2:
