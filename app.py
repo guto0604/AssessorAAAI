@@ -140,6 +140,13 @@ def _reset_pitch_flow_state():
             st.session_state.pop(key, None)
 
 
+def _reset_talk_to_data_state() -> None:
+    st.session_state.talk_to_data_question = ""
+    st.session_state.talk_to_data_last_llm_output = None
+    st.session_state.talk_to_data_generated_sql = ""
+    st.session_state.talk_to_data_saved_sql = ""
+
+
 def _format_cliente_value(campo: str, valor):
     campos_monetarios = {
         "Patrimonio_Investido_Conosco",
@@ -867,6 +874,10 @@ def render_talk_to_your_data_page():
     st.title("Talk to your Data")
     st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
 
+    if st.button("➕ Próxima pergunta", key="talk_to_data_next_question"):
+        _reset_talk_to_data_state()
+        st.success("Campos limpos. Você já pode iniciar uma nova pergunta.")
+
     question = st.text_area(
         "Pergunte sobre a base de assessoria:",
         placeholder="Ex.: Quais clientes fazem aniversário neste mês?",
@@ -960,9 +971,6 @@ def render_talk_to_your_data_page():
             result_df = run_duckdb_query(final_sql)
         except Exception as exc:
             query_error = exc
-
-        with st.expander("SQL final executada", expanded=True):
-            st.code(final_sql or saved_sql, language="sql")
 
         if query_error:
             st.error("Erro ao executar SQL no DuckDB.")
