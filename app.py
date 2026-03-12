@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime, timezone
 
+import pandas as pd
 import streamlit as st
 from openai_client import SESSION_OPENAI_KEY
 from openai_client import get_effective_openai_api_key
@@ -121,6 +122,49 @@ def _reset_pitch_flow_state():
     for key in list(st.session_state.keys()):
         if key.startswith("pitch_chk_") or key.startswith("pitch_draft_box_"):
             st.session_state.pop(key, None)
+
+
+def _format_cliente_value(campo: str, valor):
+    campos_monetarios = {
+        "Patrimonio_Investido_Conosco",
+        "Patrimonio_Investido_Outros",
+        "Dinheiro_Disponivel_Para_Investir",
+    }
+    campos_percentuais = {"Rentabilidade_12_meses", "CDI_12_Meses"}
+
+    if valor is None:
+        return "-"
+
+    if campo in campos_monetarios and isinstance(valor, (int, float)):
+        valor_formatado = f"R$ {valor:,.2f}"
+        return valor_formatado.replace(",", "X").replace(".", ",").replace("X", ".")
+
+    if campo in campos_percentuais and isinstance(valor, (int, float)):
+        return f"{valor:.2f}%"
+
+    return str(valor)
+
+
+def _build_cliente_sidebar_table(cliente_info: dict) -> pd.DataFrame:
+    labels = {
+        "Cliente_ID": "ID",
+        "Nome": "Nome",
+        "Patrimonio_Investido_Conosco": "Patrimônio investido conosco",
+        "Patrimonio_Investido_Outros": "Patrimônio investido em outras instituições",
+        "Dinheiro_Disponivel_Para_Investir": "Dinheiro disponível para investir",
+        "Perfil_Suitability": "Perfil de suitability",
+        "Rentabilidade_12_meses": "Rentabilidade (12 meses)",
+        "CDI_12_Meses": "CDI (12 meses)",
+    }
+
+    dados_formatados = [
+        {
+            "Campo": labels.get(campo, campo),
+            "Valor": _format_cliente_value(campo, valor),
+        }
+        for campo, valor in cliente_info.items()
+    ]
+    return pd.DataFrame(dados_formatados)
 
 
 def init_session_state():
@@ -921,7 +965,8 @@ def main():
     cliente_info = get_cliente_by_id(st.session_state.selected_cliente_id)
 
     st.sidebar.markdown("### Dados do Cliente")
-    st.sidebar.json(cliente_info)
+    dados_cliente_df = _build_cliente_sidebar_table(cliente_info)
+    st.sidebar.table(dados_cliente_df)
 
     tab_pitch, tab_meetings, tab_portfolio, tab_insights, tab_settings = st.tabs([
         "Voz do Assessor (Pitch)",
