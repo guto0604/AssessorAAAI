@@ -4,22 +4,49 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
-CLIENTES_PATH = DATA_DIR / "clientes_base_poc.xlsx"
+CLIENTES_PATH = Path("informacoes_cliente.parquet")
 JORNADAS_PATH = DATA_DIR / "jornadas_comerciais_poc.xlsx"
-INVESTIMENTOS_PATH = DATA_DIR / "investimentos_clientes_poc.xlsx"
-PRODUTOS_PATH = DATA_DIR / "produtos_investimentos_poc.xlsx"
+INVESTIMENTOS_PATH = Path("investimentos_cliente.parquet")
+PRODUTOS_PATH = Path("produtos.parquet")
+
+CLIENTES_COLUMNS = [
+    "Cliente_ID",
+    "Nome",
+    "Patrimonio_Investido_Conosco",
+    "Patrimonio_Investido_Outros",
+    "Dinheiro_Disponivel_Para_Investir",
+    "Perfil_Suitability",
+    "Rentabilidade_12_meses",
+    "CDI_12_Meses",
+]
+
+INVESTIMENTOS_COLUMNS = [
+    "Cliente_ID",
+    "Produto",
+    "Categoria",
+    "Valor_Investido",
+]
+
+PRODUTOS_COLUMNS = [
+    "Produto_ID",
+    "Nome_Produto",
+    "Categoria",
+    "Subcategoria",
+    "Risco_Nivel (1-5)",
+    "Suitability_Ideal",
+]
 
 def load_clientes():
-    return pd.read_excel(CLIENTES_PATH)
+    return pd.read_parquet(CLIENTES_PATH, columns=CLIENTES_COLUMNS)
 
 def load_jornadas():
     return pd.read_excel(JORNADAS_PATH)
 
 def load_investimentos():
-    return pd.read_excel(INVESTIMENTOS_PATH)
+    return pd.read_parquet(INVESTIMENTOS_PATH, columns=INVESTIMENTOS_COLUMNS)
 
 def load_produtos():
-    return pd.read_excel(PRODUTOS_PATH)
+    return pd.read_parquet(PRODUTOS_PATH, columns=PRODUTOS_COLUMNS)
 
 def get_cliente_by_id(cliente_id):
     df = load_clientes()
