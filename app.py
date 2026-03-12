@@ -145,7 +145,8 @@ def _reset_talk_to_data_state() -> None:
     st.session_state.talk_to_data_last_llm_output = None
     st.session_state.talk_to_data_generated_sql = ""
     st.session_state.talk_to_data_saved_sql = ""
-    st.session_state.talk_to_data_can_generate = False
+    st.session_state.talk_to_data_can_generate = True
+    st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
 
 
 def _apply_talk_to_data_template_question(question: str) -> None:
@@ -241,7 +242,10 @@ def init_session_state():
         st.session_state.talk_to_data_saved_sql = ""
 
     if "talk_to_data_can_generate" not in st.session_state:
-        st.session_state.talk_to_data_can_generate = False
+        st.session_state.talk_to_data_can_generate = True
+
+    if "talk_to_data_template_dropdown" not in st.session_state:
+        st.session_state.talk_to_data_template_dropdown = "Selecione uma pergunta..."
 
 
 def render_pitch_tab(cliente_id, cliente_info):
@@ -912,29 +916,22 @@ def render_talk_to_your_data_page():
     st.caption("Faça perguntas em linguagem natural, gere a consulta SQL, edite/salve e só então execute no DuckDB.")
 
     st.subheader("Perguntas modelo")
+    dropdown_options = ["Selecione uma pergunta..."]
     for category, questions in sample_questions.items():
-        st.markdown(f"**{category}**")
-        question_columns = st.columns(2)
-        for idx, sample_question in enumerate(questions):
-            with question_columns[idx % 2]:
-                if st.button(sample_question, key=f"talk_to_data_sample_question_{category}_{idx}"):
-                    _apply_talk_to_data_template_question(sample_question)
-                    st.rerun()
+        for sample_question in questions:
+            dropdown_options.append(f"{category} — {sample_question}")
 
-    controls_col_1, controls_col_2 = st.columns(2)
-    with controls_col_1:
-        if st.button("➕ Nova pergunta", key="talk_to_data_next_question"):
-            _reset_talk_to_data_state()
-            st.session_state.talk_to_data_can_generate = True
-            st.success("Campos limpos. Você já pode iniciar uma nova pergunta.")
+    selected_template = st.selectbox(
+        "Escolha uma pergunta modelo",
+        options=dropdown_options,
+        key="talk_to_data_template_dropdown",
+    )
+
+    if selected_template != "Selecione uma pergunta...":
+        selected_question = selected_template.split(" — ", 1)[1]
+        if selected_question != st.session_state.get("talk_to_data_question", ""):
+            _apply_talk_to_data_template_question(selected_question)
             st.rerun()
-
-    with controls_col_2:
-        generate_pressed = st.button(
-            "Gerar consulta",
-            key="talk_to_data_submit",
-            disabled=not st.session_state.get("talk_to_data_can_generate", False),
-        )
 
     question = st.text_area(
         "Pergunte sobre a base de assessoria:",
@@ -942,6 +939,20 @@ def render_talk_to_your_data_page():
         key="talk_to_data_question",
         height=100,
     )
+
+    controls_col_1, controls_col_2 = st.columns(2)
+    with controls_col_1:
+        if st.button("🧹 Reiniciar pergunta", key="talk_to_data_reset_question"):
+            _reset_talk_to_data_state()
+            st.success("Pergunta limpa. Você pode gerar uma nova consulta.")
+            st.rerun()
+
+    with controls_col_2:
+        generate_pressed = st.button(
+            "Gerar consulta",
+            key="talk_to_data_submit",
+            disabled=not st.session_state.get("talk_to_data_can_generate", True),
+        )
 
     if generate_pressed:
         if not question.strip():
@@ -957,6 +968,7 @@ def render_talk_to_your_data_page():
             return
 
         st.session_state.talk_to_data_last_llm_output = llm_output
+        st.session_state.talk_to_data_can_generate = False
 
     llm_output = st.session_state.get("talk_to_data_last_llm_output") or {}
     if not llm_output:
