@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import re
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -921,6 +922,8 @@ def render_meetings_tab(cliente_id, cliente_info):
 
 
 def render_talk_to_your_data_page():
+    tracer = get_tracer()
+
     sample_questions = {
         "Perguntas Cliente": [
             "Mostre a distribuição da carteira do cliente A_001.",
@@ -1002,11 +1005,65 @@ def render_talk_to_your_data_page():
             st.warning("Escreva uma pergunta antes de enviar.")
             return
 
+        talk_to_data_run_id = tracer.start_run(
+            name=f"talk_to_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            run_type="chain",
+            inputs={"question": question.strip()},
+            tags=["talk_to_data", "streamlit"],
+            metadata={"started_at": _iso_now()},
+        )
+
         try:
             reference_text = load_reference_text()
             prompt = build_llm_prompt(question=question.strip(), reference_text=reference_text)
-            llm_output = ask_talk_to_data_llm(prompt)
+            tracer.log_event(talk_to_data_run_id, "talk_to_data_llm_call_started")
+            llm_started_at = time.perf_counter()
+            llm_result = ask_talk_to_data_llm(prompt, include_api_metrics=True)
+            llm_output = llm_result["output"]
+            api_metrics = llm_result.get("api_metrics", {})
+            call_duration_ms = int((time.perf_counter() - llm_started_at) * 1000)
+
+            tracer.log_event(
+                talk_to_data_run_id,
+                "talk_to_data_api_call",
+                {
+                    "provider": "openai",
+                    "model": api_metrics.get("model"),
+                    "input_tokens": api_metrics.get("input_tokens"),
+                    "output_tokens": api_metrics.get("output_tokens"),
+                    "total_tokens": api_metrics.get("total_tokens"),
+                    "duration_ms": call_duration_ms,
+                },
+            )
+            tracer.log_event(
+                talk_to_data_run_id,
+                "talk_to_data_llm_call_completed",
+                {
+                    "can_answer": bool(llm_output.get("can_answer", False)),
+                    "has_sql": bool((llm_output.get("sql") or "").strip()),
+                    "visualization_type": (llm_output.get("visualization") or {}).get("type", "none"),
+                },
+            )
+            tracer.end_run(
+                talk_to_data_run_id,
+                status="success",
+                outputs={
+                    "status": "success",
+                    "can_answer": bool(llm_output.get("can_answer", False)),
+                    "api_metrics": {
+                        **api_metrics,
+                        "duration_ms": call_duration_ms,
+                    },
+                },
+            )
         except Exception as exc:
+            tracer.log_event(talk_to_data_run_id, "talk_to_data_error", {"error": str(exc)})
+            tracer.end_run(
+                talk_to_data_run_id,
+                status="error",
+                error=str(exc),
+                outputs={"status": "error"},
+            )
             st.error(f"Falha ao interpretar a pergunta com a LLM: {exc}")
             return
 
@@ -1148,7 +1205,7 @@ Referência completa da base:
 """.strip()
 
 
-def ask_talk_to_data_llm(prompt: str) -> dict:
+def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict:
     client = get_openai_client()
     response = client.chat.completions.create(
         model="gpt-5.1",
@@ -1164,7 +1221,22 @@ def ask_talk_to_data_llm(prompt: str) -> dict:
     if content.startswith("```"):
         content = content.strip("`")
         content = content.replace("json\n", "", 1).strip()
-    return json.loads(content)
+
+    parsed_output = json.loads(content)
+    if not include_api_metrics:
+        return parsed_output
+
+    usage = response.usage or {}
+    return {
+        "output": parsed_output,
+        "api_metrics": {
+            "provider": "openai",
+            "model": response.model,
+            "input_tokens": usage.prompt_tokens,
+            "output_tokens": usage.completion_tokens,
+            "total_tokens": usage.total_tokens,
+        },
+    }
 
 
 def sanitize_duckdb_sql(sql: str) -> str:
