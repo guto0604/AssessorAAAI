@@ -1,0 +1,30 @@
+import streamlit as st
+def render_home_tab():
+    st.title("Potencializando assessores com IA")
+
+    st.subheader("🎯 Objetivo da ferramenta")
+    st.markdown(
+        """
+        - Aumentar a qualidade e consistência dos contatos com clientes.
+        - Reduzir tempo operacional para montar abordagens e materiais.
+        - Transformar dados internos em ações comerciais práticas.
+        """
+    )
+
+    st.subheader("🧭 O que você encontra em cada aba")
+    st.markdown(
+        """
+        - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
+        - **📝 Resumo Reuniões**: Transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
+        - **📊 Talk to your Data**: pergunte e convesre em linguagem natural para explorar dados e visualizar dados.
+        - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando o IA.
+        - **💡 Insights**: espaço onde a IA pode fazer recomendações e oportunidades de negócio.
+        - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
+        """
+    )
+
+    st.info(
+        "Dica: para as abas de Voz do Assessor e Reuniões selecione o cliente na barra lateral antes de iniciar garantir o contexto correto."
+    )
+
+
