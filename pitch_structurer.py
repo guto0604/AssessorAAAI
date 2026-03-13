@@ -56,7 +56,7 @@ def build_pitch_options_step5(
 
     produtos_list = []
     if produtos_selecionados_df is not None and not produtos_selecionados_df.empty:
-        cols = ["Produto_ID", "Nome_Produto", "Categoria", "Subcategoria", "Risco_Nivel (1-5)", "Suitability_Ideal"]
+        cols = ["Produto_ID", "Nome_Produto", "Categoria", "Subcategoria", "Risco_Nivel", "Suitability_Ideal"]
         produtos_list = produtos_selecionados_df[cols].to_dict(orient="records")
 
     system_prompt = """

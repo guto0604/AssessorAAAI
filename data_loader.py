@@ -32,7 +32,7 @@ PRODUTOS_COLUMNS = [
     "Nome_Produto",
     "Categoria",
     "Subcategoria",
-    "Risco_Nivel (1-5)",
+    "Risco_Nivel",
     "Suitability_Ideal",
 ]
 

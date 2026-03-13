@@ -50,7 +50,7 @@ def select_sources_step4(
     kb_files = list_kb_files(kb_dir)
 
     produtos_catalogo = produtos_df[[
-        "Produto_ID", "Nome_Produto", "Categoria", "Subcategoria", "Risco_Nivel (1-5)", "Suitability_Ideal"
+        "Produto_ID", "Nome_Produto", "Categoria", "Subcategoria", "Risco_Nivel", "Suitability_Ideal"
     ]].to_dict(orient="records")
 
     investimentos_list = investimentos_cliente_df[[
