@@ -927,8 +927,8 @@ def render_talk_to_your_data_page():
     sample_questions = {
         "Perguntas Cliente": [
             "Mostre a distribuição da carteira do cliente A_001.",
-            "Quais os clientes que resgataram mais que aportaram nos últimos 12 meses que não fazemos contato a mais de 60 dias",
-            "Quais clientes têm dinheiro disponível para investir acima de 100 mil?",
+            "Quais os clientes que resgataram mais que aportaram nos últimos 12 meses que não fazemos contato a mais de 50 dias",
+            "Quais clientes têm dinheiro disponível para investir acima de 1 milhão?",
         ],
         "Perguntas sobre investimentos": [
             "Qual é a distribuição da carteira por categoria de investimento?",
@@ -938,7 +938,7 @@ def render_talk_to_your_data_page():
             "Quais produtos em campanha são adequados para clientes moderados?",
         ],
         "Perguntas cruzando clientes + investimentos": [
-            "Quais clientes conservadores possuem investimentos incompatíveis com seu perfil?",
+            "Quais clientes com perfil arrojado e mais de 1 milhão investidos tem exposição alta em cripto?",
         ],
         "Pergunta mais analítica / avançada": [
             "Quais clientes têm maior risco de churn e possuem mais de 50 mil disponíveis para investir?",
@@ -1102,7 +1102,7 @@ def render_talk_to_your_data_page():
     if not st.session_state.talk_to_data_generated_sql:
         st.session_state.talk_to_data_generated_sql = sql
 
-    st.subheader("Consulta SQL (edite antes de salvar)")
+    st.subheader("Consulta SQL (permitida edição)")
     generated_sql = st.text_area(
         "SQL gerado",
         key="talk_to_data_generated_sql",
@@ -1128,7 +1128,7 @@ def render_talk_to_your_data_page():
         st.info("Salve a consulta para habilitar a execução.")
         return
 
-    with st.expander("Consulta salva", expanded=True):
+    with st.expander("Consulta salva", expanded=False):
         st.code(saved_sql, language="sql")
 
     if st.button("▶️ Executar consulta salva", key="talk_to_data_execute_saved_sql"):
