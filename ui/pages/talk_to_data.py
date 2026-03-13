@@ -11,6 +11,11 @@ import plotly.express as px
 import streamlit as st
 
 from openai_client import get_openai_client
+from ui.guardrails import (
+    evaluate_input_guardrails,
+    guardrail_warning_message,
+    handle_guardrail_exception,
+)
 from ui.state import TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION, _iso_now, get_tracer
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -166,6 +171,40 @@ def render_talk_to_your_data_page():
         )
 
         try:
+            try:
+                guardrail_result = evaluate_input_guardrails(question.strip())
+            except Exception as exc:
+                guardrail_result = handle_guardrail_exception(question.strip(), exc)
+
+            tracer.log_event(
+                talk_to_data_run_id,
+                "input_guardrail_checked",
+                {
+                    "blocked": guardrail_result.blocked,
+                    "violation_type": guardrail_result.violation_type,
+                    "reason": guardrail_result.message,
+                    "model": guardrail_result.model,
+                    "input_tokens": guardrail_result.input_tokens,
+                    "output_tokens": guardrail_result.output_tokens,
+                    "total_tokens": guardrail_result.total_tokens,
+                },
+            )
+
+            if guardrail_result.blocked:
+                tracer.end_run(
+                    talk_to_data_run_id,
+                    status="blocked",
+                    outputs={
+                        "status": "blocked",
+                        "guardrail": {
+                            "violation_type": guardrail_result.violation_type,
+                            "reason": guardrail_result.message,
+                        },
+                    },
+                )
+                st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                return
+
             reference_text = load_reference_text()
             prompt = build_llm_prompt(question=question.strip(), reference_text=reference_text)
             tracer.log_event(talk_to_data_run_id, "talk_to_data_llm_call_started")
@@ -501,5 +540,4 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
     else:
         st.info("Tipo de visual não suportado; exibindo tabela.")
         st.dataframe(result_df, width="stretch")
-
 

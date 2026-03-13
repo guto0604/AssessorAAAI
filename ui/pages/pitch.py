@@ -13,6 +13,11 @@ from langsmith_tracing import LangSmithTracer
 from pitch_structurer import build_pitch_options_step5
 from pitch_writer import generate_final_pitch_step7, revise_pitch_step8
 from source_selector import select_sources_step4
+from ui.guardrails import (
+    evaluate_input_guardrails,
+    guardrail_warning_message,
+    handle_guardrail_exception,
+)
 from ui.state import (
     SESSION_PITCH_FLOW_STARTED,
     SESSION_PITCH_TRACE,
@@ -91,6 +96,46 @@ def render_pitch_tab(cliente_id, cliente_info):
             "at": _iso_now(),
             "prompt_chars": len(prompt_assessor.strip()),
         })
+
+        try:
+            guardrail_result = evaluate_input_guardrails(prompt_assessor.strip())
+        except Exception as exc:
+            guardrail_result = handle_guardrail_exception(prompt_assessor.strip(), exc)
+
+        tracer.log_event(
+            pitch_run_id,
+            "input_guardrail_checked",
+            {
+                "blocked": guardrail_result.blocked,
+                "violation_type": guardrail_result.violation_type,
+                "reason": guardrail_result.message,
+                "model": guardrail_result.model,
+                "input_tokens": guardrail_result.input_tokens,
+                "output_tokens": guardrail_result.output_tokens,
+                "total_tokens": guardrail_result.total_tokens,
+            },
+        )
+
+        if guardrail_result.blocked:
+            tracer.end_run(
+                pitch_run_id,
+                status="blocked",
+                outputs={
+                    "status": "blocked",
+                    "guardrail": {
+                        "violation_type": guardrail_result.violation_type,
+                        "reason": guardrail_result.message,
+                    },
+                },
+            )
+            st.session_state[SESSION_PITCH_TRACE] = {
+                "run_id": pitch_run_id,
+                "status": "blocked",
+                "ended_at": _iso_now(),
+            }
+            st.warning(guardrail_warning_message(guardrail_result.violation_type))
+            return
+
         st.session_state[SESSION_PITCH_FLOW_STARTED] = True
         st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
 
@@ -522,6 +567,49 @@ def render_pitch_tab(cliente_id, cliente_info):
                 if st.button("🔁 Aplicar ajuste", key="pitch_btn_step8") and edit_instruction.strip():
                     pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
                     tracer.log_event(pitch_run_id, "pitch_step_8_started", {"has_target_excerpt": bool(target_excerpt.strip())})
+
+                    combined_input = "\n".join([st.session_state["pitch_draft"], target_excerpt.strip(), edit_instruction.strip()]).strip()
+                    try:
+                        guardrail_result = evaluate_input_guardrails(combined_input)
+                    except Exception as exc:
+                        guardrail_result = handle_guardrail_exception(combined_input, exc)
+
+                    tracer.log_event(
+                        pitch_run_id,
+                        "input_guardrail_checked",
+                        {
+                            "step": "step8",
+                            "blocked": guardrail_result.blocked,
+                            "violation_type": guardrail_result.violation_type,
+                            "reason": guardrail_result.message,
+                            "model": guardrail_result.model,
+                            "input_tokens": guardrail_result.input_tokens,
+                            "output_tokens": guardrail_result.output_tokens,
+                            "total_tokens": guardrail_result.total_tokens,
+                        },
+                    )
+
+                    if guardrail_result.blocked:
+                        tracer.end_run(
+                            pitch_run_id,
+                            status="blocked",
+                            outputs={
+                                "status": "blocked",
+                                "blocked_step": "step8",
+                                "guardrail": {
+                                    "violation_type": guardrail_result.violation_type,
+                                    "reason": guardrail_result.message,
+                                },
+                            },
+                        )
+                        st.session_state[SESSION_PITCH_TRACE] = {
+                            "run_id": pitch_run_id,
+                            "status": "blocked",
+                            "ended_at": _iso_now(),
+                        }
+                        st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                        return
+
                     try:
                         with st.spinner("Aplicando ajuste..."):
                             revised_result = revise_pitch_step8(
