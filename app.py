@@ -1172,6 +1172,8 @@ Regras:
 - Não invente campos.
 - Se não for possível responder, use can_answer=false, sql="", visualization.type="none".
 - Gere SQL compatível com DuckDB.
+- Priorize SQL portátil para DuckDB: evite window functions (OVER/PARTITION BY), funções analíticas avançadas e recursos menos comuns quando houver alternativa.
+- Quando possível, substitua window functions por CTEs com agregações e JOINs simples.
 - Sempre use uma data explícita no SQL no formato DATE 'YYYY-MM-DD'.
 - Nunca use funções de data/hora atual (CURRENT_DATE, NOW, CURRENT_TIMESTAMP, TODAY), a data atual é "{date.today().isoformat()}"
 - Use DATE '{date.today().isoformat()}' como data atual.
