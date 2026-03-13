@@ -1,0 +1,72 @@
+RELATÓRIO INTERNO – ALPHA CAPITAL GESTÃO DE INVESTIMENTOS
+Ano de referência: 2024
+
+1. Visão Geral da Empresa
+
+A Alpha Capital Gestão de Investimentos é uma empresa fictícia especializada em gestão patrimonial e consultoria financeira para clientes de alta renda. Fundada em 2016, a empresa atua principalmente no mercado brasileiro oferecendo serviços de alocação estratégica de ativos, planejamento financeiro e acompanhamento de portfólio.
+
+Atualmente a Alpha Capital atende aproximadamente 1.200 clientes e possui cerca de R$ 8,5 bilhões sob assessoria (Assets Under Advisory - AUA).
+
+2. Estrutura de Serviços
+
+A empresa organiza seus serviços em três principais frentes:
+
+Assessoria de Investimentos  
+A área de assessoria auxilia clientes na construção de portfólios diversificados com foco em preservação de capital e geração de retorno ajustado ao risco.
+
+Planejamento Financeiro  
+Essa área trabalha com planejamento de longo prazo, incluindo aposentadoria, sucessão patrimonial e otimização tributária.
+
+Inteligência de Mercado  
+Equipe responsável por produzir relatórios macroeconômicos, análises setoriais e recomendações estratégicas de alocação.
+
+3. Perfil dos Clientes
+
+A base de clientes da Alpha Capital é composta principalmente por:
+
+- Empresários e executivos (55%)
+- Profissionais liberais de alta renda (25%)
+- Family offices e holdings familiares (20%)
+
+O ticket médio por cliente é de aproximadamente R$ 7 milhões.
+
+4. Estratégia de Investimentos
+
+A filosofia de investimentos da empresa se baseia em três pilares principais:
+
+Diversificação global  
+A empresa incentiva exposição a ativos internacionais como forma de reduzir risco país.
+
+Alocação estratégica de longo prazo  
+Mudanças frequentes de portfólio são evitadas. O foco é manter uma alocação consistente baseada em perfil de risco.
+
+Seleção criteriosa de gestores  
+Fundos de investimento passam por análise qualitativa e quantitativa antes de serem incluídos nas recomendações.
+
+5. Cenário Macroeconômico (Resumo)
+
+Para 2024 e 2025, o time de inteligência de mercado da Alpha Capital destaca alguns pontos relevantes:
+
+- Expectativa de queda gradual das taxas de juros no Brasil.
+- Crescimento moderado da economia global.
+- Maior volatilidade em mercados emergentes.
+- Aumento da relevância de ativos internacionais na composição de portfólio.
+
+6. Tecnologias e Ferramentas
+
+A empresa vem investindo em ferramentas de tecnologia para aumentar a eficiência dos assessores. Entre as iniciativas recentes estão:
+
+- sistemas de análise de portfólio automatizados
+- dashboards de acompanhamento de clientes
+- ferramentas de inteligência artificial para apoio a reuniões e geração de relatórios
+
+7. Perspectivas Futuras
+
+A Alpha Capital pretende expandir sua base de clientes em aproximadamente 20% nos próximos três anos, com foco em clientes que estão em fase de transição patrimonial ou liquidez após venda de empresas.
+
+Além disso, a empresa estuda o uso de inteligência artificial para:
+
+- resumir reuniões com clientes
+- gerar relatórios personalizados de portfólio
+- consultar bases internas de conhecimento
+- auxiliar assessores na preparação de reuniões
