@@ -11,3 +11,5 @@ langchain-openai==0.3.35
 langsmith==0.4.28
 duckdb==1.4.0
 plotly==6.3.1
+chromadb==0.5.23
+pypdf==5.1.0
