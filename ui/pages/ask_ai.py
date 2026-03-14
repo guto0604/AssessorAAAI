@@ -1,33 +1,96 @@
+from pathlib import Path
+
 import streamlit as st
+
+from rag.config import KNOWLEDGE_BASE_DIR, SUPPORTED_EXTENSIONS
+from rag.document_loader import InvalidDocumentError
+from ui.rag_service_provider import get_rag_service
+
+
+def _list_kb_folders() -> list[str]:
+    KNOWLEDGE_BASE_DIR.mkdir(parents=True, exist_ok=True)
+    folders = [p.relative_to(KNOWLEDGE_BASE_DIR).as_posix() for p in KNOWLEDGE_BASE_DIR.iterdir() if p.is_dir()]
+    return sorted(folders)
+
+
 def render_ask_ai_tab():
     st.title("🤖 Pergunte à IA")
-    st.caption("Visão funcional da próxima etapa (placeholder — implementação ainda não iniciada).")
+    st.caption("Faça perguntas sobre a knowledge base e adicione novos documentos para indexação vetorial.")
 
-    st.markdown(
-        """
-        Esta aba será dedicada a perguntas operacionais e de negócio com respostas baseadas
-        em **documentos internos**, políticas e materiais de apoio.
-        """
+    rag = get_rag_service()
+
+    st.subheader("📥 Upload para knowledge base")
+    folders = _list_kb_folders()
+    default_folder = folders[0] if folders else "geral"
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        folder_options = folders + ["+ Nova pasta"]
+        folder_choice = st.selectbox("Pasta de destino", options=folder_options, index=0)
+    with col2:
+        new_folder_name = st.text_input("Nova pasta", value="", placeholder="ex: normativos")
+
+    selected_folder = new_folder_name.strip() if folder_choice == "+ Nova pasta" else folder_choice
+    if not selected_folder:
+        selected_folder = default_folder
+
+    uploaded_files = st.file_uploader(
+        "Envie arquivos PDF ou TXT",
+        type=["pdf", "txt"],
+        accept_multiple_files=True,
+        key="ask_ai_upload_files",
     )
 
-    st.subheader("🔍 Como funcionará")
-    st.markdown(
-        """
-        1. O usuário faz uma pergunta em linguagem natural.
-        2. Um pipeline de **RAG** recupera trechos relevantes da base de conhecimento.
-        3. A IA responde com contexto operacional e referência do conteúdo encontrado.
-        """
-    )
+    if st.button("⬆️ Processar e indexar uploads", key="ask_ai_upload_button"):
+        if not uploaded_files:
+            st.warning("Selecione ao menos um arquivo para upload.")
+        elif not selected_folder:
+            st.error("Informe uma pasta de destino válida.")
+        else:
+            added_files = 0
+            added_chunks = 0
+            for file in uploaded_files:
+                suffix = Path(file.name).suffix.lower()
+                if suffix not in SUPPORTED_EXTENSIONS:
+                    st.error(f"{file.name}: formato inválido. Apenas PDF e TXT.")
+                    continue
 
-    st.subheader("📚 Base de conhecimento (planejado)")
-    st.markdown(
-        """
-        - Upload de novos documentos diretamente pela interface.
-        - Indexação dos arquivos com **modelo de embeddings**.
-        - Atualização incremental da base para ampliar cobertura de dúvidas.
-        """
-    )
+                try:
+                    result = rag.ingest_uploaded_file(selected_folder, file.name, file.getvalue())
+                    added_files += result.added_files
+                    added_chunks += result.added_chunks
+                    st.success(f"{file.name}: indexado com sucesso.")
+                except InvalidDocumentError as exc:
+                    st.error(f"{file.name}: {exc}")
+                except Exception as exc:
+                    st.error(f"{file.name}: falha ao processar arquivo ({exc}).")
 
-    st.warning("Tela adicionada como planejamento funcional. O fluxo completo ainda não foi desenvolvido.")
+            if added_files:
+                st.info(f"Indexação concluída: {added_files} arquivo(s), {added_chunks} chunk(s).")
 
+    st.divider()
 
+    st.subheader("❓ Pergunta")
+    question = st.text_area("Digite sua pergunta", placeholder="Ex.: Quais regras internas temos para suitability?")
+
+    if st.button("🚀 Enviar pergunta", key="ask_ai_send_question"):
+        question = (question or "").strip()
+        if not question:
+            st.warning("Digite uma pergunta antes de enviar.")
+        else:
+            with st.spinner("Consultando base vetorial..."):
+                try:
+                    answer, sources = rag.answer_question(question, top_k=4)
+                    st.markdown("### Resposta")
+                    st.write(answer)
+
+                    st.markdown("### Fontes utilizadas")
+                    if sources:
+                        for source in sources:
+                            st.markdown(
+                                f"- `{source['source_path']}` (chunk {source['chunk_id']}, score={source['score']:.3f})"
+                            )
+                    else:
+                        st.info("Nenhuma fonte encontrada.")
+                except Exception as exc:
+                    st.error(f"Falha ao responder pergunta: {exc}")

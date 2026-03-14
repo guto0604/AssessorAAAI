@@ -4,6 +4,7 @@ from datetime import datetime
 import streamlit as st
 from openai_client import SESSION_OPENAI_KEY, get_effective_openai_api_key
 from ui.state import get_tracer, _iso_now, SESSION_LANGSMITH_KEY, SESSION_LANGSMITH_TRACING_ENABLED, SESSION_TRACING_HEALTH_STATUS
+from ui.rag_service_provider import get_rag_service
 def render_settings_tab():
     st.title("Configurações")
     st.caption("Preencha apenas as credenciais essenciais da sessão (quando necessário).")
@@ -97,3 +98,20 @@ def render_settings_tab():
                 st.error("Falha ao criar run de teste no LangSmith.")
 
 
+
+    st.divider()
+    st.subheader("Knowledge Base Vetorial")
+    st.caption("Reconstrói o índice FAISS local usando todos os arquivos PDF/TXT da pasta knowledge_base.")
+
+    if st.button("🔁 Reindexar base vetorial", key="settings_reindex_vectorstore"):
+        with st.spinner("Reindexando documentos da knowledge base..."):
+            try:
+                rag = get_rag_service()
+                result = rag.reindex_all_documents()
+                st.success(
+                    f"Reindexação concluída: {result.added_files} arquivo(s), {result.added_chunks} chunk(s)."
+                )
+                if result.skipped_files:
+                    st.warning("Arquivos ignorados: " + ", ".join(result.skipped_files))
+            except Exception as exc:
+                st.error(f"Falha na reindexação: {exc}")
