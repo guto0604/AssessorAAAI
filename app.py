@@ -7,6 +7,7 @@ from ui.pages.client_visualization import render_visualizacao_clientes_tab
 from ui.pages.meetings import render_meetings_tab
 from ui.pages.pitch import render_pitch_tab
 from ui.pages.settings import render_settings_tab
+from ui.pages.market_intelligence import render_market_intelligence_tab
 from ui.pages.talk_to_data import (
     run_duckdb_query,
     sanitize_duckdb_sql,
@@ -45,12 +46,13 @@ def main():
     dados_cliente_df = build_cliente_sidebar_table(cliente_info)
     st.sidebar.table(dados_cliente_df)
 
-    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_settings = st.tabs([
+    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_market, tab_ask_ai, tab_settings = st.tabs([
         "🏠 Início",
         "👤 Visualização clientes",
         "🚀 Voz do Assessor (Pitch)",
         "📝 Resumo Reuniões",
         "📊 Talk to your Data",
+        "🧭 Market Intelligence",
         "🤖 Pergunte à IA",
         "⚙️ Configurações",
     ])
@@ -70,9 +72,11 @@ def main():
     with tab_portfolio:
         render_talk_to_your_data_page()
 
+    with tab_market:
+        render_market_intelligence_tab()
+
     with tab_ask_ai:
         render_ask_ai_tab()
-
 
     with tab_settings:
         render_settings_tab()
