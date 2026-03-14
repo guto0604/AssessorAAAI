@@ -55,7 +55,7 @@ class MarketIntelligenceTests(unittest.TestCase):
     @patch("core.market_intelligence.search_exa", return_value=[{"title": "T", "url": "https://u", "publishedDate": "2026-01-01T00:00:00Z", "highlights": ["x"]}])
     def test_fetch_market_intelligence_shape(self, _search_mock, _openai_mock):
         out = fetch_market_intelligence(days=1)
-        self.assertIn("radar_events", out)
+        self.assertIn("ranked_news", out)
         self.assertIn("sectors", out)
         self.assertTrue(len(out["sectors"]) > 0)
 

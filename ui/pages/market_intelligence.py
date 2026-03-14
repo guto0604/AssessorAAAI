@@ -57,9 +57,15 @@ def _render_news_card(item: dict):
         st.markdown(f"[🔗 Abrir notícia original]({url})")
 
 
+def _is_exa_credits_error(exc: Exception) -> bool:
+    error_msg = str(exc).lower()
+    exa_credit_terms = ["credit", "credits", "insufficient", "quota", "429", "rate limit", "too many requests"]
+    return "exa" in error_msg and any(term in error_msg for term in exa_credit_terms)
+
+
 def render_market_intelligence_tab():
-    st.title("🧭 Market Intelligence")
-    st.caption("Monitoramento executivo de eventos relevantes do mercado brasileiro por impacto e recência.")
+    st.title("📈 Market Intelligence")
+    st.caption("Notícias relevantes do mercado brasileiro ranqueadas por impacto e recência.")
 
     col_period, col_event, col_sector, col_company, col_source = st.columns([1.1, 1, 1, 1, 1])
     with col_period:
@@ -78,72 +84,43 @@ def render_market_intelligence_tab():
     cache_key = f"market_intelligence_{days}_{selected_sector}"
 
     if selected_sector == "Selecione...":
-        st.warning("Selecione um setor para habilitar a execução do EXA.")
+        st.warning("Selecione um setor para carregar as notícias.")
         return
 
-    if st.button("▶️ Executar Market Intelligence"):
-        with st.spinner("Coletando sinais com EXA e estruturando com OpenAI..."):
+    if st.button("▶️ Atualizar notícias"):
+        with st.spinner("Atualizando Market Intelligence..."):
             try:
                 st.session_state[cache_key] = fetch_market_intelligence(days=days, sector=selected_sector)
             except Exception as exc:
-                st.error(f"Erro ao atualizar Market Intelligence: {exc}")
+                if _is_exa_credits_error(exc):
+                    st.error("Créditos da EXA acabaram. Atualize sua chave ou aguarde a renovação para continuar.")
+                else:
+                    st.error("Não foi possível atualizar o Market Intelligence no momento. Tente novamente.")
                 return
 
     data = st.session_state.get(cache_key)
     if not data:
-        st.info("Defina os filtros e clique em 'Executar Market Intelligence' para carregar os dados.")
+        st.info("Defina os filtros e clique em 'Atualizar notícias' para carregar os dados.")
         return
 
-    radar_events = data.get("radar_events", [])
-
-    source_options = ["Todas"] + sorted({n.get("source") for n in radar_events if n.get("source")})
+    ranked_news = data.get("ranked_news", [])
+    source_options = ["Todas"] + sorted({n.get("source") for n in ranked_news if n.get("source")})
     if selected_source not in source_options:
         selected_source = "Todas"
 
-    radar_filtered = _filter_news(
-        radar_events,
+    filtered_news = _filter_news(
+        ranked_news,
         selected_event_type=selected_event_type,
         selected_sector=selected_sector,
         selected_company=selected_company,
         selected_source=selected_source,
     )
 
-    st.subheader("Radar de Eventos")
-    if not radar_filtered:
-        st.info("Nenhum evento encontrado para os filtros selecionados.")
-    else:
-        for event in radar_filtered[:25]:
-            with st.container(border=True):
-                _render_news_card(event)
-
-    st.divider()
-    st.subheader("Acompanhamento por Setor")
-
-    sectors = data.get("sectors", [])
-    sectors = [s for s in sectors if s.get("sector") == selected_sector]
-
-    if not sectors:
-        st.info("Nenhum setor disponível para os filtros selecionados.")
+    st.subheader("Notícias ranqueadas")
+    if not filtered_news:
+        st.info("Nenhuma notícia encontrada para os filtros selecionados.")
         return
 
-    for sector_block in sectors:
+    for item in filtered_news[:35]:
         with st.container(border=True):
-            st.markdown(f"### {sector_block.get('sector')}")
-            st.caption("Empresas monitoradas: " + ", ".join(sector_block.get("companies", [])))
-            st.write(sector_block.get("summary") or "Sem resumo consolidado.")
-
-            sector_news = _filter_news(
-                sector_block.get("news", []),
-                selected_event_type=selected_event_type,
-                selected_sector=selected_sector,
-                selected_company=selected_company,
-                selected_source=selected_source,
-            )
-
-            if not sector_news:
-                st.info("Sem notícias relevantes neste setor para os filtros aplicados.")
-                continue
-
-            for item in sector_news[:10]:
-                st.markdown("---")
-                _render_news_card(item)
+            _render_news_card(item)
