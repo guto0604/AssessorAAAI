@@ -10,10 +10,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.tools import tool
 
-from langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
-from openai_client import get_openai_client
+from core.langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
+from core.openai_client import get_openai_client
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 MEETINGS_DIR = BASE_DIR / "meetings"
 
 

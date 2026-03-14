@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from data_loader import load_clientes
-from langsmith_tracing import LangSmithTracer
-from openai_client import SESSION_OPENAI_KEY
+from core.data_loader import load_clientes
+from core.langsmith_tracing import LangSmithTracer
+from core.openai_client import SESSION_OPENAI_KEY
 
 SESSION_LANGSMITH_KEY = "user_langsmith_api_key"
 SESSION_LANGSMITH_TRACING_ENABLED = "user_langsmith_tracing_enabled"

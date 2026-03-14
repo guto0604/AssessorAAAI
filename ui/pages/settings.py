@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 import streamlit as st
-from openai_client import SESSION_OPENAI_KEY, get_effective_openai_api_key
+from core.openai_client import SESSION_OPENAI_KEY, get_effective_openai_api_key
 from ui.state import get_tracer, _iso_now, SESSION_LANGSMITH_KEY, SESSION_LANGSMITH_TRACING_ENABLED, SESSION_TRACING_HEALTH_STATUS
 from ui.rag_service_provider import get_rag_service
 def render_settings_tab():

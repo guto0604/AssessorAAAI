@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
-from langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
+from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
 
 def _build_api_metrics(response, *, provider: str = "openai") -> dict:

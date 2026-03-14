@@ -2,17 +2,17 @@ from datetime import datetime
 
 import streamlit as st
 
-from data_loader import (
+from core.data_loader import (
     carteira_summary_for_llm,
     get_investimentos_by_cliente,
     load_jornadas,
     load_produtos,
 )
-from journey_ranker import rank_journeys
-from langsmith_tracing import LangSmithTracer
-from pitch_structurer import build_pitch_options_step5
-from pitch_writer import generate_final_pitch_step7, revise_pitch_step8
-from source_selector import select_sources_step4
+from core.journey_ranker import rank_journeys
+from core.langsmith_tracing import LangSmithTracer
+from core.pitch_structurer import build_pitch_options_step5
+from core.pitch_writer import generate_final_pitch_step7, revise_pitch_step8
+from core.source_selector import select_sources_step4
 from ui.guardrails import (
     evaluate_input_guardrails,
     guardrail_warning_message,
