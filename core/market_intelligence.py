@@ -89,7 +89,7 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     response = client.chat.completions.create(
         model="gpt-5-mini",
-        temperature=0.2,
+        #temperature=0.2, # gpt-5 não tem temperatura
         response_format={"type": "json_object"},
         messages=[
             {
