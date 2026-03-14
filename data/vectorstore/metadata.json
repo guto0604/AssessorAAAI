@@ -1,0 +1,394 @@
+[
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_consultando_taxas_administracao_fundos.txt",
+    "source_hash": "21310740a0a9b2bd96bd58dae00db58c8491b15f1ec7c92c60a7cc7a1ecc7556",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultando_taxas_administracao_fundos.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como verificar taxa de administração de um fundo Antes de recomendar um fundo é importante avaliar custos. Passos - Abrir ficha do fundo - Consultar taxa de administração - Verificar taxa de performance Custos impactam diretamente a rentabilidade líquida do cliente."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_consultar_liquidez_produto.txt",
+    "source_hash": "aa4b961689129b08e076b371e182999da1cffc391fe39cb9bff54c32c3046fec",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_liquidez_produto.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como verificar liquidez de um produto Antes de recomendar um produto é necessário verificar sua liquidez. Passos - Consultar ficha técnica do produto - Verificar prazo de resgate - Confirmar existência de mercado secundário Tipos comuns - Liquidez diária - D+30 - Liquidez apenas no vencimento Liquidez deve sempre estar alinhada ao objetivo do cliente."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_consultar_ordens_cliente.txt",
+    "source_hash": "eace4c29d9974a8aab727621e071090e1afeeb1b5cb702990a578c09432c351d",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_ordens_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como consultar histórico de ordens do cliente O histórico de ordens permite visualizar todas as operações realizadas. Passos - Acessar sistema da plataforma - Buscar cliente pelo CPF - Abrir aba de ordens executadas Informações disponíveis - Data da operação - Produto negociado - Quantidade - Preço de execução"
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_consultar_posicao_cliente.txt",
+    "source_hash": "ed8f0221520a6e20a1cd0286acd7fd1da887cf74d579d3592ff34b6b1efedcb7",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_posicao_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como consultar posição consolidada do cliente A posição consolidada permite visualizar todos os investimentos do cliente. Passos gerais - Acessar sistema da plataforma - Buscar cliente pelo CPF - Abrir aba de posição consolidada Informações disponíveis - Valor total investido - Alocação por classe de ativo - Performance histórica Essa consulta é essencial antes de qualquer recomendação."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_identificando_concentracao_elevada.txt",
+    "source_hash": "a2a32251524d75b46fe02498ab8d7167d33a57b20e952f076d46f5081cc99138",
+    "kb_folder": "operacional",
+    "file_name": "operacional_identificando_concentracao_elevada.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como identificar concentração excessiva na carteira Antes de novas recomendações é importante avaliar concentração de ativos. Pontos de atenção - Exposição elevada em um único ativo - Alta concentração em um setor - Forte dependência de renda variável Nesses casos pode ser recomendada diversificação da carteira."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_identificando_oportunidade_rebalanceamento.txt",
+    "source_hash": "0405ed94a8f840be934eafce7f5502689ee7041ef5aa12da1d93b7836a53d44d",
+    "kb_folder": "operacional",
+    "file_name": "operacional_identificando_oportunidade_rebalanceamento.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como identificar oportunidade de rebalanceamento Rebalanceamento pode ser necessário quando a alocação se distancia da estratégia inicial. Sinais comuns - Forte valorização de uma classe de ativos - Mudança no cenário macro - Alteração no perfil do cliente Rebalanceamento ajuda a manter disciplina de investimento."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_preparacao_reuniao_cliente.txt",
+    "source_hash": "836d1774af89627c03e84b2952feafc6a87c7ec3ad7355130699a5edd31304bc",
+    "kb_folder": "operacional",
+    "file_name": "operacional_preparacao_reuniao_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como preparar reunião de revisão de carteira Antes da reunião com o cliente, o assessor deve preparar alguns pontos. Checklist - Revisar posição atual - Avaliar performance recente - Identificar oportunidades - Atualizar cenário de mercado Reuniões estruturadas aumentam qualidade do atendimento."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_registrar_interacao_cliente.txt",
+    "source_hash": "5e0fb931124fffb5d5ba0e3e0517641bdd4231c18771f56fa47692f09328f60c",
+    "kb_folder": "operacional",
+    "file_name": "operacional_registrar_interacao_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como registrar interação com cliente Toda interação com cliente deve ser registrada no CRM. Informações recomendadas - Tema da conversa - Produto discutido - Próximos passos - Possíveis oportunidades Registro adequado permite histórico completo de relacionamento."
+  },
+  {
+    "source_path": "knowledge_base\\operacional\\operacional_verificar_perfil_investimento_cliente.txt",
+    "source_hash": "4a66ae1dd0a5e34880bd62373f5c5ed3e33ebc798c6193cd599620dd0de933f9",
+    "kb_folder": "operacional",
+    "file_name": "operacional_verificar_perfil_investimento_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Operacional – Como verificar perfil de investimento do cliente O perfil do cliente deve sempre ser consultado antes de qualquer recomendação. Passos - Acessar cadastro do cliente - Abrir aba de suitability - Verificar perfil atual Perfis comuns - Conservador - Moderado - Arrojado Produtos recomendados devem respeitar esse perfil."
+  },
+  {
+    "source_path": "knowledge_base\\outros\\relatorio_empresa_xyz.txt",
+    "source_hash": "4d2fbc863381340f8c07f8139bd5ac181ae1c6d586f609aae83c76d759c8700e",
+    "kb_folder": "outros",
+    "file_name": "relatorio_empresa_xyz.txt",
+    "chunk_id": 0,
+    "text": "RELATÓRIO INTERNO – ALPHA CAPITAL GESTÃO DE INVESTIMENTOS Ano de referência: 2024 1. Visão Geral da Empresa A Alpha Capital Gestão de Investimentos é uma empresa fictícia especializada em gestão patrimonial e consultoria financeira para clientes de alta renda. Fundada em 2016, a empresa atua principalmente no mercado brasileiro oferecendo serviços de alocação estratégica de ativos, planejamento financeiro e acompanhamento de portfólio. Atualmente a Alpha Capital atende aproximadamente 1.200 clientes e possui cerca de R$ 8,5 bilhões sob assessoria (Assets Under Advisory - AUA). 2. Estrutura de Serviços A empresa organiza seus serviços em três principais frentes: Assessoria de Investimentos A área de assessoria auxilia clientes na construção de portfólios diversificados com foco em preservação de capital e geração de retorno ajustado ao risco. Planejamento Financeiro Essa área trabalha com planejamento de longo prazo, incluindo aposentadoria, sucessão patrimonial e otimização tributária."
+  },
+  {
+    "source_path": "knowledge_base\\outros\\relatorio_empresa_xyz.txt",
+    "source_hash": "4d2fbc863381340f8c07f8139bd5ac181ae1c6d586f609aae83c76d759c8700e",
+    "kb_folder": "outros",
+    "file_name": "relatorio_empresa_xyz.txt",
+    "chunk_id": 1,
+    "text": "ão de capital e geração de retorno ajustado ao risco. Planejamento Financeiro Essa área trabalha com planejamento de longo prazo, incluindo aposentadoria, sucessão patrimonial e otimização tributária. Inteligência de Mercado Equipe responsável por produzir relatórios macroeconômicos, análises setoriais e recomendações estratégicas de alocação. 3. Perfil dos Clientes A base de clientes da Alpha Capital é composta principalmente por: - Empresários e executivos (55%) - Profissionais liberais de alta renda (25%) - Family offices e holdings familiares (20%) O ticket médio por cliente é de aproximadamente R$ 7 milhões. 4. Estratégia de Investimentos A filosofia de investimentos da empresa se baseia em três pilares principais: Diversificação global A empresa incentiva exposição a ativos internacionais como forma de reduzir risco país. Alocação estratégica de longo prazo Mudanças frequentes de portfólio são evitadas. O foco é manter uma alocação consistente baseada em perfil de risco. Seleção"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\relatorio_empresa_xyz.txt",
+    "source_hash": "4d2fbc863381340f8c07f8139bd5ac181ae1c6d586f609aae83c76d759c8700e",
+    "kb_folder": "outros",
+    "file_name": "relatorio_empresa_xyz.txt",
+    "chunk_id": 2,
+    "text": "onais como forma de reduzir risco país. Alocação estratégica de longo prazo Mudanças frequentes de portfólio são evitadas. O foco é manter uma alocação consistente baseada em perfil de risco. Seleção criteriosa de gestores Fundos de investimento passam por análise qualitativa e quantitativa antes de serem incluídos nas recomendações. 5. Cenário Macroeconômico (Resumo) Para 2024 e 2025, o time de inteligência de mercado da Alpha Capital destaca alguns pontos relevantes: - Expectativa de queda gradual das taxas de juros no Brasil. - Crescimento moderado da economia global. - Maior volatilidade em mercados emergentes. - Aumento da relevância de ativos internacionais na composição de portfólio. 6. Tecnologias e Ferramentas A empresa vem investindo em ferramentas de tecnologia para aumentar a eficiência dos assessores. Entre as iniciativas recentes estão: - sistemas de análise de portfólio automatizados - dashboards de acompanhamento de clientes - ferramentas de inteligência artificial para"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\relatorio_empresa_xyz.txt",
+    "source_hash": "4d2fbc863381340f8c07f8139bd5ac181ae1c6d586f609aae83c76d759c8700e",
+    "kb_folder": "outros",
+    "file_name": "relatorio_empresa_xyz.txt",
+    "chunk_id": 3,
+    "text": "ficiência dos assessores. Entre as iniciativas recentes estão: - sistemas de análise de portfólio automatizados - dashboards de acompanhamento de clientes - ferramentas de inteligência artificial para apoio a reuniões e geração de relatórios 7. Perspectivas Futuras A Alpha Capital pretende expandir sua base de clientes em aproximadamente 20% nos próximos três anos, com foco em clientes que estão em fase de transição patrimonial ou liquidez após venda de empresas. Além disso, a empresa estuda o uso de inteligência artificial para: - resumir reuniões com clientes - gerar relatórios personalizados de portfólio - consultar bases internas de conhecimento - auxiliar assessores na preparação de reuniões"
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_abordagem_primeiro_contato.txt",
+    "source_hash": "f70e45733676aed1f767ea7a207f647676784cd8727734eb5160da622c0653a1",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_abordagem_primeiro_contato.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Abordagem Comercial – Primeiro Contato O primeiro contato com o cliente deve ter como foco entender o momento financeiro e criar conexão. A abordagem deve priorizar perguntas abertas para identificar objetivos, necessidades e possíveis insatisfações com a estrutura atual. Antes de apresentar qualquer produto, é fundamental compreender patrimônio, horizonte de investimento e expectativas. A proposta de valor deve ser apresentada de forma simples, destacando atendimento personalizado, planejamento estratégico e acompanhamento contínuo. O objetivo final do primeiro contato é agendar um diagnóstico financeiro mais aprofundado. Erros a evitar incluem linguagem excessivamente técnica, foco prematuro em produtos e pressão por fechamento imediato."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_atualizacao_cadastral.txt",
+    "source_hash": "b36db4a97d03feb6b6ebeabbc7ce5e1b766fb6f3a2502d7644949147de710f62",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_atualizacao_cadastral.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Atualização de Cadastro Dados cadastrais dos clientes devem ser atualizados periodicamente. Informações críticas incluem: - Situação patrimonial - Objetivos financeiros - Perfil de risco - Situação profissional Atualização adequada garante recomendações alinhadas à realidade do cliente."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_compliance_conduta.txt",
+    "source_hash": "68ab282123eefdf3516e948a663f13e4d16bb7697f7cd0a281da43464539da47",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_compliance_conduta.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Compliance e Conduta A política de compliance estabelece regras de atuação ética e regulatória dentro da assessoria. Todos os profissionais devem atuar com transparência, integridade e responsabilidade. É proibida a promessa de rentabilidade garantida, o uso de informação privilegiada e a realização de operações sem autorização do cliente. Conflitos de interesse devem ser declarados de forma clara. O objetivo é preservar a reputação da instituição, proteger o cliente e garantir conformidade regulatória."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_comunicacao_clientes.txt",
+    "source_hash": "7c86664091ae1f498841ac372fbbb57f6316657f03fe5f085ce92e35694b60a9",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_comunicacao_clientes.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Comunicação com Clientes A comunicação com clientes deve ser clara, transparente e adequada ao perfil de conhecimento do investidor. Boas práticas: - Evitar linguagem excessivamente técnica - Explicar riscos de forma clara - Não prometer rentabilidade Objetivo é garantir entendimento completo da recomendação."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_conflito_interesse.txt",
+    "source_hash": "2f7bc45f9cadc312376b9ab2769ac5d51447fe4c3f8ca2f02a7bb7cebc8df311",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_conflito_interesse.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Conflito de Interesse Assessores devem sempre priorizar o interesse do cliente. Situações de potencial conflito incluem: - Produtos com maior comissão - Ofertas exclusivas com incentivo comercial - Recomendação de produtos proprietários Sempre que existir conflito potencial, a recomendação deve ser baseada na adequação ao cliente."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_dados_sensiveis_cliente.txt",
+    "source_hash": "4e733554cc6a7a9c95fc9bcca5e872a184a8ba0d8eb9ae98321a7ac915de44d4",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_dados_sensiveis_cliente.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Proteção de Dados Sensíveis do Cliente Informações de clientes devem ser tratadas com confidencialidade. É proibido: - Compartilhar dados sem autorização - Utilizar informações para fins não relacionados ao atendimento - Armazenar dados sensíveis fora dos sistemas autorizados Essa política está alinhada com a LGPD."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_diversificacao.txt",
+    "source_hash": "d6950bd9a7a6822c8802f95b597c2946fcd6aa650ef6356c750467f673eb09b2",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_diversificacao.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Diversificação de Carteira A diversificação é princípio central na construção de portfólios. Recomenda-se diversificação entre: - Classes de ativos - Setores econômicos - Geografias - Estratégias de gestão Diversificação reduz risco específico e melhora a relação risco-retorno da carteira."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_guia_rebalanceamento.txt",
+    "source_hash": "3ad2a101c8bc1950256da1482101a000023f84f086421f6f7577d277aca1e0dc",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_guia_rebalanceamento.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Guia de Rebalanceamento de Carteira Rebalanceamento é o processo de ajustar a carteira para manter a alocação estratégica definida. Indicado quando: - Um ativo cresce muito acima do planejado - Mudança de cenário macroeconômico - Mudança no perfil do cliente Benefícios: - Controle de risco - Realização de lucros - Disciplina na alocação"
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_limite_exposicao_perfil.txt",
+    "source_hash": "828f13dbf07430518f872888f0212bf73a94a4c3f355dedddc2a790ec7265adf",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_limite_exposicao_perfil.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Limites de Alocação por Perfil A política de alocação define limites máximos de exposição por classe de ativo de acordo com o perfil do cliente. Perfil Conservador - Renda fixa: predominante - Renda variável: até 20% - Alternativos: até 10% Perfil Moderado - Renda fixa: relevante - Renda variável: até 40% - Alternativos: até 20% Perfil Arrojado - Renda variável: até 70% - Alternativos: até 30% Esses limites garantem adequação ao perfil de risco e proteção ao cliente."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_suitability.txt",
+    "source_hash": "4c725e2ab3beceff35aa41560575096c672ff329844a4d22b751b34f793c0968",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_suitability.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Suitability A política de suitability garante que os produtos recomendados estejam adequados ao perfil do cliente. O processo considera objetivos financeiros, horizonte de investimento, tolerância a risco e situação patrimonial. Nenhuma recomendação deve ser realizada sem análise prévia do perfil. A política protege o cliente contra exposição inadequada a risco e protege a assessoria contra risco regulatório. Objetivo principal é alinhar recomendação, perfil e estratégia de investimento de forma responsável."
+  },
+  {
+    "source_path": "knowledge_base\\politicas\\politica_interna_uso_informacao_mercado.txt",
+    "source_hash": "2d4e8da11158859a143c920c1ac2cc55845258b4a6b7b4fa414713372dda79c8",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_uso_informacao_mercado.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Política Interna – Uso de Informações de Mercado Informações de research devem ser utilizadas como apoio na tomada de decisão. Recomendações devem considerar: - Cenário macroeconômico - Estratégia da casa - Perfil do cliente - Composição atual da carteira Research não substitui análise individual de cada cliente."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_cdb.txt",
+    "source_hash": "8e9ec13503a0a6f5bfc8dcea7930187ea4e78e8f09f08ac936b655a3ee18700f",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_cdb.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – CDB (Certificado de Depósito Bancário) CDB é um título de renda fixa emitido por bancos para captar recursos. Ao investir em um CDB, o cliente está emprestando dinheiro para o banco e recebe uma rentabilidade em troca. A rentabilidade pode ser pós-fixada atrelada ao CDI, prefixada com taxa definida no momento da aplicação ou híbrida, normalmente IPCA mais uma taxa fixa. É indicado para investidores conservadores e moderados que buscam previsibilidade e segurança. Possui cobertura do FGC até o limite de 250 mil reais por CPF por instituição financeira. A tributação segue a tabela regressiva de renda fixa. Pontos comerciais: segurança, previsibilidade, alternativa ao CDI, diversificação entre bancos. Riscos: risco de crédito da instituição emissora e possível baixa liquidez em casos de carência."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_coe.txt",
+    "source_hash": "1253b3867d5d5003da18617ad3c914c608781de711bed54f1889c633e680cf2f",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_coe.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO Explicação – COE (Certificado de Operações Estruturadas) COE é um produto estruturado que combina renda fixa com derivativos. Permite exposição a diferentes cenários - Alta de bolsa - Alta do dólar - Cenários internacionais Pode ter capital protegido ou não protegido. Pontos comerciais - Estrutura personalizada - Assimetria de retorno - Diversificação internacional Riscos - Liquidez até vencimento - Complexidade de entendimento"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_debentures_credito_privado.txt",
+    "source_hash": "27edc51051a2fb31278690e7cbd1ce0db0475aa2644c1d7a047cfc5a920e3969",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_debentures_credito_privado.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Debêntures (Crédito Privado) Debêntures são títulos de dívida emitidos por empresas para financiar suas atividades. Investidor empresta recursos para a empresa e recebe juros em troca. Podem ser: - Prefixadas - Atreladas ao CDI - Atreladas à inflação (IPCA) Pontos comerciais - Taxas geralmente superiores à renda fixa bancária - Diversificação de crédito - Possibilidade de isenção fiscal em debêntures incentivadas Riscos - Risco de crédito da empresa - Liquidez variável no mercado secundário"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_debentures_incentivadas.txt",
+    "source_hash": "8011d3bcac622bd5926a2fcee87ac88d8eefcd4102a06e02ac224ff94a566ff6",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_debentures_incentivadas.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Debêntures Incentivadas Debêntures incentivadas financiam projetos de infraestrutura. Possuem benefício fiscal relevante. Principais características - Isenção de imposto de renda para pessoa física - Geralmente indexadas ao IPCA - Prazo médio mais longo Pontos comerciais - Retorno real atrativo - Benefício fiscal - Exposição a projetos de infraestrutura Riscos - Risco de crédito - Liquidez limitada"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_etf.txt",
+    "source_hash": "534ae3e342365572da59bf329dc405d1e80f965dc53dc337eaccd794e4366a0a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_etf.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – ETF (Exchange Traded Fund) ETF é um fundo negociado em bolsa que busca replicar o desempenho de um índice. Exemplos: - Ibovespa - S&P 500 - Nasdaq - Índices de commodities Pontos comerciais - Baixo custo de gestão - Diversificação automática - Alta liquidez Riscos - Volatilidade de mercado - Exposição direta ao índice"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_fundos_acoes.txt",
+    "source_hash": "33fbe89108faa4c27c4ac695e7bd1a688f70e4707e74aed92c4f1aa4202e66ca",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_acoes.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Fundo de Ações Fundos de ações investem predominantemente em empresas listadas em bolsa. Gestores selecionam empresas com base em análise fundamentalista ou quantitativa. Pontos comerciais - Gestão profissional - Diversificação - Acesso a estratégias sofisticadas Riscos - Volatilidade de mercado - Performance depende do gestor"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_fundos_credito_privado.txt",
+    "source_hash": "60c024e73cef1fe3ed5de601ea4884d686491e41d5301b8ae31c22e2d3a6591a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_credito_privado.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Fundos de Crédito Privado Fundos de crédito privado investem em títulos de dívida corporativa. Principais ativos - Debêntures - CRI - CRA - Letras financeiras Pontos comerciais - Retorno superior ao CDI em muitos cenários - Diversificação de emissores - Gestão ativa de crédito Riscos - Risco de crédito - Eventual menor liquidez"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_fundos_imobiliarios.txt",
+    "source_hash": "115f487751d0f3dba69ad8530c58a3c759d8fa5ae7e73dd035bf3425ab4521d1",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_imobiliarios.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Fundos Imobiliários Fundos Imobiliários são veículos que investem em ativos do setor imobiliário, como shoppings, lajes corporativas, galpões logísticos ou títulos imobiliários. São negociados em bolsa e costumam distribuir rendimentos periódicos. Permitem acesso ao mercado imobiliário com menor capital inicial e maior diversificação. São indicados para investidores que buscam geração de renda passiva. Os rendimentos podem ser isentos de Imposto de Renda para pessoa física, conforme regras vigentes. Pontos comerciais: renda recorrente, diversificação, acesso a grandes empreendimentos, potencial de valorização. Riscos: oscilação de mercado, vacância dos imóveis, risco de crédito nos fundos de papel."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_fundos_multimercado.txt",
+    "source_hash": "ab80a5192cac4781b5e63dede6b8c321114200bd175f24c08a972b7b80c6687a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_multimercado.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Fundos Multimercado Fundos multimercado são veículos de investimento com mandato flexível, podendo operar renda fixa, câmbio, bolsa e derivativos. São indicados para diversificação de portfólio, principalmente para investidores moderados e arrojados. Podem ter estratégias macro, long & short, quantitativas ou multimercado balanceado. Tributação segue tabela regressiva de renda fixa (come-cotas semestral). Pontos comerciais: - Diversificação - Gestão ativa - Proteção em cenários de volatilidade"
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_lci_lca.txt",
+    "source_hash": "5caa5cacaca83f643f42c90b27b04a2d387aadd4c3433716e7c4dbbf479ed2a6",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_lci_lca.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – LCI e LCA LCI e LCA são títulos de renda fixa emitidos por bancos e lastreados respectivamente nos setores imobiliário e do agronegócio. Ao investir, o cliente empresta recursos ao banco, que direciona esses valores para operações desses setores. O principal diferencial é a isenção de Imposto de Renda para pessoa física. Normalmente possuem prazo mínimo de carência para resgate. São indicadas para investidores conservadores e moderados que buscam eficiência tributária. Possuem cobertura do FGC até 250 mil reais por CPF por instituição. Pontos comerciais: isenção de imposto, segurança, alternativa ao CDB, eficiência fiscal. Riscos: risco de crédito do banco emissor e liquidez reduzida durante a carência."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_previdencia_privada.txt",
+    "source_hash": "1a0a060aae11e4a702e77ea53f767cd08cb36bbe8eb66a0ff802df1437173253",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_previdencia_privada.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Previdência Privada Previdência privada é um produto de acumulação de longo prazo voltado para aposentadoria e planejamento sucessório. As principais modalidades são PGBL e VGBL, sendo o PGBL indicado para quem declara Imposto de Renda completo e busca benefício fiscal, e o VGBL mais adequado para declaração simplificada. Permite acesso a diferentes estratégias de investimento dentro do plano. Pode utilizar tabela progressiva ou regressiva de tributação. É indicada para planejamento de longo prazo e organização patrimonial. Pontos comerciais: benefício fiscal, sucessão facilitada, portabilidade, planejamento estruturado. Riscos: desempenho depende da estratégia escolhida e podem existir custos conforme o plano contratado."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_tesouro_direto.txt",
+    "source_hash": "f5acf9e3a7a1e4899d6fd9cd920dec04276123ca8ec6e5bb8f5d939e620c0f7d",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_tesouro_direto.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Explicação – Tesouro Direto Tesouro Direto são títulos públicos emitidos pelo Governo Federal e considerados de baixo risco de crédito. Os principais tipos são Tesouro Selic, Tesouro Prefixado e Tesouro IPCA+. Podem ser utilizados para reserva de emergência, objetivos de médio prazo e planejamento de aposentadoria. Possuem liquidez diária em D+1, porém estão sujeitos à marcação a mercado antes do vencimento. A tributação segue a tabela regressiva de renda fixa. Pontos comerciais: baixo risco de crédito, acessibilidade, planejamento de longo prazo, transparência. Riscos: oscilação de preço antes do vencimento devido à marcação a mercado."
+  },
+  {
+    "source_path": "knowledge_base\\produtos\\explicacao_tributacao_fundos.txt",
+    "source_hash": "66dff774531d3aa310014cda2a03485d5188eda04ad30c3b7be8ef268578c42e",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_tributacao_fundos.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Tributação de Fundos de Investimento Fundos de renda fixa e multimercado seguem tabela regressiva de IR: - 22,5% até 180 dias - 20% até 360 dias - 17,5% até 720 dias - 15% acima de 720 dias Possuem mecanismo de come-cotas semestral. Fundos de ações possuem alíquota fixa de 15% e não têm come-cotas. Importante alinhar horizonte de investimento ao impacto tributário."
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_bolsa_brasil.txt",
+    "source_hash": "3c1f4be6d4d973b995cb960fecfab76553b8512c262e086c7232d37f739de8b3",
+    "kb_folder": "research",
+    "file_name": "cenario_bolsa_brasil.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Research – Cenário para Bolsa Brasileira Bolsa brasileira apresenta forte dependência de três fatores principais - Juros domésticos - Commodities - Fluxo estrangeiro Setores sensíveis - Bancos - Commodities - Consumo doméstico Estratégias - Diversificação setorial - Fundos de ações ativos - ETFs de índice amplo"
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_commodities.txt",
+    "source_hash": "224b7a9cf3794086ce515498d63d3336dc7cddcdd7497756a23dc0ff7c5c3348",
+    "kb_folder": "research",
+    "file_name": "cenario_commodities.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Research – Commodities e Impacto no Brasil Commodities possuem forte impacto na economia brasileira. Principais commodities - Petróleo - Minério de ferro - Soja Impactos - Empresas exportadoras - Balança comercial - Câmbio Investimentos relacionados - Ações de empresas exportadoras - ETFs internacionais - Fundos de commodities"
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_dolar.txt",
+    "source_hash": "2829320e8c753c338887f9ff4c1d06ec00ee998cf7414b80c3fe27b40eb28f55",
+    "kb_folder": "research",
+    "file_name": "cenario_dolar.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Cenário de Câmbio Dólar apresenta volatilidade diante de incertezas globais. Possível pressão vinda de: - Política monetária americana - Fluxo estrangeiro - Commodities Produtos com exposição cambial podem servir como hedge de carteira. COEs atrelados ao dólar e fundos cambiais podem ganhar relevância."
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_inflacao.txt",
+    "source_hash": "3ed42d715153315e70fac11c35f0b73ecc01a83b157ec61ea0ee303d0599f58f",
+    "kb_folder": "research",
+    "file_name": "cenario_inflacao.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Research – Cenário de Inflação Inflação segue sendo variável central para política monetária. Principais drivers - Commodities - Câmbio - Pressões fiscais Impactos em investimentos - Renda fixa atrelada ao IPCA ganha relevância - Empresas com poder de repasse tendem a performar melhor Ativos favorecidos - Tesouro IPCA - Debêntures incentivadas - Fundos de inflação"
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_internacional.txt",
+    "source_hash": "ffba9bc9d0cede7da257f4b2f995a71ec1576289c0398ede9c8ebb811e79679f",
+    "kb_folder": "research",
+    "file_name": "cenario_internacional.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Research – Cenário Internacional Economia global apresenta dinâmicas distintas entre regiões. Estados Unidos - Mercado de trabalho resiliente - Política monetária restritiva Europa - Crescimento moderado - Pressões inflacionárias persistentes China - Desafios no setor imobiliário - Políticas de estímulo seletivas Impacto para investidores - Diversificação internacional continua relevante."
+  },
+  {
+    "source_path": "knowledge_base\\research\\cenario_juros.txt",
+    "source_hash": "7644d82f60716ab776f128dcfd37d3fe92d3c26a750c7d4084e7931613a90b3c",
+    "kb_folder": "research",
+    "file_name": "cenario_juros.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Cenário de Juros Expectativa de manutenção da taxa básica no curto prazo. Curva de juros apresenta inclinação moderada. Renda fixa pós-fixada segue atrativa. Fundos de inflação ganham relevância em cenário de incerteza fiscal. Produtos atrelados ao CDI mantêm boa relação risco-retorno."
+  },
+  {
+    "source_path": "knowledge_base\\research\\morning_call_macro.txt",
+    "source_hash": "f4d0746b5fbb705c2c0e8ce4293a751ec3171dbf864d25c47e293ca11cd1604e",
+    "kb_folder": "research",
+    "file_name": "morning_call_macro.txt",
+    "chunk_id": 0,
+    "text": "TÍTULO: Morning Call – Cenário Macro Atual Mercados iniciam o dia com volatilidade moderada. Destaques: - Juros futuros em leve alta - Dólar pressionado pelo cenário externo - Bolsas internacionais mistas Ambiente ainda exige seletividade e diversificação. Multimercados macro podem capturar oportunidades em juros e câmbio."
+  },
+  {
+    "source_path": "knowledge_base\\outros\\consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "chunk_id": 0,
+    "text": "RELATÓRIO SETORIAL – RESULTADOS DE EMPRESAS DO SETOR DE PROTEÍNA Período analisado: Ano fiscal de 2024 Fonte: Departamento de Inteligência de Mercado (documento fictício) 1. Visão Geral do Setor O setor global de proteína animal apresentou um ano de recuperação moderada em 2024 após um período de volatilidade em custos de insumos e logística observado entre 2022 e 2023. A redução gradual dos preços de grãos utilizados em ração animal, especialmente milho e soja, contribuiu para melhora nas margens operacionais das empresas. Além disso, o aumento da demanda por proteína em mercados emergentes, principalmente no Sudeste Asiático e no Oriente Médio, impulsionou exportações de carne bovina e de frango. Este relatório apresenta um resumo de desempenho de três empresas fictícias relevantes do setor: NovaProtein Foods, TerraPrime Meats e GlobalFarm Proteins. 2. NovaProtein Foods Descrição da empresa A NovaProtein Foods é uma empresa multinacional fictícia com sede na América do Sul, especiali"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "chunk_id": 1,
+    "text": "tor: NovaProtein Foods, TerraPrime Meats e GlobalFarm Proteins. 2. NovaProtein Foods Descrição da empresa A NovaProtein Foods é uma empresa multinacional fictícia com sede na América do Sul, especializada na produção e exportação de carne bovina e produtos processados derivados de proteína animal. Principais mercados - América Latina - China - Oriente Médio Resultados financeiros (2024) Receita líquida: US$ 18,2 bilhões Crescimento de receita (YoY): +8,5% EBITDA: US$ 2,6 bilhões Margem EBITDA: 14,3% Principais fatores de desempenho - Expansão das exportações para a China - Aumento da demanda por cortes premium - Melhoria de eficiência em plantas de processamento A empresa também iniciou investimentos em automação industrial e rastreabilidade de cadeia produtiva para atender exigências de mercados internacionais. 3. TerraPrime Meats Descrição da empresa A TerraPrime Meats é uma empresa fictícia com forte atuação na América do Norte e Europa, com foco em carne bovina e proteína suína. Pr"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "chunk_id": 2,
+    "text": "ercados internacionais. 3. TerraPrime Meats Descrição da empresa A TerraPrime Meats é uma empresa fictícia com forte atuação na América do Norte e Europa, com foco em carne bovina e proteína suína. Principais mercados - Estados Unidos - União Europeia - Canadá Resultados financeiros (2024) Receita líquida: US$ 24,7 bilhões Crescimento de receita (YoY): +5,1% EBITDA: US$ 3,1 bilhões Margem EBITDA: 12,6% Principais fatores de desempenho - Recuperação das margens após queda nos preços de grãos - Expansão da linha de produtos processados - Investimentos em produtos com maior valor agregado A TerraPrime também iniciou projetos voltados para sustentabilidade e redução de emissões na cadeia de produção. 4. GlobalFarm Proteins Descrição da empresa A GlobalFarm Proteins é uma empresa fictícia com presença global e portfólio diversificado, incluindo carne bovina, frango e produtos de proteína processada. Principais mercados - Sudeste Asiático - América do Norte - América Latina Resultados financ"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "chunk_id": 3,
+    "text": "resença global e portfólio diversificado, incluindo carne bovina, frango e produtos de proteína processada. Principais mercados - Sudeste Asiático - América do Norte - América Latina Resultados financeiros (2024) Receita líquida: US$ 21,5 bilhões Crescimento de receita (YoY): +9,8% EBITDA: US$ 2,9 bilhões Margem EBITDA: 13,5% Principais fatores de desempenho - Forte crescimento de exportações para o Sudeste Asiático - Ampliação da produção de proteína de frango - Parcerias logísticas para otimizar exportações A empresa também anunciou planos para expansão de capacidade produtiva em duas novas plantas industriais na Ásia. 5. Comparação entre as Empresas Empresa: NovaProtein Foods Receita: US$ 18,2 bilhões EBITDA: US$ 2,6 bilhões Margem EBITDA: 14,3% Empresa: TerraPrime Meats Receita: US$ 24,7 bilhões EBITDA: US$ 3,1 bilhões Margem EBITDA: 12,6% Empresa: GlobalFarm Proteins Receita: US$ 21,5 bilhões EBITDA: US$ 2,9 bilhões Margem EBITDA: 13,5% 6. Conclusão O setor de proteína animal apre"
+  },
+  {
+    "source_path": "knowledge_base\\outros\\consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "chunk_id": 4,
+    "text": ",7 bilhões EBITDA: US$ 3,1 bilhões Margem EBITDA: 12,6% Empresa: GlobalFarm Proteins Receita: US$ 21,5 bilhões EBITDA: US$ 2,9 bilhões Margem EBITDA: 13,5% 6. Conclusão O setor de proteína animal apresentou crescimento consistente em 2024, impulsionado pela recuperação de margens e pela expansão da demanda internacional. Entre as empresas analisadas, a NovaProtein Foods apresentou a maior margem EBITDA, enquanto a TerraPrime Meats liderou em receita total. A GlobalFarm Proteins, por sua vez, destacou-se pelo maior crescimento anual de receita, refletindo forte expansão em mercados asiáticos. As perspectivas para os próximos anos permanecem positivas, embora fatores como volatilidade de commodities, questões sanitárias e pressões regulatórias continuem sendo riscos relevantes para o setor."
+  }
+]

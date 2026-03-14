@@ -71,7 +71,7 @@ def render_ask_ai_tab():
     st.divider()
 
     st.subheader("❓ Pergunta")
-    question = st.text_area("Digite sua pergunta", placeholder="Ex.: Quais regras internas temos para suitability?")
+    question = st.text_area("Digite sua pergunta", placeholder="Ex.: Qual foi o resultado das empresas do setor de proteína animal?")
 
     if st.button("🚀 Enviar pergunta", key="ask_ai_send_question"):
         question = (question or "").strip()

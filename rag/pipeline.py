@@ -164,7 +164,7 @@ class RagService:
 
         response = self.client.chat.completions.create(
             model=CHAT_MODEL,
-            temperature=0.1,
+            #temperature=0.1,
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": user_message},
