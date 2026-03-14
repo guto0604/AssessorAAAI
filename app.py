@@ -1,6 +1,6 @@
 import streamlit as st
 
-from data_loader import get_cliente_by_id, load_clientes
+from core.data_loader import get_cliente_by_id, load_clientes
 from ui.pages.ask_ai import render_ask_ai_tab
 from ui.pages.home import render_home_tab
 from ui.pages.insights import render_insights_tab

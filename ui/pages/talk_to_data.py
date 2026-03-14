@@ -10,7 +10,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from openai_client import get_openai_client
+from core.openai_client import get_openai_client
 from ui.guardrails import (
     evaluate_input_guardrails,
     guardrail_warning_message,

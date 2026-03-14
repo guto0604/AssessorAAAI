@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import patch
 
-from journey_ranker import rank_journeys
-from source_selector import select_sources_step4
-from pitch_structurer import build_pitch_options_step5
-from pitch_writer import generate_final_pitch_step7, revise_pitch_step8
-from meetings import summarize_transcript
+from core.journey_ranker import rank_journeys
+from core.source_selector import select_sources_step4
+from core.pitch_structurer import build_pitch_options_step5
+from core.pitch_writer import generate_final_pitch_step7, revise_pitch_step8
+from core.meetings import summarize_transcript
 
 
 class MiniDF:

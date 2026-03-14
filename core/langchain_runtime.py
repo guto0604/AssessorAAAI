@@ -6,7 +6,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
-from openai_client import get_effective_openai_api_key
+from core.openai_client import get_effective_openai_api_key
 
 
 DEFAULT_PROJECT = "poc_datamasters"

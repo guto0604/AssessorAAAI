@@ -1,6 +1,6 @@
 from time import perf_counter
 
-from openai_client import get_openai_client
+from core.openai_client import get_openai_client
 
 
 class _Resp:

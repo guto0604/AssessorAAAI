@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import dataclass
-from openai_client import get_openai_client
+from core.openai_client import get_openai_client
 
 LOGGER = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from openai_client import get_openai_client
+from core.openai_client import get_openai_client
 from rag.chunking import chunk_text
 from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR
 from rag.document_loader import (

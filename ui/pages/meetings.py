@@ -2,8 +2,8 @@ from datetime import datetime
 
 import streamlit as st
 
-from langsmith_tracing import LangSmithTracer
-from meetings import list_client_meetings, process_meeting_with_langchain, save_meeting
+from core.langsmith_tracing import LangSmithTracer
+from core.meetings import list_client_meetings, process_meeting_with_langchain, save_meeting
 from ui.state import SESSION_MEETING_TRACE, _iso_now, get_tracer
 
 def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
