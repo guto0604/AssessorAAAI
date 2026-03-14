@@ -7,7 +7,7 @@ import streamlit as st
 from core.data_loader import load_clientes
 from core.langsmith_tracing import LangSmithTracer
 from core.openai_client import SESSION_OPENAI_KEY
-from core.exa_client import SESSION_EXA_KEY
+from core.tavily_client import SESSION_TAVILY_KEY
 
 SESSION_LANGSMITH_KEY = "user_langsmith_api_key"
 SESSION_LANGSMITH_TRACING_ENABLED = "user_langsmith_tracing_enabled"
@@ -101,8 +101,8 @@ def init_session_state():
     if SESSION_LANGSMITH_KEY not in st.session_state:
         st.session_state[SESSION_LANGSMITH_KEY] = ""
 
-    if SESSION_EXA_KEY not in st.session_state:
-        st.session_state[SESSION_EXA_KEY] = ""
+    if SESSION_TAVILY_KEY not in st.session_state:
+        st.session_state[SESSION_TAVILY_KEY] = ""
 
     if SESSION_LANGSMITH_TRACING_ENABLED not in st.session_state:
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True

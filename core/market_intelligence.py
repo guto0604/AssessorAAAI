@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Any
 
-from core.exa_client import search_exa
+from core.tavily_client import search_tavily
 from core.openai_client import get_openai_client
 
 TRUSTED_DOMAINS = [
@@ -62,15 +62,15 @@ def _parse_date(value: str | None) -> datetime:
 
 
 def _normalize_result(item: dict[str, Any], source_type: str, sector: str | None = None, company: str | None = None) -> dict[str, Any]:
-    highlights = item.get("highlights") or []
-    text = item.get("text") or ""
-    summary_seed = " ".join(highlights[:2]).strip() or text[:280]
+    title = (item.get("title") or "Sem título").strip()
+    content = item.get("content") or item.get("raw_content") or ""
+    summary_seed = (content or title)[:280]
     return {
-        "title": (item.get("title") or "Sem título").strip(),
+        "title": title,
         "url": item.get("url") or "",
-        "published_at": item.get("publishedDate") or item.get("published_date") or "",
-        "source": item.get("author") or item.get("site") or "Fonte não identificada",
-        "highlights": highlights,
+        "published_at": item.get("published_date") or item.get("publishedDate") or "",
+        "source": item.get("source") or item.get("site_name") or item.get("site") or "Fonte não identificada",
+        "highlights": [],
         "summary_seed": summary_seed,
         "source_type": source_type,
         "sector": sector,
@@ -183,12 +183,12 @@ def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[
         sector_news: list[dict[str, Any]] = []
 
         for query in _build_macro_queries(sector_name, companies):
-            raw = search_exa(query, days=days, num_results=14, include_domains=TRUSTED_DOMAINS)
+            raw = search_tavily(query, days=days, num_results=14, include_domains=TRUSTED_DOMAINS)
             sector_news.extend(_normalize_result(item, source_type="setor", sector=sector_name) for item in raw)
 
         for company in companies:
             for query in _build_company_queries(company):
-                raw_company = search_exa(query, days=days, num_results=10, include_domains=TRUSTED_DOMAINS)
+                raw_company = search_tavily(query, days=days, num_results=10, include_domains=TRUSTED_DOMAINS)
                 sector_news.extend(_normalize_result(item, source_type="empresa", sector=sector_name, company=company) for item in raw_company)
 
         sector_news = _dedupe(sector_news)
