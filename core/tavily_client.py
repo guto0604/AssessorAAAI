@@ -32,7 +32,9 @@ def get_effective_tavily_api_key() -> str | None:
     if env_key:
         return env_key
     session_key = (st.session_state.get(SESSION_TAVILY_KEY, "") or "").strip()
-    return session_key or None
+    if session_key:
+        return session_key
+    return None
 
 
 def _to_date(days: int) -> str:
@@ -71,6 +73,7 @@ def search_tavily(
 
     response = requests.post(
         TAVILY_SEARCH_URL,
+        headers={"Authorization": f"Bearer {api_key}"},
         json=payload,
         timeout=40,
     )
