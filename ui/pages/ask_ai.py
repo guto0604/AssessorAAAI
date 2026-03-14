@@ -4,6 +4,11 @@ import streamlit as st
 
 from rag.config import KNOWLEDGE_BASE_DIR, SUPPORTED_EXTENSIONS
 from rag.document_loader import InvalidDocumentError
+from ui.guardrails import (
+    evaluate_input_guardrails,
+    guardrail_warning_message,
+    handle_guardrail_exception,
+)
 from ui.rag_service_provider import get_rag_service
 from ui.state import get_tracer
 
@@ -89,6 +94,41 @@ def render_ask_ai_tab():
                     "feature": "ask_ai",
                 },
             )
+
+            try:
+                guardrail_result = evaluate_input_guardrails(question)
+            except Exception as exc:
+                guardrail_result = handle_guardrail_exception(question, exc)
+
+            tracer.log_event(
+                ask_ai_run_id,
+                "input_guardrail_checked",
+                {
+                    "blocked": guardrail_result.blocked,
+                    "violation_type": guardrail_result.violation_type,
+                    "reason": guardrail_result.message,
+                    "model": guardrail_result.model,
+                    "input_tokens": guardrail_result.input_tokens,
+                    "output_tokens": guardrail_result.output_tokens,
+                    "total_tokens": guardrail_result.total_tokens,
+                },
+            )
+
+            if guardrail_result.blocked:
+                tracer.end_run(
+                    ask_ai_run_id,
+                    status="blocked",
+                    outputs={
+                        "status": "blocked",
+                        "guardrail": {
+                            "violation_type": guardrail_result.violation_type,
+                            "reason": guardrail_result.message,
+                        },
+                    },
+                )
+                st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                return
+
             with st.spinner("Consultando base vetorial..."):
                 try:
                     rag_result = rag.answer_question(question, top_k=4, include_api_metrics=True)
