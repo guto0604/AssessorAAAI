@@ -59,21 +59,25 @@ def _safe_text(value: Any, default: str = "-") -> str:
 
 def _priority_badge(label: str, value: str) -> str:
     palette = {
-        "Ativo": "#E8F5E9",
-        "Morno": "#FFF8E1",
-        "Em Risco": "#FFEBEE",
-        "Alta": "#FCE4EC",
-        "Média": "#E3F2FD",
-        "Baixa": "#ECEFF1",
-        "Alto": "#E8F5E9",
-        "Médio": "#FFF8E1",
-        "Baixo": "#ECEFF1",
+        "Ativo": "#1B5E20",
+        "Morno": "#9A3412",
+        "Em Risco": "#991B1B",
+        "Alta": "#4A148C",
+        "Média": "#1E3A8A",
+        "Baixa": "#374151",
+        "Alto": "#166534",
+        "Médio": "#92400E",
+        "Baixo": "#4B5563",
     }
-    color = palette.get(value, "#F5F5F5")
+    color = palette.get(value, "#1F2937")
     return (
-        f"<span style='background:{color}; padding:4px 10px; border-radius:14px; margin-right:6px;'>"
+        f"<span style='background:{color}; color:#FFFFFF; border:1px solid #111827; padding:4px 10px; border-radius:14px; margin-right:6px; display:inline-block;'>"
         f"<b>{label}:</b> {value}</span>"
     )
+
+
+def _section_title(title: str, description: str) -> None:
+    st.subheader(title, help=description)
 
 
 def _calculate_kpis(cliente: dict[str, Any]) -> dict[str, float]:
@@ -205,10 +209,6 @@ def _generate_alertas(cliente: dict[str, Any], kpis: dict[str, float], aderencia
     if aderencia["pct_liquidez_incompativel"] > 0.2:
         alertas.append({"prioridade": "atencao", "titulo": "Liquidez incompatível", "descricao": "Parte relevante da carteira não atende necessidade de curto prazo."})
 
-    gap = _to_float(cliente.get("Gap_Rentabilidade_vs_CDI_12M"), _to_float(cliente.get("Rentabilidade_12_meses")) - _to_float(cliente.get("CDI_12_Meses")))
-    if gap < -0.01:
-        alertas.append({"prioridade": "atencao", "titulo": "Performance abaixo do benchmark", "descricao": f"Gap de {_format_percent(gap, as_fraction=False)} vs CDI."})
-
     if kpis["pct_conosco"] < 0.35 and kpis["patrimonio_fora"] > kpis["patrimonio_conosco"]:
         alertas.append({"prioridade": "info", "titulo": "Baixo share of wallet", "descricao": "Patrimônio fora da casa acima do valor investido conosco."})
 
@@ -326,12 +326,16 @@ def _render_alertas(alertas: list[dict[str, str]]) -> None:
         st.info("Sem alertas prioritários para este cliente no momento.")
         return
 
-    color_map = {"critico": "#fdecea", "atencao": "#fff4e5", "info": "#edf3fe"}
+    color_map = {
+        "critico": {"bg": "#7F1D1D", "border": "#FCA5A5"},
+        "atencao": {"bg": "#78350F", "border": "#FCD34D"},
+        "info": {"bg": "#1E3A8A", "border": "#93C5FD"},
+    }
     for alerta in alertas:
-        cor = color_map.get(alerta["prioridade"], "#f5f5f5")
+        style = color_map.get(alerta["prioridade"], {"bg": "#374151", "border": "#D1D5DB"})
         st.markdown(
             f"""
-            <div style='background:{cor}; padding:12px; border-radius:10px; margin-bottom:8px;'>
+            <div style='background:{style['bg']}; color:#FFFFFF; border:1px solid {style['border']}; padding:12px; border-radius:10px; margin-bottom:8px;'>
                 <strong>{alerta['titulo']}</strong><br/>
                 <span>{alerta['descricao']}</span>
             </div>
@@ -360,11 +364,11 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     insights = _insights_automaticos(cliente, kpis, aderencia)
     oportunidades = _montar_oportunidades(cliente, produtos, kpis)
 
-    st.header("Visualização clientes")
+    st.header("Visualização clientes", help="Painel consolidado para leitura executiva de cliente, carteira, risco e oportunidades comerciais.")
     # Controle reservado para futuro modo de exibição cliente x assessor.
     st.checkbox("Modo Cliente", value=False, disabled=True, help="Em breve: alternância entre visão assessor e visão cliente.")
 
-    st.subheader("1) Cabeçalho executivo do cliente")
+    _section_title("1) Cabeçalho executivo do cliente", "Resumo rápido com dados de relacionamento, perfil e contexto do cliente.")
     nome = _safe_text(cliente.get("Nome"), "Cliente sem nome")
     st.markdown(f"### {nome}")
     st.caption(
@@ -390,7 +394,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         f"Localidade: {_safe_text(cliente.get('Cidade'))}/{_safe_text(cliente.get('UF'))}"
     )
 
-    st.subheader("2) KPIs principais")
+    _section_title("2) KPIs principais", "Indicadores de patrimônio, receita e potencial de alocação para priorização comercial.")
     k1, k2, k3 = st.columns(3)
     k1.metric("Patrimônio conosco", _format_currency(kpis["patrimonio_conosco"]))
     k2.metric("Patrimônio fora", _format_currency(kpis["patrimonio_fora"]))
@@ -402,7 +406,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     k5.metric("Receita gerada (12m)", _format_currency(kpis["receita_12m"]))
     k6.metric("Capacidade mensal de aporte", _format_currency(kpis["capacidade_aporte"]))
 
-    st.subheader("3) Alertas e sinais prioritários")
+    _section_title("3) Alertas e sinais prioritários", "Sinais de atenção e oportunidades imediatas com base em churn, engajamento e carteira.")
     _render_alertas(alertas)
 
     st.markdown("**Insights automáticos**")
@@ -412,11 +416,9 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     else:
         st.write("- Sem insights adicionais gerados pelas regras atuais.")
 
-    st.subheader("4) Performance resumida")
+    _section_title("4) Performance resumida", "Comparativo de retorno da carteira contra o CDI em 12 meses.")
     rent = _to_float(cliente.get("Rentabilidade_12_meses"))
     cdi = _to_float(cliente.get("CDI_12_Meses"))
-    gap = _to_float(cliente.get("Gap_Rentabilidade_vs_CDI_12M"), rent - cdi)
-
     perf_df = pd.DataFrame(
         {
             "Indicador": ["Carteira", "CDI"],
@@ -424,35 +426,47 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         }
     )
     st.bar_chart(perf_df.set_index("Indicador"), horizontal=True)
-    st.metric("Gap vs benchmark", _format_percent(gap, as_fraction=False))
-    st.caption("Acima do benchmark" if gap >= 0 else "Abaixo do benchmark")
 
-    st.subheader("5) Composição da carteira")
+    _section_title("5) Composição da carteira", "Distribuição dos investimentos por categoria, subcategoria, liquidez e exposição internacional.")
     if inv_cliente.empty:
         st.info("Sem dados de posições para este cliente.")
     else:
         left, right = st.columns(2)
         left.markdown("**Categorias**")
-        left.dataframe(
-            carteira["categoria"][["Grupo", "Valor", "Percentual"]].rename(columns={"Grupo": "Categoria"}),
-            use_container_width=True,
-            hide_index=True,
-        )
+        categorias_df = carteira["categoria"][["Grupo", "Valor", "Percentual"]].rename(columns={"Grupo": "Categoria"})
+        left.dataframe(categorias_df, use_container_width=True, hide_index=True)
+
+        if not categorias_df.empty:
+            pizza_df = categorias_df.rename(columns={"Categoria": "category", "Valor": "value"})
+            left.markdown("**Pizza de categorias**")
+            left.vega_lite_chart(
+                pizza_df,
+                {
+                    "mark": {"type": "arc", "innerRadius": 35},
+                    "encoding": {
+                        "theta": {"field": "value", "type": "quantitative"},
+                        "color": {"field": "category", "type": "nominal", "legend": {"title": "Categoria"}},
+                        "tooltip": [
+                            {"field": "category", "type": "nominal", "title": "Categoria"},
+                            {"field": "value", "type": "quantitative", "title": "Valor"},
+                        ],
+                    },
+                },
+                use_container_width=True,
+            )
+
         right.markdown("**Subcategorias**")
         right.bar_chart(carteira["subcategoria"].set_index("Grupo")["Valor"], horizontal=True)
 
-        low1, low2 = st.columns(2)
-        low1.markdown("**Indexadores**")
-        low1.bar_chart(carteira["indexador"].set_index("Grupo")["Valor"], horizontal=True)
-        low2.markdown("**Liquidez**")
-        low2.bar_chart(carteira["liquidez"].set_index("Grupo")["Valor"], horizontal=True)
+        st.markdown("**Liquidez**")
+        st.bar_chart(carteira["liquidez"].set_index("Grupo")["Valor"], horizontal=True)
 
         expo = carteira["exposicao"]
         if not expo.empty:
             st.markdown("**Exposição internacional**")
             st.dataframe(expo.rename(columns={"Exposicao_Internacional": "Exposição", "Valor": "Valor"}), use_container_width=True, hide_index=True)
 
-    st.subheader("6) Risco e aderência ao perfil")
+    _section_title("6) Risco e aderência ao perfil", "Compatibilidade da carteira com suitability, liquidez desejada e concentração de risco.")
     st.write(
         f"Perfil suitability: **{_safe_text(cliente.get('Perfil_Suitability'))}** | "
         f"Horizonte: **{_safe_text(cliente.get('Horizonte_Investimento'))}** | "
@@ -472,7 +486,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         st.markdown("**Top 5 maiores posições**")
         st.dataframe(carteira["top_produtos"].rename(columns={"Valor": "Valor atual"}), use_container_width=True, hide_index=True)
 
-    st.subheader("7) Objetivo financeiro")
+    _section_title("7) Objetivo financeiro", "Acompanhamento de progresso do objetivo principal, valor alvo e prazo para conclusão.")
     objetivo = _safe_text(cliente.get("Objetivo_Principal"), "Não informado")
     valor_obj = _to_float(cliente.get("Valor_Objetivo_Financeiro"))
     progresso_raw = (kpis["patrimonio_conosco"] / valor_obj) if valor_obj > 0 else 0.0
@@ -494,7 +508,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         prazo_restante = f"{dias} dias" if dias >= 0 else "Prazo expirado"
     o4.metric("Prazo restante", prazo_restante)
 
-    st.subheader("8) Movimentação e relacionamento")
+    _section_title("8) Movimentação e relacionamento", "Evolução recente de aportes e resgates junto ao histórico de relacionamento com o cliente.")
     m1, m2, m3 = st.columns(3)
     m1.metric("Aportes (12m)", _format_currency(kpis["aportes_12m"]))
     m2.metric("Resgates (12m)", _format_currency(kpis["resgates_12m"]))
@@ -518,7 +532,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         f"Score de engajamento: {_to_float(cliente.get('Score_Engajamento')):.0f}"
     )
 
-    st.subheader("9) Oportunidades comerciais")
+    _section_title("9) Oportunidades comerciais", "Lista de produtos elegíveis com justificativas automáticas de recomendação.")
     if oportunidades.empty:
         st.info("Sem oportunidades elegíveis com as regras atuais.")
     else:

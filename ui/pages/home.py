@@ -16,8 +16,9 @@ def render_home_tab():
         """
         - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
         - **📝 Resumo Reuniões**: Transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
-        - **📊 Talk to your Data**: pergunte e convesre em linguagem natural para explorar dados e visualizar dados.
-        - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando o IA.
+        - **📊 Talk to your Data**: pergunte e converse em linguagem natural para explorar e visualizar dados.
+        - **👤 Visualização clientes**: painel executivo com KPIs, alertas, composição de carteira, aderência de risco e oportunidades comerciais.
+        - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando IA.
         - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
         """
     )
