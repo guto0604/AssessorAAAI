@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
+from typing import Any
 
 from core.openai_client import get_openai_client
 from rag.chunking import chunk_text
@@ -27,9 +29,46 @@ class RagService:
         self.store.load()
         self.client = get_openai_client()
 
-    def _embed_texts(self, texts: list[str]) -> list[list[float]]:
+    def _extract_usage(self, usage: Any) -> tuple[int | None, int | None, int | None]:
+        if usage is None:
+            return None, None, None
+
+        if hasattr(usage, "prompt_tokens"):
+            input_tokens = getattr(usage, "prompt_tokens", None)
+            output_tokens = getattr(usage, "completion_tokens", None)
+            total_tokens = getattr(usage, "total_tokens", None)
+            return input_tokens, output_tokens, total_tokens
+
+        if isinstance(usage, dict):
+            input_tokens = usage.get("prompt_tokens") or usage.get("input_tokens")
+            output_tokens = usage.get("completion_tokens") or usage.get("output_tokens")
+            total_tokens = usage.get("total_tokens")
+            return input_tokens, output_tokens, total_tokens
+
+        return None, None, None
+
+    def _embed_texts(self, texts: list[str], include_api_metrics: bool = False):
+        started_at = perf_counter()
         response = self.client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
-        return [row.embedding for row in response.data]
+        latency_ms = int((perf_counter() - started_at) * 1000)
+        embeddings = [row.embedding for row in response.data]
+
+        if not include_api_metrics:
+            return embeddings
+
+        input_tokens, output_tokens, total_tokens = self._extract_usage(getattr(response, "usage", None))
+        return {
+            "embeddings": embeddings,
+            "api_metrics": {
+                "provider": "openai",
+                "step": "embedding",
+                "model": getattr(response, "model", EMBEDDING_MODEL),
+                "latency_ms": latency_ms,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+            },
+        }
 
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
         text = extract_text_from_bytes(file_name=file_name, content=content)
@@ -122,17 +161,28 @@ class RagService:
         if not self.store.exists() or not self.store.metadata:
             self.reindex_all_documents()
 
-    def answer_question(self, question: str, top_k: int = 4) -> tuple[str, list[dict]]:
+    def answer_question(self, question: str, top_k: int = 4, include_api_metrics: bool = False):
         self.ensure_index_exists()
 
-        query_embedding = self._embed_texts([question])[0]
+        query_embedding_result = self._embed_texts([question], include_api_metrics=include_api_metrics)
+        if include_api_metrics:
+            query_embedding = query_embedding_result["embeddings"][0]
+            query_embedding_metrics = query_embedding_result["api_metrics"]
+        else:
+            query_embedding = query_embedding_result[0]
+            query_embedding_metrics = None
+
         retrieved = self.store.search(query_embedding, k=top_k)
 
         if not retrieved:
-            return (
-                "Não encontrei trechos relevantes na base para responder com segurança.",
-                [],
-            )
+            fallback_answer = "Não encontrei trechos relevantes na base para responder com segurança."
+            if include_api_metrics:
+                return {
+                    "answer": fallback_answer,
+                    "sources": [],
+                    "api_calls": [query_embedding_metrics] if query_embedding_metrics else [],
+                }
+            return fallback_answer, []
 
         context_parts = []
         sources = []
@@ -162,6 +212,7 @@ class RagService:
             + "\n\nRegras: não invente informações, cite limitações quando necessário."
         )
 
+        llm_started_at = perf_counter()
         response = self.client.chat.completions.create(
             model=CHAT_MODEL,
             #temperature=0.1,
@@ -170,5 +221,24 @@ class RagService:
                 {"role": "user", "content": user_message},
             ],
         )
+        llm_latency_ms = int((perf_counter() - llm_started_at) * 1000)
         answer = response.choices[0].message.content or "Sem resposta."
-        return answer, sources
+        if not include_api_metrics:
+            return answer, sources
+
+        input_tokens, output_tokens, total_tokens = self._extract_usage(getattr(response, "usage", None))
+        completion_metrics = {
+            "provider": "openai",
+            "step": "chat_completion",
+            "model": getattr(response, "model", CHAT_MODEL),
+            "latency_ms": llm_latency_ms,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+        }
+        api_calls = [query_embedding_metrics, completion_metrics]
+        return {
+            "answer": answer,
+            "sources": sources,
+            "api_calls": [call for call in api_calls if call],
+        }
