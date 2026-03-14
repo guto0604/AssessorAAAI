@@ -1,4 +1,6 @@
 import streamlit as st
+
+
 def render_home_tab():
     st.title("Potencializando assessores com IA")
 
@@ -11,20 +13,20 @@ def render_home_tab():
         """
     )
 
-    st.subheader("🧭 O que você encontra em cada aba")
+    st.subheader("📚 O que você encontra em cada aba")
     st.markdown(
         """
-        - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
-        - **📝 Resumo Reuniões**: Transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
-        - **📊 Talk to your Data**: pergunte e converse em linguagem natural para explorar e visualizar dados.
+        - **🏠 Início**: visão geral da plataforma, objetivo da solução e orientação rápida de uso.
         - **👤 Visualização clientes**: painel executivo com KPIs, alertas, composição de carteira, aderência de risco e oportunidades comerciais.
+        - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
+        - **📝 Resumo Reuniões**: transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
+        - **📊 Talk to your Data**: pergunte e converse em linguagem natural para explorar e visualizar dados.
+        - **📈 Market Intelligence**: monitoramento de notícias e eventos por setor para apoiar timing comercial e conversas com clientes.
         - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando IA.
         - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
         """
     )
 
     st.info(
-        "Dica: para as abas de Voz do Assessor e Reuniões selecione o cliente na barra lateral antes de iniciar garantir o contexto correto."
+        "Dica: para as abas de Voz do Assessor e Reuniões, selecione o cliente na barra lateral antes de iniciar para garantir o contexto correto."
     )
-
-

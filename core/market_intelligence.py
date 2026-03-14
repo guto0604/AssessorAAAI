@@ -18,6 +18,25 @@ TRUSTED_DOMAINS = [
     "www.bcb.gov.br",
     "www.cvm.gov.br",
     "www.gov.br",
+    "economia.uol.com.br",
+    "www.moneytimes.com.br",
+    "www.seudinheiro.com",
+    "www.neofeed.com.br",
+    "www.suno.com.br",
+    "www.nordinvestimentos.com.br",
+    "www.spacemoney.com.br",
+    "pipelinevalor.globo.com",
+    "einvestidor.estadao.com.br",
+    "agenciabrasil.ebc.com.br",
+    "www.canalrural.com.br",
+    "www.abrasce.com.br",
+    "www.anbima.com.br",
+    "ri.b3.com.br",
+    "www.brasildefato.com.br",
+    "www.poder360.com.br",
+    "www.conjur.com.br",
+    "www.tecmundo.com.br",
+    "epocanegocios.globo.com",
 ]
 
 SECTOR_COMPANIES = {
@@ -89,7 +108,6 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     response = client.chat.completions.create(
         model="gpt-5-mini",
-        #temperature=0.2, # gpt-5 não tem temperatura
         response_format={"type": "json_object"},
         messages=[
             {
@@ -111,9 +129,8 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
     for idx, item in enumerate(items):
         meta = enriched.get(idx, {})
         event_type = meta.get("tipo_evento") if meta.get("tipo_evento") in EVENT_TYPES else "corporate"
-        score = meta.get("score_relevancia")
         try:
-            score_value = int(score)
+            score_value = int(meta.get("score_relevancia"))
         except Exception:
             score_value = 50
         item["event_type"] = event_type
@@ -124,19 +141,17 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
     return output
 
 
-def _sector_consolidated_summary(sector: str, companies: list[str], items: list[dict[str, Any]]) -> str:
-    if not items:
-        return "Sem notícias relevantes no período selecionado."
-
-    client = get_openai_client()
-    brief = [
-        {
-            "titulo": item["title"],
-            "tipo": item.get("event_type"),
-            "empresa": item.get("company"),
-            "resumo": item.get("short_summary"),
-        }
-        for item in items[:12]
+def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
+    companies_text = " ou ".join(companies)
+    return [
+        f"Brasil {sector_name} mercado financeiro resultados guidance dividendos",
+        f"Brasil {sector_name} regulação CVM Banco Central governo tributação",
+        f"Brasil {sector_name} M&A aquisição fusão joint venture",
+        f"Brasil {sector_name} crédito dívida rating captação debêntures",
+        f"Brasil {sector_name} risco operacional investigação governança",
+        f"Brasil {sector_name} mudanças de política comercial política de preços compliance",
+        f"Brasil {sector_name} lançamento de produtos serviços inovação digital",
+        f"Brasil {companies_text} notícia investimento bolsa",
     ]
 
     response = client.chat.completions.create(
@@ -156,51 +171,57 @@ def _sector_consolidated_summary(sector: str, companies: list[str], items: list[
     return response.choices[0].message.content.strip()
 
 
-def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[str, Any]:
-    radar_queries = [
-        "Brasil mercado financeiro resultados corporativos guidance dividendos M&A CVM Banco Central",
-        "Brasil mudanças regulatórias CVM Banco Central fiscal juros inflação governo",
-        "Brasil follow-on default recuperação judicial troca de CEO reestruturação empresas listadas",
+def _build_company_queries(company: str) -> list[str]:
+    return [
+        f"Brasil {company} resultado guidance receita lucro ebitda",
+        f"Brasil {company} M&A aquisição venda ativo parceria",
+        f"Brasil {company} dívida captação rating default recuperação judicial",
+        f"Brasil {company} regulação CVM ANEEL ANP ANS Anatel CADE",
+        f"Brasil {company} dividendos recompra ações governança",
+        f"Brasil {company} lançamento de produto novo serviço app plataforma",
+        f"Brasil {company} mudança de política política de preços política comercial",
+        f"Brasil {company} mudança estratégica reestruturação diretoria CEO conselho",
+        f"Brasil {company} investimentos expansão fábrica unidade operação",
+        f"Brasil {company} ESG sustentabilidade metas ambientais sociais",
     ]
 
-    radar_items: list[dict[str, Any]] = []
-    for query in radar_queries:
-        raw = search_exa(query, days=days, num_results=10, include_domains=TRUSTED_DOMAINS)
-        radar_items.extend(_normalize_result(item, source_type="radar") for item in raw)
 
+def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[str, Any]:
+    if sector not in SECTOR_COMPANIES:
+        sectors_to_fetch = SECTOR_COMPANIES
+    else:
+        sectors_to_fetch = {sector: SECTOR_COMPANIES[sector]}
+
+    all_news: list[dict[str, Any]] = []
     sectors_payload: list[dict[str, Any]] = []
-    sectors_to_fetch = {sector: SECTOR_COMPANIES[sector]} if sector in SECTOR_COMPANIES else SECTOR_COMPANIES
+
     for sector_name, companies in sectors_to_fetch.items():
         sector_news: list[dict[str, Any]] = []
 
-        sector_query = f"Brasil setor {sector_name} notícias mercado financeiro empresas listadas"
-        raw_sector = search_exa(sector_query, days=days, num_results=8, include_domains=TRUSTED_DOMAINS)
-        sector_news.extend(_normalize_result(item, source_type="sector", sector=sector_name) for item in raw_sector)
+        for query in _build_macro_queries(sector_name, companies):
+            raw = search_exa(query, days=days, num_results=14, include_domains=TRUSTED_DOMAINS)
+            sector_news.extend(_normalize_result(item, source_type="setor", sector=sector_name) for item in raw)
 
         for company in companies:
-            company_query = f"Brasil {company} resultado guidance M&A dívida regulação"
-            raw_company = search_exa(company_query, days=days, num_results=4, include_domains=TRUSTED_DOMAINS)
-            sector_news.extend(_normalize_result(item, source_type="company", sector=sector_name, company=company) for item in raw_company)
+            for query in _build_company_queries(company):
+                raw_company = search_exa(query, days=days, num_results=10, include_domains=TRUSTED_DOMAINS)
+                sector_news.extend(_normalize_result(item, source_type="empresa", sector=sector_name, company=company) for item in raw_company)
 
         sector_news = _dedupe(sector_news)
-        sector_news = _classify_and_summarize(sector_news)
-        sector_news.sort(key=lambda x: (x.get("relevance_score", 0), _parse_date(x.get("published_at"))), reverse=True)
-        sectors_payload.append(
-            {
-                "sector": sector_name,
-                "companies": companies,
-                "summary": _sector_consolidated_summary(sector_name, companies, sector_news),
-                "news": sector_news[:20],
-            }
-        )
+        all_news.extend(sector_news)
+        sectors_payload.append({"sector": sector_name, "companies": companies, "news": sector_news})
 
-    radar_items = _dedupe(radar_items)
-    radar_items = _classify_and_summarize(radar_items)
-    radar_items.sort(key=lambda x: (x.get("relevance_score", 0), _parse_date(x.get("published_at"))), reverse=True)
+    ranked_news = _dedupe(all_news)
+    ranked_news = _classify_and_summarize(ranked_news)
+    ranked_news.sort(key=lambda x: (x.get("relevance_score", 0), _parse_date(x.get("published_at"))), reverse=True)
+
+    for sector_block in sectors_payload:
+        sector_ranked = [news for news in ranked_news if news.get("sector") == sector_block["sector"]]
+        sector_block["news"] = sector_ranked[:35]
 
     return {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "time_range_days": days,
-        "radar_events": radar_items,
+        "ranked_news": ranked_news[:60],
         "sectors": sectors_payload,
     }
