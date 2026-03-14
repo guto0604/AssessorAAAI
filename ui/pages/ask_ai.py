@@ -5,6 +5,7 @@ import streamlit as st
 from rag.config import KNOWLEDGE_BASE_DIR, SUPPORTED_EXTENSIONS
 from rag.document_loader import InvalidDocumentError
 from ui.rag_service_provider import get_rag_service
+from ui.state import get_tracer
 
 
 def _list_kb_folders() -> list[str]:
@@ -18,6 +19,7 @@ def render_ask_ai_tab():
     st.caption("Faça perguntas sobre a knowledge base e adicione novos documentos para indexação vetorial.")
 
     rag = get_rag_service()
+    tracer = get_tracer()
 
     st.subheader("📥 Upload para knowledge base")
     folders = _list_kb_folders()
@@ -78,9 +80,42 @@ def render_ask_ai_tab():
         if not question:
             st.warning("Digite uma pergunta antes de enviar.")
         else:
+            ask_ai_run_id = tracer.start_run(
+                name=f"ask_ai_{st.session_state.get('selected_cliente_id', 'unknown')}",
+                run_type="chain",
+                inputs={"question": question, "top_k": 4},
+                tags=["ask_ai", "streamlit", "rag"],
+                metadata={
+                    "feature": "ask_ai",
+                },
+            )
             with st.spinner("Consultando base vetorial..."):
                 try:
-                    answer, sources = rag.answer_question(question, top_k=4)
+                    rag_result = rag.answer_question(question, top_k=4, include_api_metrics=True)
+                    answer = rag_result["answer"]
+                    sources = rag_result["sources"]
+
+                    for api_call in rag_result.get("api_calls", []):
+                        tracer.log_child_run(
+                            ask_ai_run_id,
+                            name=f"ask_ai_{api_call.get('step')}",
+                            run_type="llm" if api_call.get("step") == "chat_completion" else "embedding",
+                            inputs={"question": question, "top_k": 4},
+                            outputs={"status": "success"},
+                            metadata=api_call,
+                            tags=["ask_ai", api_call.get("step", "unknown")],
+                        )
+
+                    tracer.end_run(
+                        ask_ai_run_id,
+                        status="success",
+                        outputs={
+                            "status": "success",
+                            "sources_count": len(sources),
+                            "api_calls": rag_result.get("api_calls", []),
+                        },
+                    )
+
                     st.markdown("### Resposta")
                     st.write(answer)
 
@@ -93,4 +128,10 @@ def render_ask_ai_tab():
                     else:
                         st.info("Nenhuma fonte encontrada.")
                 except Exception as exc:
+                    tracer.end_run(
+                        ask_ai_run_id,
+                        status="error",
+                        error=str(exc),
+                        outputs={"status": "error"},
+                    )
                     st.error(f"Falha ao responder pergunta: {exc}")
