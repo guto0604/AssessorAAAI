@@ -390,15 +390,14 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
     st.caption("Aqui você acompanha sua carteira, seus objetivos e a composição dos seus investimentos.")
 
     st.subheader("Resumo patrimonial")
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     c1.metric("Seu patrimônio investido", _format_currency(kpis["patrimonio_conosco"]))
 
     rent = _to_float(cliente.get("Rentabilidade_12_meses"))
     cdi = _to_float(cliente.get("CDI_12_Meses"))
     diff = rent - cdi
     c2.metric("Rentabilidade em 12 meses", _format_percent(rent), delta=f"vs CDI: {_format_percent(diff)}")
-    c3.metric("Comparação com o CDI", f"Carteira {_format_percent(rent)} | CDI {_format_percent(cdi)}")
-    c4.metric("Saldo disponível", _format_currency(kpis["dinheiro_disponivel"]))
+    c3.metric("Saldo disponível", _format_currency(kpis["dinheiro_disponivel"]))
 
     st.subheader("Objetivo financeiro")
     objetivo = _build_objetivo_financeiro(cliente, kpis["patrimonio_conosco"])
