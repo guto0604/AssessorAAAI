@@ -61,38 +61,39 @@ def render_market_intelligence_tab():
     st.title("🧭 Market Intelligence")
     st.caption("Monitoramento executivo de eventos relevantes do mercado brasileiro por impacto e recência.")
 
-    col_period, col_event, col_sector, col_company, col_source, col_refresh = st.columns([1.1, 1, 1, 1, 1, 0.8])
+    col_period, col_event, col_sector, col_company, col_source = st.columns([1.1, 1, 1, 1, 1])
     with col_period:
         period_label = st.selectbox("Período", list(TIME_RANGE_OPTIONS.keys()), index=1)
     with col_event:
         selected_event_type = st.selectbox("Tipo de evento", ["Todos"] + EVENT_TYPES)
     with col_sector:
-        selected_sector = st.selectbox("Setor", ["Todos"] + list(SECTOR_COMPANIES.keys()))
+        selected_sector = st.selectbox("Setor *", ["Selecione..."] + list(SECTOR_COMPANIES.keys()))
     with col_company:
-        all_companies = sorted({c for companies in SECTOR_COMPANIES.values() for c in companies})
-        selected_company = st.selectbox("Empresa", ["Todas"] + all_companies)
+        sector_companies = SECTOR_COMPANIES.get(selected_sector, [])
+        selected_company = st.selectbox("Empresa", ["Todas"] + sector_companies, disabled=not sector_companies)
     with col_source:
         selected_source = st.text_input("Fonte", value="Todas")
-    with col_refresh:
-        st.write("")
-        refresh = st.button("🔄 Atualizar")
 
     days = TIME_RANGE_OPTIONS[period_label]
-    cache_key = f"market_intelligence_{days}"
+    cache_key = f"market_intelligence_{days}_{selected_sector}"
 
-    if refresh:
-        st.session_state.pop(cache_key, None)
+    if selected_sector == "Selecione...":
+        st.warning("Selecione um setor para habilitar a execução do EXA.")
+        return
 
-    if cache_key not in st.session_state:
+    if st.button("▶️ Executar Market Intelligence"):
         with st.spinner("Coletando sinais com EXA e estruturando com OpenAI..."):
             try:
-                st.session_state[cache_key] = fetch_market_intelligence(days=days)
+                st.session_state[cache_key] = fetch_market_intelligence(days=days, sector=selected_sector)
             except Exception as exc:
                 st.error(f"Erro ao atualizar Market Intelligence: {exc}")
-                st.info("Verifique as chaves OPENAI_API_KEY e EXA_API_KEY em Configurações.")
                 return
 
-    data = st.session_state.get(cache_key) or {}
+    data = st.session_state.get(cache_key)
+    if not data:
+        st.info("Defina os filtros e clique em 'Executar Market Intelligence' para carregar os dados.")
+        return
+
     radar_events = data.get("radar_events", [])
 
     source_options = ["Todas"] + sorted({n.get("source") for n in radar_events if n.get("source")})
@@ -119,8 +120,7 @@ def render_market_intelligence_tab():
     st.subheader("Acompanhamento por Setor")
 
     sectors = data.get("sectors", [])
-    if selected_sector != "Todos":
-        sectors = [s for s in sectors if s.get("sector") == selected_sector]
+    sectors = [s for s in sectors if s.get("sector") == selected_sector]
 
     if not sectors:
         st.info("Nenhum setor disponível para os filtros selecionados.")
@@ -135,7 +135,7 @@ def render_market_intelligence_tab():
             sector_news = _filter_news(
                 sector_block.get("news", []),
                 selected_event_type=selected_event_type,
-                selected_sector=selected_sector if selected_sector != "Todos" else sector_block.get("sector"),
+                selected_sector=selected_sector,
                 selected_company=selected_company,
                 selected_source=selected_source,
             )

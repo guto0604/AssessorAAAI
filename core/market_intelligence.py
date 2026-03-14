@@ -156,7 +156,7 @@ def _sector_consolidated_summary(sector: str, companies: list[str], items: list[
     return response.choices[0].message.content.strip()
 
 
-def fetch_market_intelligence(days: int = 7) -> dict[str, Any]:
+def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[str, Any]:
     radar_queries = [
         "Brasil mercado financeiro resultados corporativos guidance dividendos M&A CVM Banco Central",
         "Brasil mudanças regulatórias CVM Banco Central fiscal juros inflação governo",
@@ -169,26 +169,27 @@ def fetch_market_intelligence(days: int = 7) -> dict[str, Any]:
         radar_items.extend(_normalize_result(item, source_type="radar") for item in raw)
 
     sectors_payload: list[dict[str, Any]] = []
-    for sector, companies in SECTOR_COMPANIES.items():
+    sectors_to_fetch = {sector: SECTOR_COMPANIES[sector]} if sector in SECTOR_COMPANIES else SECTOR_COMPANIES
+    for sector_name, companies in sectors_to_fetch.items():
         sector_news: list[dict[str, Any]] = []
 
-        sector_query = f"Brasil setor {sector} notícias mercado financeiro empresas listadas"
+        sector_query = f"Brasil setor {sector_name} notícias mercado financeiro empresas listadas"
         raw_sector = search_exa(sector_query, days=days, num_results=8, include_domains=TRUSTED_DOMAINS)
-        sector_news.extend(_normalize_result(item, source_type="sector", sector=sector) for item in raw_sector)
+        sector_news.extend(_normalize_result(item, source_type="sector", sector=sector_name) for item in raw_sector)
 
         for company in companies:
             company_query = f"Brasil {company} resultado guidance M&A dívida regulação"
             raw_company = search_exa(company_query, days=days, num_results=4, include_domains=TRUSTED_DOMAINS)
-            sector_news.extend(_normalize_result(item, source_type="company", sector=sector, company=company) for item in raw_company)
+            sector_news.extend(_normalize_result(item, source_type="company", sector=sector_name, company=company) for item in raw_company)
 
         sector_news = _dedupe(sector_news)
         sector_news = _classify_and_summarize(sector_news)
         sector_news.sort(key=lambda x: (x.get("relevance_score", 0), _parse_date(x.get("published_at"))), reverse=True)
         sectors_payload.append(
             {
-                "sector": sector,
+                "sector": sector_name,
                 "companies": companies,
-                "summary": _sector_consolidated_summary(sector, companies, sector_news),
+                "summary": _sector_consolidated_summary(sector_name, companies, sector_news),
                 "news": sector_news[:20],
             }
         )
