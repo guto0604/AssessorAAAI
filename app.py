@@ -3,7 +3,7 @@ import streamlit as st
 from core.data_loader import get_cliente_by_id, load_clientes
 from ui.pages.ask_ai import render_ask_ai_tab
 from ui.pages.home import render_home_tab
-from ui.pages.insights import render_insights_tab
+from ui.pages.client_visualization import render_visualizacao_clientes_tab
 from ui.pages.meetings import render_meetings_tab
 from ui.pages.pitch import render_pitch_tab
 from ui.pages.settings import render_settings_tab
@@ -45,18 +45,21 @@ def main():
     dados_cliente_df = build_cliente_sidebar_table(cliente_info)
     st.sidebar.table(dados_cliente_df)
 
-    tab_home, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_insights, tab_settings = st.tabs([
+    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_settings = st.tabs([
         "🏠 Início",
+        "👤 Visualização clientes",
         "🚀 Voz do Assessor (Pitch)",
         "📝 Resumo Reuniões",
         "📊 Talk to your Data",
         "🤖 Pergunte à IA",
-        "💡 Insights",
         "⚙️ Configurações",
     ])
 
     with tab_home:
         render_home_tab()
+
+    with tab_clientes:
+        render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
 
     with tab_pitch:
         render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
@@ -70,8 +73,6 @@ def main():
     with tab_ask_ai:
         render_ask_ai_tab()
 
-    with tab_insights:
-        render_insights_tab()
 
     with tab_settings:
         render_settings_tab()
