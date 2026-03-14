@@ -11,3 +11,6 @@ langchain-openai==0.3.35
 langsmith==0.4.28
 duckdb==1.4.0
 plotly==6.3.1
+faiss-cpu==1.8.0.post1
+pypdf==5.4.0
+numpy==2.3.3
