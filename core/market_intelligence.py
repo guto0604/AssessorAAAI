@@ -141,7 +141,7 @@ def _sector_consolidated_summary(sector: str, companies: list[str], items: list[
 
     response = client.chat.completions.create(
         model="gpt-5-mini",
-        temperature=0.3,
+        # temperature=0.3,
         messages=[
             {
                 "role": "system",
