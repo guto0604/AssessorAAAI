@@ -60,5 +60,13 @@ class MarketIntelligenceTests(unittest.TestCase):
         self.assertTrue(len(out["sectors"]) > 0)
 
 
+    @patch("core.market_intelligence.get_openai_client", return_value=_FakeClient())
+    @patch("core.market_intelligence.search_exa", return_value=[{"title": "T", "url": "https://u", "publishedDate": "2026-01-01T00:00:00Z", "highlights": ["x"]}])
+    def test_fetch_market_intelligence_sector_filter(self, _search_mock, _openai_mock):
+        out = fetch_market_intelligence(days=1, sector="Bancos")
+        self.assertEqual(len(out["sectors"]), 1)
+        self.assertEqual(out["sectors"][0]["sector"], "Bancos")
+
+
 if __name__ == "__main__":
     unittest.main()
