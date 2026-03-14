@@ -95,7 +95,7 @@ def render_market_intelligence_tab():
                 if _is_tavily_credits_error(exc):
                     st.error("Créditos da Tavily acabaram. Atualize sua chave ou aguarde a renovação para continuar.")
                 else:
-                    st.error("Não foi possível atualizar o Market Intelligence no momento. Tente novamente.")
+                    st.error(f"Não foi possível atualizar o Market Intelligence no momento. Tente novamente. {exc}")
                 return
 
     data = st.session_state.get(cache_key)
