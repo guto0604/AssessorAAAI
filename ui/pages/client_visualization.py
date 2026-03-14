@@ -344,9 +344,169 @@ def _render_alertas(alertas: list[dict[str, str]]) -> None:
         )
 
 
+def _filter_selected_client(clientes_df: pd.DataFrame, selected_cliente_id: Any) -> pd.DataFrame:
+    if "Cliente_ID" not in clientes_df.columns:
+        return pd.DataFrame()
+    return clientes_df[clientes_df["Cliente_ID"] == selected_cliente_id]
+
+
+def _build_objetivo_financeiro(cliente: dict[str, Any], patrimonio_conosco: float) -> dict[str, Any]:
+    valor_alvo = _to_float(cliente.get("Valor_Objetivo_Financeiro"))
+    progresso = (patrimonio_conosco / valor_alvo) if valor_alvo > 0 else 0.0
+    progresso = max(progresso, 0.0)
+    faltante = max(valor_alvo - patrimonio_conosco, 0.0) if valor_alvo > 0 else 0.0
+    return {
+        "objetivo": _safe_text(cliente.get("Objetivo_Principal"), "Objetivo ainda não definido"),
+        "horizonte": _safe_text(cliente.get("Horizonte_Investimento"), "Não informado"),
+        "valor_alvo": valor_alvo,
+        "progresso": progresso,
+        "faltante": faltante,
+    }
+
+
+def _format_positions_table(inv_cliente: pd.DataFrame) -> pd.DataFrame:
+    if inv_cliente.empty:
+        return pd.DataFrame(columns=["Produto", "Categoria", "Valor atual", "Peso na carteira", "Liquidez"])
+
+    base = inv_cliente.copy()
+    base["Valor_Atual"] = pd.to_numeric(base.get("Valor_Atual", base.get("Valor_Investido", 0)), errors="coerce").fillna(0)
+    total = base["Valor_Atual"].sum()
+    base["Peso"] = base["Valor_Atual"] / total if total > 0 else 0.0
+
+    tabela = pd.DataFrame(
+        {
+            "Produto": base.get("Produto", "Não informado").fillna("Não informado"),
+            "Categoria": base.get("Categoria", "Não informado").fillna("Não informado"),
+            "Valor atual": base["Valor_Atual"],
+            "Peso na carteira": base["Peso"],
+            "Liquidez": base.get("Liquidez", "Não informado").fillna("Não informado"),
+        }
+    )
+    return tabela.sort_values("Valor atual", ascending=False).head(15)
+
+
+def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpis: dict[str, float], carteira: dict[str, pd.DataFrame]) -> None:
+    st.header("Acompanhamento do seu patrimônio")
+    st.caption("Aqui você acompanha sua carteira, seus objetivos e a composição dos seus investimentos.")
+
+    st.subheader("Resumo patrimonial")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Seu patrimônio investido", _format_currency(kpis["patrimonio_conosco"]))
+
+    rent = _to_float(cliente.get("Rentabilidade_12_meses"))
+    cdi = _to_float(cliente.get("CDI_12_Meses"))
+    diff = rent - cdi
+    c2.metric("Rentabilidade em 12 meses", _format_percent(rent), delta=f"vs CDI: {_format_percent(diff)}")
+    c3.metric("Comparação com o CDI", f"Carteira {_format_percent(rent)} | CDI {_format_percent(cdi)}")
+    c4.metric("Saldo disponível", _format_currency(kpis["dinheiro_disponivel"]))
+
+    st.subheader("Objetivo financeiro")
+    objetivo = _build_objetivo_financeiro(cliente, kpis["patrimonio_conosco"])
+    st.markdown(f"**{objetivo['objetivo']}**")
+    st.caption(f"Horizonte de investimento: {objetivo['horizonte']}")
+
+    if objetivo["valor_alvo"] <= 0:
+        st.info("Ainda não há um valor alvo definido para acompanhar este objetivo.")
+    else:
+        progresso_texto = min(objetivo["progresso"], 1.0)
+        if progresso_texto >= 1:
+            st.success("Parabéns! Você já atingiu seu objetivo financeiro.")
+        elif progresso_texto >= 0.75:
+            st.info(f"Você já percorreu {_format_percent(progresso_texto)} do caminho para seu objetivo.")
+        else:
+            st.info(f"Você já percorreu {_format_percent(progresso_texto)} do caminho para seu objetivo.")
+
+        st.progress(progresso_texto, text=f"Progresso estimado: {_format_percent(progresso_texto)}")
+        o1, o2, o3 = st.columns(3)
+        o1.metric("Valor acumulado", _format_currency(kpis["patrimonio_conosco"]))
+        o2.metric("Valor alvo", _format_currency(objetivo["valor_alvo"]))
+        o3.metric("Valor faltante", _format_currency(objetivo["faltante"]))
+
+    st.subheader("Alocação da carteira")
+    if inv_cliente.empty:
+        st.info("Ainda não encontramos posições para mostrar a composição da carteira.")
+    else:
+        categorias_df = carteira["categoria"][["Grupo", "Valor", "Percentual"]].rename(columns={"Grupo": "Categoria"})
+        if categorias_df.empty:
+            st.info("Não foi possível consolidar a alocação por categoria com os dados disponíveis.")
+        else:
+            donut_df = categorias_df.rename(columns={"Categoria": "category", "Valor": "value"})
+            col_donut, col_leg = st.columns([1, 1])
+            col_donut.vega_lite_chart(
+                donut_df,
+                {
+                    "mark": {"type": "arc", "innerRadius": 55},
+                    "encoding": {
+                        "theta": {"field": "value", "type": "quantitative"},
+                        "color": {"field": "category", "type": "nominal", "legend": None},
+                        "tooltip": [
+                            {"field": "category", "type": "nominal", "title": "Categoria"},
+                            {"field": "value", "type": "quantitative", "title": "Valor"},
+                        ],
+                    },
+                },
+                use_container_width=True,
+            )
+            leg = categorias_df.copy()
+            leg["Percentual"] = leg["Percentual"].apply(_format_percent)
+            leg["Valor"] = leg["Valor"].apply(_format_currency)
+            col_leg.dataframe(leg, use_container_width=True, hide_index=True)
+
+    st.subheader("Liquidez e prazo")
+    liquidez_df = carteira["liquidez"]
+    if liquidez_df.empty:
+        st.info("Não há dados suficientes para classificar a carteira por liquidez.")
+    else:
+        st.caption("Parte da sua carteira está disponível para resgate rápido, enquanto outra parte está alocada em investimentos com prazo maior.")
+        st.bar_chart(liquidez_df.set_index("Grupo")["Valor"], horizontal=True)
+
+    st.subheader("Diversificação e exposição")
+    expo = carteira["exposicao"]
+    total_carteira = _to_float(inv_cliente.get("Valor_Atual", inv_cliente.get("Valor_Investido", 0)).sum() if not inv_cliente.empty else 0)
+    internacional = 0.0
+    if not expo.empty and "Exposicao_Internacional" in expo.columns:
+        mask = expo["Exposicao_Internacional"].astype(str).str.lower().isin({"sim", "internacional", "true"})
+        internacional = expo.loc[mask, "Valor"].sum()
+    percentual_internacional = (internacional / total_carteira) if total_carteira > 0 else 0.0
+
+    d1, d2 = st.columns(2)
+    d1.metric("Exposição internacional", _format_percent(percentual_internacional))
+
+    top_posicoes = _format_positions_table(inv_cliente).head(3)
+    if top_posicoes.empty:
+        d2.metric("Concentração nas maiores posições", "-")
+    else:
+        concentracao_top3 = top_posicoes["Peso na carteira"].sum()
+        d2.metric("Concentração nas 3 maiores posições", _format_percent(concentracao_top3))
+        st.caption("Principais posições da carteira:")
+        resumo_top = top_posicoes[["Produto", "Peso na carteira"]].copy()
+        resumo_top["Peso na carteira"] = resumo_top["Peso na carteira"].apply(_format_percent)
+        st.dataframe(resumo_top, use_container_width=True, hide_index=True)
+
+    st.subheader("Detalhe dos investimentos")
+    tabela = _format_positions_table(inv_cliente)
+    if tabela.empty:
+        st.info("Não há investimentos para detalhar no momento.")
+    else:
+        tabela_exibicao = tabela.copy()
+        tabela_exibicao["Valor atual"] = tabela_exibicao["Valor atual"].apply(_format_currency)
+        tabela_exibicao["Peso na carteira"] = tabela_exibicao["Peso na carteira"].apply(_format_percent)
+        st.dataframe(tabela_exibicao, use_container_width=True, hide_index=True)
+
+    st.subheader("Perfil do investidor")
+    p1, p2 = st.columns(2)
+    p1.markdown(f"**Perfil suitability:** {_safe_text(cliente.get('Perfil_Suitability'), 'Não informado')}")
+    p1.markdown(f"**Horizonte de investimento:** {_safe_text(cliente.get('Horizonte_Investimento'), 'Não informado')}")
+    p2.markdown(
+        f"**Necessidade de liquidez de curto prazo:** {_safe_text(cliente.get('Necessidade_Liquidez_Curto_Prazo'), 'Não informada')}"
+    )
+    p2.markdown(f"**Nível de conhecimento financeiro:** {_safe_text(cliente.get('Nivel_Conhecimento_Financeiro'), 'Não informado')}")
+    st.caption("Seu perfil atual indica como equilibrar segurança, liquidez e potencial de retorno para a sua carteira.")
+
+
 def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     clientes_df = load_clientes_full()
-    cliente_df = clientes_df[clientes_df["Cliente_ID"] == selected_cliente_id]
+    cliente_df = _filter_selected_client(clientes_df, selected_cliente_id)
 
     if cliente_df.empty:
         st.warning("Cliente não encontrado na base de informações.")
@@ -364,9 +524,12 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     insights = _insights_automaticos(cliente, kpis, aderencia)
     oportunidades = _montar_oportunidades(cliente, produtos, kpis)
 
-    st.header("Visualização clientes", help="Painel consolidado para leitura executiva de cliente, carteira, risco e oportunidades comerciais.")
-    # Controle reservado para futuro modo de exibição cliente x assessor.
-    st.checkbox("Modo Cliente", value=False, disabled=True, help="Em breve: alternância entre visão assessor e visão cliente.")
+    st.header("Visualização clientes", help="Painel consolidado da carteira do cliente com modo assessor e cliente.")
+    modo_cliente = st.checkbox("Modo Cliente", value=False, help="Ative para visualizar a experiência simplificada do cliente final.")
+
+    if modo_cliente:
+        _render_cliente_view(cliente, inv_cliente, kpis, carteira)
+        return
 
     _section_title("1) Cabeçalho executivo do cliente", "Resumo rápido com dados de relacionamento, perfil e contexto do cliente.")
     nome = _safe_text(cliente.get("Nome"), "Cliente sem nome")
