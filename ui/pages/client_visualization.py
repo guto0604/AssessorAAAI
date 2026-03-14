@@ -438,7 +438,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
 
         if not categorias_df.empty:
             pizza_df = categorias_df.rename(columns={"Categoria": "category", "Valor": "value"})
-            left.markdown("**Pizza de categorias**")
+            left.markdown("**Categorias**")
             left.vega_lite_chart(
                 pizza_df,
                 {
@@ -458,13 +458,13 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         right.markdown("**Subcategorias**")
         right.bar_chart(carteira["subcategoria"].set_index("Grupo")["Valor"], horizontal=True)
 
-        st.markdown("**Liquidez**")
-        st.bar_chart(carteira["liquidez"].set_index("Grupo")["Valor"], horizontal=True)
+        right.markdown("**Liquidez**")
+        right.bar_chart(carteira["liquidez"].set_index("Grupo")["Valor"], horizontal=True)
 
         expo = carteira["exposicao"]
         if not expo.empty:
-            st.markdown("**Exposição internacional**")
-            st.dataframe(expo.rename(columns={"Exposicao_Internacional": "Exposição", "Valor": "Valor"}), use_container_width=True, hide_index=True)
+            right.markdown("**Exposição internacional**")
+            right.dataframe(expo.rename(columns={"Exposicao_Internacional": "Exposição", "Valor": "Valor"}), use_container_width=True, hide_index=True)
 
     _section_title("6) Risco e aderência ao perfil", "Compatibilidade da carteira com suitability, liquidez desejada e concentração de risco.")
     st.write(
@@ -496,17 +496,10 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     st.markdown(f"**Objetivo principal:** {objetivo}")
     st.progress(progresso, text=f"Progresso estimado: {_format_percent(progresso)}")
 
-    o1, o2, o3, o4 = st.columns(4)
+    o1, o2, o3 = st.columns(3)
     o1.metric("Valor atual considerado", _format_currency(kpis["patrimonio_conosco"]))
     o2.metric("Valor alvo", _format_currency(valor_obj))
     o3.metric("Quanto falta", _format_currency(faltante))
-
-    data_objetivo = _to_datetime(cliente.get("Data_Objetivo_Financeiro"))
-    prazo_restante = "-"
-    if data_objetivo:
-        dias = (data_objetivo.date() - date.today()).days
-        prazo_restante = f"{dias} dias" if dias >= 0 else "Prazo expirado"
-    o4.metric("Prazo restante", prazo_restante)
 
     _section_title("8) Movimentação e relacionamento", "Evolução recente de aportes e resgates junto ao histórico de relacionamento com o cliente.")
     m1, m2, m3 = st.columns(3)
@@ -532,17 +525,8 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         f"Score de engajamento: {_to_float(cliente.get('Score_Engajamento')):.0f}"
     )
 
-    _section_title("9) Oportunidades comerciais", "Lista de produtos elegíveis com justificativas automáticas de recomendação.")
+    _section_title("9) Oportunidades comerciais", "Lista de produtos elegíveis com justificativas de recomendação.")
     if oportunidades.empty:
         st.info("Sem oportunidades elegíveis com as regras atuais.")
     else:
         st.dataframe(oportunidades, use_container_width=True, hide_index=True)
-        st.markdown(
-            """
-            **Ações sugeridas por regra**
-            - Aumentar share of wallet quando patrimônio fora for relevante.
-            - Realocar posições com baixa aderência ao perfil de risco.
-            - Alocar caixa disponível em produtos aderentes ao objetivo.
-            - Priorizar produtos em campanha quando houver aderência.
-            """
-        )
