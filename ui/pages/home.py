@@ -18,7 +18,6 @@ def render_home_tab():
         - **📝 Resumo Reuniões**: Transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
         - **📊 Talk to your Data**: pergunte e convesre em linguagem natural para explorar dados e visualizar dados.
         - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando o IA.
-        - **💡 Insights**: espaço onde a IA pode fazer recomendações e oportunidades de negócio.
         - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
         """
     )

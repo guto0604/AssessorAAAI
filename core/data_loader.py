@@ -39,14 +39,26 @@ PRODUTOS_COLUMNS = [
 def load_clientes():
     return pd.read_parquet(CLIENTES_PATH, columns=CLIENTES_COLUMNS)
 
+
+def load_clientes_full():
+    return pd.read_parquet(CLIENTES_PATH)
+
 def load_jornadas():
     return pd.read_excel(JORNADAS_PATH)
 
 def load_investimentos():
     return pd.read_parquet(INVESTIMENTOS_PATH, columns=INVESTIMENTOS_COLUMNS)
 
+
+def load_investimentos_full():
+    return pd.read_parquet(INVESTIMENTOS_PATH)
+
 def load_produtos():
     return pd.read_parquet(PRODUTOS_PATH, columns=PRODUTOS_COLUMNS)
+
+
+def load_produtos_full():
+    return pd.read_parquet(PRODUTOS_PATH)
 
 def get_cliente_by_id(cliente_id):
     df = load_clientes()
