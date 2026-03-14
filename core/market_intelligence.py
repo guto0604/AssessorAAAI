@@ -154,22 +154,6 @@ def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
         f"Brasil {companies_text} notícia investimento bolsa",
     ]
 
-    response = client.chat.completions.create(
-        model="gpt-5-mini",
-        # temperature=0.3,
-        messages=[
-            {
-                "role": "system",
-                "content": "Resuma em português-BR, em até 4 frases objetivas, o que está movimentando o setor para um assessor financeiro.",
-            },
-            {
-                "role": "user",
-                "content": json.dumps({"setor": sector, "empresas": companies, "noticias": brief}, ensure_ascii=False),
-            },
-        ],
-    )
-    return response.choices[0].message.content.strip()
-
 
 def _build_company_queries(company: str) -> list[str]:
     return [

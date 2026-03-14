@@ -55,7 +55,9 @@ def search_exa(
         "query": query,
         "type": "keyword",
         "category": category,
-        "useAutoprompt": True,
+        # Keep EXA in standard keyword mode (without autoprompt rewriting)
+        # to avoid agent-like query expansion and keep cost/behavior predictable.
+        "useAutoprompt": False,
         "numResults": num_results,
         "startPublishedDate": _to_iso(days),
         "text": True,
