@@ -57,10 +57,10 @@ def _render_news_card(item: dict):
         st.markdown(f"[🔗 Abrir notícia original]({url})")
 
 
-def _is_exa_credits_error(exc: Exception) -> bool:
+def _is_tavily_credits_error(exc: Exception) -> bool:
     error_msg = str(exc).lower()
-    exa_credit_terms = ["credit", "credits", "insufficient", "quota", "429", "rate limit", "too many requests"]
-    return "exa" in error_msg and any(term in error_msg for term in exa_credit_terms)
+    tavily_credit_terms = ["credit", "credits", "insufficient", "quota", "429", "rate limit", "too many requests"]
+    return "tavily" in error_msg and any(term in error_msg for term in tavily_credit_terms)
 
 
 def render_market_intelligence_tab():
@@ -92,8 +92,8 @@ def render_market_intelligence_tab():
             try:
                 st.session_state[cache_key] = fetch_market_intelligence(days=days, sector=selected_sector)
             except Exception as exc:
-                if _is_exa_credits_error(exc):
-                    st.error("Créditos da EXA acabaram. Atualize sua chave ou aguarde a renovação para continuar.")
+                if _is_tavily_credits_error(exc):
+                    st.error("Créditos da Tavily acabaram. Atualize sua chave ou aguarde a renovação para continuar.")
                 else:
                     st.error("Não foi possível atualizar o Market Intelligence no momento. Tente novamente.")
                 return
