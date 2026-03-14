@@ -1,11 +1,14 @@
 from pathlib import Path
 
 import streamlit as st
+from datetime import date, datetime
 
 from rag.config import KNOWLEDGE_BASE_DIR, SUPPORTED_EXTENSIONS
 from rag.document_loader import InvalidDocumentError
 from ui.rag_service_provider import get_rag_service
 from ui.state import get_tracer
+
+
 
 
 def _list_kb_folders() -> list[str]:
@@ -73,7 +76,7 @@ def render_ask_ai_tab():
     st.divider()
 
     st.subheader("❓ Pergunta")
-    question = st.text_area("Digite sua pergunta", placeholder="Ex.: Qual foi o resultado das empresas do setor de proteína animal?")
+    question = st.text_area("Digite sua pergunta", placeholder="Ex.: Qual foi o resultado das empresas do setor de proteína animal?\nQuais as regras de rebalanceamento?\nComo me preparar para uma reunião com o cliente?")
 
     if st.button("🚀 Enviar pergunta", key="ask_ai_send_question"):
         question = (question or "").strip()
@@ -81,7 +84,7 @@ def render_ask_ai_tab():
             st.warning("Digite uma pergunta antes de enviar.")
         else:
             ask_ai_run_id = tracer.start_run(
-                name=f"ask_ai_{st.session_state.get('selected_cliente_id', 'unknown')}",
+                name=f"ask_ai_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                 run_type="chain",
                 inputs={"question": question, "top_k": 4},
                 tags=["ask_ai", "streamlit", "rag"],
