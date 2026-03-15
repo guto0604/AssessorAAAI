@@ -370,6 +370,7 @@ Regras:
 - Use DATE '{date.today().isoformat()}' como data atual.
 - Prefira queries leves (agregações e LIMIT quando fizer sentido).
 - Nunca gere código Python para visualização.
+- Se o usuário pedir para colorir o visual por uma coluna, inclua essa coluna no SELECT final do SQL e preencha visualization.color com o nome exato da coluna.
 - Retorne APENAS JSON válido.
 
 Formato de saída JSON:
@@ -385,6 +386,7 @@ Formato de saída JSON:
     "type": "bar|line|pie|scatter|table|none",
     "x": "campo ou vazio",
     "y": "campo ou vazio",
+    "color": "campo ou vazio",
     "title": "título"
   }},
   "answer": "resposta executiva em português"
@@ -507,6 +509,7 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
 
     x = visualization_spec.get("x")
     y = visualization_spec.get("y")
+    color = visualization_spec.get("color")
     title = visualization_spec.get("title") or "Visual gerado"
 
     if vis_type == "table":
@@ -521,23 +524,28 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
         st.info(f"Não foi possível renderizar o visual: coluna y '{y}' não encontrada no resultado.")
         return
 
+    if color and color not in result_df.columns:
+        st.info(f"Não foi possível renderizar o visual: coluna de cor '{color}' não encontrada no resultado.")
+        return
+
     if vis_type == "bar":
-        st.bar_chart(result_df, x=x, y=y)
+        fig = px.bar(result_df, x=x, y=y, color=color, title=title)
+        st.plotly_chart(fig, width="stretch")
     elif vis_type == "line":
-        st.line_chart(result_df, x=x, y=y)
+        fig = px.line(result_df, x=x, y=y, color=color, title=title)
+        st.plotly_chart(fig, width="stretch")
     elif vis_type == "pie":
         if not x or not y:
             st.info("Visual de pizza requer campos x e y válidos.")
             return
-        fig = px.pie(result_df, names=x, values=y, title=title)
+        fig = px.pie(result_df, names=x, values=y, color=color, title=title)
         st.plotly_chart(fig, width="stretch")
     elif vis_type == "scatter":
         if not x or not y:
             st.info("Visual de dispersão requer campos x e y válidos.")
             return
-        fig = px.scatter(result_df, x=x, y=y, title=title)
+        fig = px.scatter(result_df, x=x, y=y, color=color, title=title)
         st.plotly_chart(fig, width="stretch")
     else:
         st.info("Tipo de visual não suportado; exibindo tabela.")
         st.dataframe(result_df, width="stretch")
-
