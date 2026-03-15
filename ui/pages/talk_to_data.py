@@ -530,13 +530,13 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
             st.info("Visual de pizza requer campos x e y válidos.")
             return
         fig = px.pie(result_df, names=x, values=y, title=title)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     elif vis_type == "scatter":
         if not x or not y:
             st.info("Visual de dispersão requer campos x e y válidos.")
             return
         fig = px.scatter(result_df, x=x, y=y, title=title)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("Tipo de visual não suportado; exibindo tabela.")
         st.dataframe(result_df, width="stretch")

@@ -444,12 +444,12 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
                         ],
                     },
                 },
-                use_container_width=True,
+                width="stretch",
             )
             leg = categorias_df.copy()
             leg["Percentual"] = leg["Percentual"].apply(_format_percent)
             leg["Valor"] = leg["Valor"].apply(_format_currency)
-            col_leg.dataframe(leg, use_container_width=True, hide_index=True)
+            col_leg.dataframe(leg, width="stretch", hide_index=True)
 
     st.subheader("Liquidez e prazo")
     liquidez_df = carteira["liquidez"]
@@ -480,7 +480,7 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
         st.caption("Principais posições da carteira:")
         resumo_top = top_posicoes[["Produto", "Peso na carteira"]].copy()
         resumo_top["Peso na carteira"] = resumo_top["Peso na carteira"].apply(_format_percent)
-        st.dataframe(resumo_top, use_container_width=True, hide_index=True)
+        st.dataframe(resumo_top, width="stretch", hide_index=True)
 
     st.subheader("Detalhe dos investimentos")
     tabela = _format_positions_table(inv_cliente)
@@ -490,7 +490,7 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
         tabela_exibicao = tabela.copy()
         tabela_exibicao["Valor atual"] = tabela_exibicao["Valor atual"].apply(_format_currency)
         tabela_exibicao["Peso na carteira"] = tabela_exibicao["Peso na carteira"].apply(_format_percent)
-        st.dataframe(tabela_exibicao, use_container_width=True, hide_index=True)
+        st.dataframe(tabela_exibicao, width="stretch", hide_index=True)
 
     st.subheader("Perfil do investidor")
     p1, p2 = st.columns(2)
@@ -596,7 +596,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         left, right = st.columns(2)
         left.markdown("**Categorias**")
         categorias_df = carteira["categoria"][["Grupo", "Valor", "Percentual"]].rename(columns={"Grupo": "Categoria"})
-        left.dataframe(categorias_df, use_container_width=True, hide_index=True)
+        left.dataframe(categorias_df, width="stretch", hide_index=True)
 
         if not categorias_df.empty:
             pizza_df = categorias_df.rename(columns={"Categoria": "category", "Valor": "value"})
@@ -614,7 +614,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
                         ],
                     },
                 },
-                use_container_width=True,
+                width="stretch",
             )
 
         right.markdown("**Subcategorias**")
@@ -626,7 +626,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
         expo = carteira["exposicao"]
         if not expo.empty:
             right.markdown("**Exposição internacional**")
-            right.dataframe(expo.rename(columns={"Exposicao_Internacional": "Exposição", "Valor": "Valor"}), use_container_width=True, hide_index=True)
+            right.dataframe(expo.rename(columns={"Exposicao_Internacional": "Exposição", "Valor": "Valor"}), width="stretch", hide_index=True)
 
     _section_title("6) Risco e aderência ao perfil", "Compatibilidade da carteira com suitability, liquidez desejada e concentração de risco.")
     st.write(
@@ -646,7 +646,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
 
     if not carteira["top_produtos"].empty:
         st.markdown("**Top 5 maiores posições**")
-        st.dataframe(carteira["top_produtos"].rename(columns={"Valor": "Valor atual"}), use_container_width=True, hide_index=True)
+        st.dataframe(carteira["top_produtos"].rename(columns={"Valor": "Valor atual"}), width="stretch", hide_index=True)
 
     _section_title("7) Objetivo financeiro", "Acompanhamento de progresso do objetivo principal, valor alvo e prazo para conclusão.")
     objetivo = _safe_text(cliente.get("Objetivo_Principal"), "Não informado")
@@ -680,7 +680,7 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
             {"Evento": "Data objetivo financeiro", "Data": _format_date(cliente.get("Data_Objetivo_Financeiro"))},
         ]
     )
-    st.dataframe(timeline, use_container_width=True, hide_index=True)
+    st.dataframe(timeline, width="stretch", hide_index=True)
     st.caption(
         f"Canal preferencial: {_safe_text(cliente.get('Canal_Preferencial'))} | "
         f"Frequência de contato: {_safe_text(cliente.get('Frequencia_Contato'))} | "
@@ -691,4 +691,4 @@ def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
     if oportunidades.empty:
         st.info("Sem oportunidades elegíveis com as regras atuais.")
     else:
-        st.dataframe(oportunidades, use_container_width=True, hide_index=True)
+        st.dataframe(oportunidades, width="stretch", hide_index=True)
