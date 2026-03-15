@@ -493,7 +493,8 @@ def render_pitch_tab(cliente_id, cliente_info):
         st.divider()
         st.header("7️⃣ Gerar pitch")
 
-        model_writer = "gpt-5-mini"
+        model_pitch_final = "gpt-5.1"
+        model_rewriter = "gpt-5-mini"
 
         if "pitch_draft" not in st.session_state:
             st.session_state["pitch_draft"] = ""
@@ -512,7 +513,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                         prompt_assessor=prompt_assessor,
                         jornada_selecionada=st.session_state["jornada_selecionada"],
                         step5_selection=st.session_state["step5_selection"],
-                        model=model_writer,
+                        model=model_pitch_final,
                         trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                         include_api_metrics=True,
                     )
@@ -616,7 +617,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                                 current_pitch=st.session_state["pitch_draft"],
                                 edit_instruction=edit_instruction.strip(),
                                 target_excerpt=target_excerpt.strip() if target_excerpt.strip() else None,
-                                model=model_writer,
+                                model=model_rewriter,
                                 trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                                 include_api_metrics=True,
                             )
