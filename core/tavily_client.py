@@ -2,8 +2,6 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import requests
-
 try:
     from dotenv import load_dotenv
 except Exception:
@@ -21,10 +19,14 @@ except Exception:
 
     st = _DummyStreamlit()
 
+try:
+    from tavily import TavilyClient
+except Exception:
+    TavilyClient = None
+
 load_dotenv()
 
 SESSION_TAVILY_KEY = "user_tavily_api_key"
-TAVILY_SEARCH_URL = "https://api.tavily.com/search"
 
 
 def get_effective_tavily_api_key() -> str | None:
@@ -59,7 +61,6 @@ def search_tavily(
         raise ValueError("TAVILY_API_KEY não configurada.")
 
     payload: dict[str, Any] = {
-        "api_key": api_key,
         "query": query,
         "topic": "news",
         "search_depth": "advanced",
@@ -71,14 +72,11 @@ def search_tavily(
         "start_date": _to_date(days),
     }
 
-    response = requests.post(
-        TAVILY_SEARCH_URL,
-        headers={"Authorization": f"Bearer {api_key}"},
-        json=payload,
-        timeout=40,
-    )
-    response.raise_for_status()
-    body = response.json() or {}
+    if TavilyClient is None:
+        raise ImportError("Pacote 'tavily-python' não instalado. Adicione ao requirements para usar a busca Tavily.")
+
+    client = TavilyClient(api_key=api_key)
+    body = client.search(**payload) or {}
     results = body.get("results", [])
 
     if include_domains:
