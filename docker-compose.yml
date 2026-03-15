@@ -1,0 +1,11 @@
+services:
+  assessor-aaai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: assessor-aaai:latest
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    command: streamlit run app.py
