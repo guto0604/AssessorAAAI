@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta, timezone
 from typing import Any
 
 try:
@@ -39,10 +38,6 @@ def get_effective_tavily_api_key() -> str | None:
     return None
 
 
-def _to_date(days: int) -> str:
-    return (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
-
-
 def _extract_domain(url: str) -> str:
     if not url:
         return ""
@@ -69,7 +64,6 @@ def search_tavily(
         "include_raw_content": True,
         "include_images": False,
         "days": days,
-        "start_date": _to_date(days),
     }
 
     if TavilyClient is None:

@@ -21,6 +21,8 @@ class TavilyClientTests(unittest.TestCase):
         client_mock.assert_called_once_with(api_key="session-key")
         _, kwargs = client_mock.return_value.search.call_args
         self.assertEqual(kwargs["query"], "mercado")
+        self.assertEqual(kwargs["days"], 7)
+        self.assertNotIn("start_date", kwargs)
 
 
 if __name__ == "__main__":
