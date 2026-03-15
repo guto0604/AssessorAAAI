@@ -101,7 +101,7 @@ def render_talk_to_your_data_page():
             "Quais clientes têm maior risco de churn e possuem mais de 50 mil disponíveis para investir?",
         ],
         "Perguntas com maior potencial para visualização": [
-            "Quero um gráfico de dispersão mostrando a relação de salário e total investido.",
+            "Quero um gráfico de dispersão mostrando a relação de salário e total investido, cor de acordo com suitability",
             "Mostre a distribuição da carteira dos clientes arrojados."
         ],
     }
