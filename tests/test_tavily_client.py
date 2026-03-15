@@ -24,6 +24,29 @@ class TavilyClientTests(unittest.TestCase):
         self.assertEqual(kwargs["days"], 7)
         self.assertNotIn("start_date", kwargs)
 
+    @patch("core.tavily_client.TavilyClient")
+    def test_search_uses_lightweight_payload_when_requested(self, client_mock):
+        client_mock.return_value.search.return_value = {"results": []}
+
+        with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
+            tavily_client.search_tavily("mercado", lightweight=True)
+
+        _, kwargs = client_mock.return_value.search.call_args
+        self.assertFalse(kwargs["include_raw_content"])
+
+    @patch("core.tavily_client.TavilyClient")
+    def test_search_retries_with_smaller_payload_on_timeout(self, client_mock):
+        client_mock.return_value.search.side_effect = [Exception("Read timed out"), {"results": []}]
+
+        with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
+            tavily_client.search_tavily("mercado", num_results=12)
+
+        self.assertEqual(client_mock.return_value.search.call_count, 2)
+        _, second_call_kwargs = client_mock.return_value.search.call_args_list[1]
+        self.assertEqual(second_call_kwargs["search_depth"], "basic")
+        self.assertFalse(second_call_kwargs["include_raw_content"])
+        self.assertEqual(second_call_kwargs["max_results"], 6)
+
 
 if __name__ == "__main__":
     unittest.main()

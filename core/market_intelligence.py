@@ -147,10 +147,6 @@ def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
         f"Brasil {sector_name} mercado financeiro resultados guidance dividendos",
         f"Brasil {sector_name} regulação CVM Banco Central governo tributação",
         f"Brasil {sector_name} M&A aquisição fusão joint venture",
-        f"Brasil {sector_name} crédito dívida rating captação debêntures",
-        f"Brasil {sector_name} risco operacional investigação governança",
-        f"Brasil {sector_name} mudanças de política comercial política de preços compliance",
-        f"Brasil {sector_name} lançamento de produtos serviços inovação digital",
         f"Brasil {companies_text} notícia investimento bolsa",
     ]
 
@@ -161,12 +157,6 @@ def _build_company_queries(company: str) -> list[str]:
         f"Brasil {company} M&A aquisição venda ativo parceria",
         f"Brasil {company} dívida captação rating default recuperação judicial",
         f"Brasil {company} regulação CVM ANEEL ANP ANS Anatel CADE",
-        f"Brasil {company} dividendos recompra ações governança",
-        f"Brasil {company} lançamento de produto novo serviço app plataforma",
-        f"Brasil {company} mudança de política política de preços política comercial",
-        f"Brasil {company} mudança estratégica reestruturação diretoria CEO conselho",
-        f"Brasil {company} investimentos expansão fábrica unidade operação",
-        f"Brasil {company} ESG sustentabilidade metas ambientais sociais",
     ]
 
 
@@ -183,12 +173,24 @@ def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[
         sector_news: list[dict[str, Any]] = []
 
         for query in _build_macro_queries(sector_name, companies):
-            raw = search_tavily(query, days=days, num_results=14, include_domains=TRUSTED_DOMAINS)
+            raw = search_tavily(
+                query,
+                days=days,
+                num_results=8,
+                include_domains=TRUSTED_DOMAINS,
+                lightweight=True,
+            )
             sector_news.extend(_normalize_result(item, source_type="setor", sector=sector_name) for item in raw)
 
         for company in companies:
             for query in _build_company_queries(company):
-                raw_company = search_tavily(query, days=days, num_results=10, include_domains=TRUSTED_DOMAINS)
+                raw_company = search_tavily(
+                    query,
+                    days=days,
+                    num_results=6,
+                    include_domains=TRUSTED_DOMAINS,
+                    lightweight=True,
+                )
                 sector_news.extend(_normalize_result(item, source_type="empresa", sector=sector_name, company=company) for item in raw_company)
 
         sector_news = _dedupe(sector_news)
