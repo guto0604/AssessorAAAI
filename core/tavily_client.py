@@ -50,6 +50,7 @@ def search_tavily(
     days: int = 7,
     num_results: int = 12,
     include_domains: list[str] | None = None,
+    lightweight: bool = False,
 ) -> list[dict[str, Any]]:
     api_key = get_effective_tavily_api_key()
     if not api_key:
@@ -61,7 +62,7 @@ def search_tavily(
         "search_depth": "advanced",
         "max_results": num_results,
         "include_answer": False,
-        "include_raw_content": True,
+        "include_raw_content": not lightweight,
         "include_images": False,
         "days": days,
     }
@@ -70,7 +71,22 @@ def search_tavily(
         raise ImportError("Pacote 'tavily-python' não instalado. Adicione ao requirements para usar a busca Tavily.")
 
     client = TavilyClient(api_key=api_key)
-    body = client.search(**payload) or {}
+    try:
+        body = client.search(**payload) or {}
+    except Exception as exc:
+        # Fallback para reduzir payload e melhorar chance de resposta em cenários de timeout.
+        fallback_payload = {
+            **payload,
+            "search_depth": "basic",
+            "include_raw_content": False,
+            "max_results": max(3, min(num_results, 6)),
+        }
+        error_msg = str(exc).lower()
+        is_timeout_like = any(term in error_msg for term in ["timed out", "timeout", "read timed out"])
+        if not is_timeout_like:
+            raise
+        body = client.search(**fallback_payload) or {}
+
     results = body.get("results", [])
 
     if include_domains:
