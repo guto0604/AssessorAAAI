@@ -3,7 +3,6 @@ from datetime import datetime
 import streamlit as st
 
 from core.market_intelligence import EVENT_TYPES, SECTOR_COMPANIES, fetch_market_intelligence
-from core.tavily_client import get_effective_tavily_api_key
 
 TIME_RANGE_OPTIONS = {
     "24h": 1,
@@ -67,9 +66,6 @@ def _is_tavily_credits_error(exc: Exception) -> bool:
 def render_market_intelligence_tab():
     st.title("📈 Market Intelligence")
     st.caption("Notícias relevantes do mercado brasileiro ranqueadas por impacto e recência.")
-
-    effective_tavily_key = get_effective_tavily_api_key()
-    st.info(f"🔑 Chave Tavily usada na chamada: {effective_tavily_key or '(não configurada)'}")
 
     col_period, col_event, col_sector, col_company, col_source = st.columns([1.1, 1, 1, 1, 1])
     with col_period:

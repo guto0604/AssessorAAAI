@@ -11,16 +11,16 @@ class TavilyClientTests(unittest.TestCase):
             with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
                 self.assertEqual(tavily_client.get_effective_tavily_api_key(), "env-key")
 
-    @patch("core.tavily_client.requests.post")
-    def test_search_uses_authorization_header(self, post_mock):
-        post_mock.return_value.json.return_value = {"results": []}
-        post_mock.return_value.raise_for_status.return_value = None
+    @patch("core.tavily_client.TavilyClient")
+    def test_search_uses_tavily_client_with_api_key(self, client_mock):
+        client_mock.return_value.search.return_value = {"results": []}
 
         with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
             tavily_client.search_tavily("mercado")
 
-        _, kwargs = post_mock.call_args
-        self.assertEqual(kwargs["headers"], {"Authorization": "Bearer session-key"})
+        client_mock.assert_called_once_with(api_key="session-key")
+        _, kwargs = client_mock.return_value.search.call_args
+        self.assertEqual(kwargs["query"], "mercado")
 
 
 if __name__ == "__main__":
