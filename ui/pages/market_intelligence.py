@@ -88,7 +88,7 @@ def render_market_intelligence_tab():
         return
 
     if st.button("▶️ Atualizar notícias"):
-        with st.spinner("Atualizando Market Intelligence..."):
+        with st.spinner("Atualizando Market Intelligence... Isso pode demorar uns mintuos."):
             try:
                 st.session_state[cache_key] = fetch_market_intelligence(days=days, sector=selected_sector)
             except Exception as exc:

@@ -46,13 +46,12 @@ def main():
     dados_cliente_df = build_cliente_sidebar_table(cliente_info)
     st.sidebar.table(dados_cliente_df)
 
-    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_market, tab_ask_ai, tab_settings = st.tabs([
+    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_settings = st.tabs([
         "🏠 Início",
         "👤 Visualização clientes",
         "🚀 Voz do Assessor (Pitch)",
-        "📝 Resumo Reuniões",
+        "📝 Reuniões",
         "📊 Talk to your Data",
-        "🧭 Market Intelligence",
         "🤖 Pergunte à IA",
         "⚙️ Configurações",
     ])
@@ -72,8 +71,8 @@ def main():
     with tab_portfolio:
         render_talk_to_your_data_page()
 
-    with tab_market:
-        render_market_intelligence_tab()
+    #with tab_market:
+    #    render_market_intelligence_tab()
 
     with tab_ask_ai:
         render_ask_ai_tab()
