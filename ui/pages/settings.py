@@ -4,7 +4,15 @@ from datetime import datetime
 import streamlit as st
 from core.openai_client import SESSION_OPENAI_KEY, get_effective_openai_api_key
 from core.tavily_client import SESSION_TAVILY_KEY, get_effective_tavily_api_key
-from ui.state import get_tracer, _iso_now, SESSION_LANGSMITH_KEY, SESSION_LANGSMITH_TRACING_ENABLED, SESSION_TRACING_HEALTH_STATUS
+from ui.state import (
+    SESSION_LANGSMITH_KEY,
+    SESSION_LANGSMITH_TRACING_ENABLED,
+    SESSION_RAG_SEMANTIC_WEIGHT,
+    SESSION_RAG_TOP_K,
+    SESSION_TRACING_HEALTH_STATUS,
+    _iso_now,
+    get_tracer,
+)
 from ui.rag_service_provider import get_rag_service
 def render_settings_tab():
     st.title("Configurações")
@@ -79,6 +87,39 @@ def render_settings_tab():
         st.session_state[SESSION_LANGSMITH_TRACING_ENABLED] = True
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
         st.success("Configurações salvas na sessão.")
+
+    st.divider()
+    st.subheader("Busca híbrida (RAG)")
+    st.caption("Ajuste top_k e o peso da busca semântica (RRF + BM25).")
+
+    current_top_k = int(st.session_state.get(SESSION_RAG_TOP_K, 5) or 5)
+    current_semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
+
+    rag_top_k = st.number_input(
+        "Top K",
+        min_value=1,
+        max_value=20,
+        value=current_top_k,
+        step=1,
+        key="settings_rag_top_k_input",
+    )
+    rag_semantic_weight = st.slider(
+        "Peso busca semântica",
+        min_value=0.0,
+        max_value=1.0,
+        value=current_semantic_weight,
+        step=0.05,
+        key="settings_rag_semantic_weight_input",
+    )
+    rag_bm25_weight = 1.0 - rag_semantic_weight
+    st.caption(
+        f"Peso BM25: {rag_bm25_weight:.2f} (calculado automaticamente como 1 - peso semântico)."
+    )
+
+    if st.button("💾 Salvar configuração do RAG", key="settings_save_rag_config"):
+        st.session_state[SESSION_RAG_TOP_K] = int(rag_top_k)
+        st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = float(rag_semantic_weight)
+        st.success("Configuração de busca híbrida salva na sessão.")
 
     if st.button("🩺 Testar tracing LangSmith", key="settings_test_tracing"):
         tracer = get_tracer()
