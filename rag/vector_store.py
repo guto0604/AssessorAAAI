@@ -9,6 +9,9 @@ except Exception:  # pragma: no cover
 import numpy as np
 
 from rag.config import (
+    FAISS_HNSW_EF_CONSTRUCTION,
+    FAISS_HNSW_EF_SEARCH,
+    FAISS_HNSW_M,
     VECTORSTORE_DIR,
     VECTORSTORE_INDEX_PATH,
     VECTORSTORE_MANIFEST_PATH,
@@ -39,6 +42,13 @@ class LocalFaissStore:
 
     def _ensure_dir(self):
         VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _build_hnsw_index(self, dimension: int):
+        self._ensure_faiss_available()
+        index = faiss.IndexHNSWFlat(dimension, FAISS_HNSW_M, faiss.METRIC_INNER_PRODUCT)
+        index.hnsw.efConstruction = FAISS_HNSW_EF_CONSTRUCTION
+        index.hnsw.efSearch = FAISS_HNSW_EF_SEARCH
+        return index
 
     def exists(self) -> bool:
         return VECTORSTORE_INDEX_PATH.exists() and VECTORSTORE_METADATA_PATH.exists()
@@ -91,7 +101,9 @@ class LocalFaissStore:
         faiss.normalize_L2(matrix)
 
         if self.index is None:
-            self.index = faiss.IndexFlatIP(matrix.shape[1])
+            self.index = self._build_hnsw_index(matrix.shape[1])
+        elif hasattr(self.index, "hnsw"):
+            self.index.hnsw.efSearch = FAISS_HNSW_EF_SEARCH
 
         self.index.add(matrix)
         self.metadata.extend(metadata)
