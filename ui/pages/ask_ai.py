@@ -139,14 +139,16 @@ def render_ask_ai_tab():
                     sources = rag_result["sources"]
 
                     for api_call in rag_result.get("api_calls", []):
+                        step = api_call.get("step")
+                        run_type = "llm" if step in {"chat_completion", "query_parser"} else "embedding"
                         tracer.log_child_run(
                             ask_ai_run_id,
-                            name=f"ask_ai_{api_call.get('step')}",
-                            run_type="llm" if api_call.get("step") == "chat_completion" else "embedding",
+                            name=f"ask_ai_{step}",
+                            run_type=run_type,
                             inputs={"question": question, "top_k": 4},
                             outputs={"status": "success"},
                             metadata=api_call,
-                            tags=["ask_ai", api_call.get("step", "unknown")],
+                            tags=["ask_ai", step or "unknown"],
                         )
 
                     tracer.end_run(

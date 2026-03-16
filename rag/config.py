@@ -9,3 +9,4 @@ VECTORSTORE_MANIFEST_PATH = VECTORSTORE_DIR / "manifest.json"
 SUPPORTED_EXTENSIONS = {".txt", ".pdf"}
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHAT_MODEL = "gpt-5-mini"
+QUERY_PARSER_MODEL = "gpt-5-mini"

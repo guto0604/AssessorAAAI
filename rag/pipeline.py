@@ -5,7 +5,7 @@ from typing import Any
 
 from core.openai_client import get_openai_client
 from rag.chunking import chunk_text
-from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR
+from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR, QUERY_PARSER_MODEL
 from rag.document_loader import (
     InvalidDocumentError,
     extract_text_from_bytes,
@@ -69,6 +69,45 @@ class RagService:
                 "total_tokens": total_tokens,
             },
         }
+
+
+    def _parse_query_for_retrieval(self, question: str, include_api_metrics: bool = False):
+        parser_prompt = (
+            "Você é um parser de consultas para recuperação semântica em assessoria de investimentos. "
+            "Reescreva a pergunta do assessor para busca vetorial em português do Brasil, "
+            "mantendo intenção original, incluindo termos financeiros e operacionais relevantes, "
+            "sinônimos úteis, e contexto de suitability/compliance quando aplicável. "
+            "Não responda à pergunta; apenas devolva a consulta expandida em uma única linha."
+        )
+
+        llm_started_at = perf_counter()
+        response = self.client.chat.completions.create(
+            model=QUERY_PARSER_MODEL,
+            temperature=1,
+            messages=[
+                {"role": "system", "content": parser_prompt},
+                {"role": "user", "content": question},
+            ],
+        )
+        llm_latency_ms = int((perf_counter() - llm_started_at) * 1000)
+        parsed_query = (response.choices[0].message.content or "").strip()
+        if not parsed_query:
+            parsed_query = question
+
+        if not include_api_metrics:
+            return parsed_query
+
+        input_tokens, output_tokens, total_tokens = self._extract_usage(getattr(response, "usage", None))
+        parser_metrics = {
+            "provider": "openai",
+            "step": "query_parser",
+            "model": getattr(response, "model", QUERY_PARSER_MODEL),
+            "latency_ms": llm_latency_ms,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+        }
+        return {"parsed_query": parsed_query, "api_metrics": parser_metrics}
 
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
         text = extract_text_from_bytes(file_name=file_name, content=content)
@@ -164,7 +203,15 @@ class RagService:
     def answer_question(self, question: str, top_k: int = 4, include_api_metrics: bool = False):
         self.ensure_index_exists()
 
-        query_embedding_result = self._embed_texts([question], include_api_metrics=include_api_metrics)
+        parsed_query_result = self._parse_query_for_retrieval(question, include_api_metrics=include_api_metrics)
+        if include_api_metrics:
+            parsed_query = parsed_query_result["parsed_query"]
+            query_parser_metrics = parsed_query_result["api_metrics"]
+        else:
+            parsed_query = parsed_query_result
+            query_parser_metrics = None
+
+        query_embedding_result = self._embed_texts([parsed_query], include_api_metrics=include_api_metrics)
         if include_api_metrics:
             query_embedding = query_embedding_result["embeddings"][0]
             query_embedding_metrics = query_embedding_result["api_metrics"]
@@ -180,7 +227,7 @@ class RagService:
                 return {
                     "answer": fallback_answer,
                     "sources": [],
-                    "api_calls": [query_embedding_metrics] if query_embedding_metrics else [],
+                    "api_calls": [call for call in [query_parser_metrics, query_embedding_metrics] if call],
                 }
             return fallback_answer, []
 
@@ -206,7 +253,8 @@ class RagService:
         )
 
         user_message = (
-            f"Pergunta: {question}\n\n"
+            f"Pergunta original do usuário: {question}\n"
+            f"Consulta usada para recuperação vetorial: {parsed_query}\n\n"
             "Trechos recuperados:\n"
             + "\n\n".join(context_parts)
             + "\n\nRegras: não invente informações, cite limitações quando necessário."
@@ -236,7 +284,7 @@ class RagService:
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
         }
-        api_calls = [query_embedding_metrics, completion_metrics]
+        api_calls = [query_parser_metrics, query_embedding_metrics, completion_metrics]
         return {
             "answer": answer,
             "sources": sources,
