@@ -13,3 +13,4 @@ plotly==6.3.1
 faiss-cpu==1.9.0.post1
 pypdf==5.4.0
 numpy==2.3.3
+sentence-transformers==3.0.1

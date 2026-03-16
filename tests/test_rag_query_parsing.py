@@ -62,6 +62,13 @@ class _FakeClient:
         self.embeddings = _Embeddings()
 
 
+
+
+class _FakeCrossEncoder:
+    def predict(self, pairs):
+        # força rerank invertendo prioridade para o segundo trecho
+        return [0.2, 0.9]
+
 class RagQueryParsingTests(unittest.TestCase):
     @patch("rag.pipeline.LocalFaissStore.load", return_value=None)
     @patch("rag.pipeline.get_openai_client")
@@ -103,6 +110,52 @@ class RagQueryParsingTests(unittest.TestCase):
         self.assertEqual(parser_metrics["output_tokens"], 5)
         self.assertEqual(parser_metrics["total_tokens"], 15)
         self.assertTrue(parser_metrics["latency_ms"] >= 0)
+
+    @patch("rag.pipeline.LocalFaissStore.load", return_value=None)
+    @patch("rag.pipeline.get_openai_client")
+    def test_answer_question_applies_cross_encoder_rerank(self, mock_client_factory, _mock_store_load):
+        fake_client = _FakeClient()
+        mock_client_factory.return_value = fake_client
+
+        service = RagService()
+        service.ensure_index_exists = lambda: None
+        service._get_cross_encoder = lambda: _FakeCrossEncoder()
+
+        meta_a = type(
+            "Meta",
+            (),
+            {
+                "source_path": "knowledge_base/operacional/a.txt",
+                "file_name": "a.txt",
+                "chunk_id": 1,
+                "text": "primeiro trecho",
+            },
+        )()
+        meta_b = type(
+            "Meta",
+            (),
+            {
+                "source_path": "knowledge_base/operacional/b.txt",
+                "file_name": "b.txt",
+                "chunk_id": 2,
+                "text": "segundo trecho",
+            },
+        )()
+
+        service.store.search = lambda embedding, k: [(meta_a, 0.95), (meta_b, 0.90)]
+
+        result = service.answer_question(
+            "pergunta",
+            top_k=2,
+            top_n=1,
+            cross_encoder_enabled=True,
+            include_api_metrics=True,
+        )
+
+        self.assertEqual(len(result["sources"]), 1)
+        self.assertEqual(result["sources"][0]["source_path"], "knowledge_base/operacional/b.txt")
+        self.assertEqual(result["api_calls"][2]["step"], "cross_encoder_rerank")
+
 
 
 if __name__ == "__main__":

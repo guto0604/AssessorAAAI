@@ -7,7 +7,13 @@ from typing import Any
 
 from core.openai_client import get_openai_client
 from rag.chunking import chunk_text
-from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR, QUERY_PARSER_MODEL
+from rag.config import (
+    CHAT_MODEL,
+    CROSS_ENCODER_MODEL,
+    EMBEDDING_MODEL,
+    KNOWLEDGE_BASE_DIR,
+    QUERY_PARSER_MODEL,
+)
 from rag.document_loader import (
     InvalidDocumentError,
     extract_text_from_bytes,
@@ -30,6 +36,7 @@ class RagService:
         self.store = LocalFaissStore()
         self.store.load()
         self.client = get_openai_client()
+        self._cross_encoder = None
 
     def _extract_usage(self, usage: Any) -> tuple[int | None, int | None, int | None]:
         if usage is None:
@@ -201,6 +208,57 @@ class RagService:
         )
         return ranked[:top_k]
 
+
+    def _get_cross_encoder(self):
+        if self._cross_encoder is not None:
+            return self._cross_encoder
+
+        from sentence_transformers import CrossEncoder
+
+        self._cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL)
+        return self._cross_encoder
+
+    def _rerank_with_cross_encoder(
+        self,
+        question: str,
+        candidates: list[tuple[ChunkMetadata, float]],
+        top_n: int,
+        include_api_metrics: bool = False,
+    ):
+        if not candidates:
+            if include_api_metrics:
+                return [], None
+            return []
+
+        top_n = max(1, min(int(top_n), len(candidates)))
+        model = self._get_cross_encoder()
+        pairs = [(question, meta.text) for meta, _ in candidates]
+
+        started_at = perf_counter()
+        scores = model.predict(pairs)
+        latency_ms = int((perf_counter() - started_at) * 1000)
+
+        reranked = sorted(
+            ((candidates[idx][0], float(score)) for idx, score in enumerate(scores)),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+        selected = reranked[:top_n]
+
+        if not include_api_metrics:
+            return selected
+
+        metrics = {
+            "provider": "local",
+            "step": "cross_encoder_rerank",
+            "model": CROSS_ENCODER_MODEL,
+            "latency_ms": latency_ms,
+            "input_tokens": None,
+            "output_tokens": None,
+            "total_tokens": None,
+        }
+        return selected, metrics
+
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
         text = extract_text_from_bytes(file_name=file_name, content=content)
         file_hash = sha256_bytes(content)
@@ -299,10 +357,13 @@ class RagService:
         semantic_weight: float = 0.8,
         bm25_weight: float = 0.2,
         include_api_metrics: bool = False,
+        cross_encoder_enabled: bool = False,
+        top_n: int | None = None,
     ):
         self.ensure_index_exists()
 
         top_k = max(1, int(top_k))
+        top_n = top_k if top_n is None else max(1, int(top_n))
         semantic_weight = max(0.0, min(1.0, float(semantic_weight)))
         bm25_weight = max(0.0, min(1.0, float(bm25_weight)))
         weights_sum = semantic_weight + bm25_weight
@@ -335,6 +396,19 @@ class RagService:
             semantic_weight=semantic_weight,
             bm25_weight=bm25_weight,
         )
+
+        rerank_metrics = None
+        if cross_encoder_enabled and retrieved:
+            reranked_result = self._rerank_with_cross_encoder(
+                question=question,
+                candidates=retrieved,
+                top_n=min(top_n, top_k),
+                include_api_metrics=include_api_metrics,
+            )
+            if include_api_metrics:
+                retrieved, rerank_metrics = reranked_result
+            else:
+                retrieved = reranked_result
 
         if not retrieved:
             fallback_answer = "Não encontrei trechos relevantes na base para responder com segurança."
@@ -370,7 +444,8 @@ class RagService:
         user_message = (
             f"Pergunta original do usuário: {question}\n"
             f"Consulta usada para recuperação vetorial: {parsed_query}\n\n"
-            f"Configuração de recuperação híbrida (RRF): top_k={top_k}, peso_semantico={semantic_weight:.2f}, peso_bm25={bm25_weight:.2f}\n\n"
+            f"Configuração de recuperação híbrida (RRF): top_k={top_k}, peso_semantico={semantic_weight:.2f}, peso_bm25={bm25_weight:.2f}\n"
+            f"Cross-encoder local ativo: {cross_encoder_enabled}; top_n={min(top_n, top_k)}\n\n"
             "Trechos recuperados:\n"
             + "\n\n".join(context_parts)
             + "\n\nRegras: não invente informações, cite limitações quando necessário."
@@ -400,7 +475,7 @@ class RagService:
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
         }
-        api_calls = [query_parser_metrics, query_embedding_metrics, completion_metrics]
+        api_calls = [query_parser_metrics, query_embedding_metrics, rerank_metrics, completion_metrics]
         return {
             "answer": answer,
             "sources": sources,

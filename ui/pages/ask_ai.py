@@ -11,7 +11,13 @@ from ui.guardrails import (
     handle_guardrail_exception,
 )
 from ui.rag_service_provider import get_rag_service
-from ui.state import SESSION_RAG_SEMANTIC_WEIGHT, SESSION_RAG_TOP_K, get_tracer
+from ui.state import (
+    SESSION_RAG_CROSS_ENCODER_ENABLED,
+    SESSION_RAG_SEMANTIC_WEIGHT,
+    SESSION_RAG_TOP_K,
+    SESSION_RAG_TOP_N,
+    get_tracer,
+)
 
 
 
@@ -30,6 +36,9 @@ def render_ask_ai_tab():
     tracer = get_tracer()
     top_k = int(st.session_state.get(SESSION_RAG_TOP_K, 5) or 5)
     semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
+    cross_encoder_enabled = bool(st.session_state.get(SESSION_RAG_CROSS_ENCODER_ENABLED, False))
+    top_n = int(st.session_state.get(SESSION_RAG_TOP_N, 3) or 3)
+    top_n = max(1, min(top_n, top_k))
     bm25_weight = 1.0 - semantic_weight
 
     st.subheader("📥 Upload para knowledge base")
@@ -99,6 +108,8 @@ def render_ask_ai_tab():
                     "top_k": top_k,
                     "semantic_weight": semantic_weight,
                     "bm25_weight": bm25_weight,
+                    "cross_encoder_enabled": cross_encoder_enabled,
+                    "top_n": top_n,
                 },
                 tags=["ask_ai", "streamlit", "rag"],
                 metadata={
@@ -148,6 +159,8 @@ def render_ask_ai_tab():
                         semantic_weight=semantic_weight,
                         bm25_weight=bm25_weight,
                         include_api_metrics=True,
+                        cross_encoder_enabled=cross_encoder_enabled,
+                        top_n=top_n,
                     )
                     answer = rag_result["answer"]
                     sources = rag_result["sources"]
@@ -164,6 +177,8 @@ def render_ask_ai_tab():
                                 "top_k": top_k,
                                 "semantic_weight": semantic_weight,
                                 "bm25_weight": bm25_weight,
+                                "cross_encoder_enabled": cross_encoder_enabled,
+                                "top_n": top_n,
                             },
                             outputs={"status": "success"},
                             metadata=api_call,

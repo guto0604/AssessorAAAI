@@ -18,6 +18,8 @@ SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
 SESSION_RAG_TOP_K = "rag_top_k"
 SESSION_RAG_SEMANTIC_WEIGHT = "rag_semantic_weight"
+SESSION_RAG_CROSS_ENCODER_ENABLED = "rag_cross_encoder_enabled"
+SESSION_RAG_TOP_N = "rag_top_n"
 TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 
@@ -129,6 +131,12 @@ def init_session_state():
 
     if SESSION_RAG_SEMANTIC_WEIGHT not in st.session_state:
         st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = 0.8
+
+    if SESSION_RAG_CROSS_ENCODER_ENABLED not in st.session_state:
+        st.session_state[SESSION_RAG_CROSS_ENCODER_ENABLED] = False
+
+    if SESSION_RAG_TOP_N not in st.session_state:
+        st.session_state[SESSION_RAG_TOP_N] = 3
 
     if "talk_to_data_last_llm_output" not in st.session_state:
         st.session_state.talk_to_data_last_llm_output = None

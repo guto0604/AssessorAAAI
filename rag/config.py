@@ -10,6 +10,7 @@ SUPPORTED_EXTENSIONS = {".txt", ".pdf"}
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHAT_MODEL = "gpt-5-mini"
 QUERY_PARSER_MODEL = "gpt-5-mini"
+CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # HNSW parameters for FAISS ANN retrieval
 FAISS_HNSW_M = 32

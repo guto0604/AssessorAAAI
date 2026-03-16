@@ -7,8 +7,10 @@ from core.tavily_client import SESSION_TAVILY_KEY, get_effective_tavily_api_key
 from ui.state import (
     SESSION_LANGSMITH_KEY,
     SESSION_LANGSMITH_TRACING_ENABLED,
+    SESSION_RAG_CROSS_ENCODER_ENABLED,
     SESSION_RAG_SEMANTIC_WEIGHT,
     SESSION_RAG_TOP_K,
+    SESSION_RAG_TOP_N,
     SESSION_TRACING_HEALTH_STATUS,
     _iso_now,
     get_tracer,
@@ -94,6 +96,8 @@ def render_settings_tab():
 
     current_top_k = int(st.session_state.get(SESSION_RAG_TOP_K, 5) or 5)
     current_semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
+    current_cross_encoder_enabled = bool(st.session_state.get(SESSION_RAG_CROSS_ENCODER_ENABLED, False))
+    current_top_n = int(st.session_state.get(SESSION_RAG_TOP_N, 3) or 3)
 
     rag_top_k = st.number_input(
         "Top K",
@@ -112,6 +116,28 @@ def render_settings_tab():
         key="settings_rag_semantic_weight_input",
     )
     rag_bm25_weight = 1.0 - rag_semantic_weight
+
+    rag_cross_encoder_enabled = st.checkbox(
+        "Ativar rerank com Cross-Encoder local",
+        value=current_cross_encoder_enabled,
+        key="settings_rag_cross_encoder_enabled_input",
+        help="Quando ativado, aplica rerank local nos candidatos do top_k e retorna o top_n mais relevantes.",
+    )
+
+    max_top_n = int(rag_top_k)
+    rag_top_n = st.number_input(
+        "Top N (após rerank)",
+        min_value=1,
+        max_value=max_top_n,
+        value=min(current_top_n, max_top_n),
+        step=1,
+        key="settings_rag_top_n_input",
+        disabled=not rag_cross_encoder_enabled,
+    )
+    if rag_cross_encoder_enabled:
+        st.caption("Com Cross-Encoder ativo: recupera top_k e aplica rerank local para selecionar top_n.")
+    else:
+        st.caption("Cross-Encoder inativo: usa somente busca híbrida padrão com top_k.")
     st.caption(
         f"Peso BM25: {rag_bm25_weight:.2f} (calculado automaticamente como 1 - peso semântico)."
     )
@@ -119,6 +145,8 @@ def render_settings_tab():
     if st.button("💾 Salvar configuração do RAG", key="settings_save_rag_config"):
         st.session_state[SESSION_RAG_TOP_K] = int(rag_top_k)
         st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = float(rag_semantic_weight)
+        st.session_state[SESSION_RAG_CROSS_ENCODER_ENABLED] = bool(rag_cross_encoder_enabled)
+        st.session_state[SESSION_RAG_TOP_N] = int(min(rag_top_n, rag_top_k))
         st.success("Configuração de busca híbrida salva na sessão.")
 
     if st.button("🩺 Testar tracing LangSmith", key="settings_test_tracing"):
