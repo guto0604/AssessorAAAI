@@ -43,12 +43,7 @@ A aplicação possui um seletor de cliente na barra lateral e abas principais:
 - **🤖 Pergunte à IA**
   - upload de arquivos para base vetorial (knowledge base),
   - perguntas e respostas com contexto dos documentos.
-
-- **⚙️ Configurações**
-  - configuração de chaves (sessão),
-  - teste de tracing (LangSmith),
-  - reindexação da base vetorial.
-
+ 
 ---
 
 ## Como executar com Docker (principal)
@@ -65,13 +60,8 @@ OPENAI_API_KEY=...
 LANGSMITH_API_KEY=...
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=poc_datamasters
-# opcional
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
-
-> Se usar recursos de busca externa, também pode ser necessário:
->
-> `TAVILY_API_KEY=...`
 
 ### 2) Subir aplicação com Docker Compose
 
@@ -82,53 +72,3 @@ docker compose up --build
 A aplicação ficará disponível em:
 
 - `http://localhost:8501`
-
-### 3) Rodar em segundo plano (detached)
-
-```bash
-docker compose up --build -d
-```
-
-### 4) Parar aplicação
-
-```bash
-docker compose down
-```
-
----
-
-## Execução alternativa (sem Compose)
-
-```bash
-docker build -t assessor-aaai:latest .
-docker run --rm -p 8501:8501 --env-file .env assessor-aaai:latest
-```
-
----
-
-## Desenvolvimento com hot reload (opcional)
-
-Para refletir mudanças locais no container:
-
-```bash
-docker run --rm -p 8501:8501 --env-file .env -v ${PWD}:/app assessor-aaai:latest
-```
-
-No Windows CMD, troque `${PWD}` por `%cd%`.
-
----
-
-## Execução local (sem Docker)
-
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
-
----
-
-## Testes
-
-```bash
-python -m unittest discover -s tests -p 'test_*.py'
-```
