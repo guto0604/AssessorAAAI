@@ -1,10 +1,66 @@
 # AssessorAAAI
 
-## Configuração
+Aplicação em **Streamlit** para apoiar assessores na jornada comercial com uso de IA.
 
-Crie um `.env` com:
+## Objetivo do projeto
 
-```bash
+O AssessorAAAI ajuda o assessor a:
+- entender melhor o cliente e sua carteira;
+- criar abordagens comerciais com mais consistência;
+- transformar dados e reuniões em ações práticas;
+- consultar documentos internos via IA.
+
+---
+
+## Telas da aplicação (resumo simples)
+
+A aplicação possui um seletor de cliente na barra lateral e abas principais:
+
+- **🏠 Início**
+  - visão geral do propósito da ferramenta e de como navegar nas funcionalidades.
+
+- **👤 Visualização clientes**
+  - painel com resumo patrimonial, objetivos, alocação, liquidez, perfil de risco e oportunidades.
+
+- **🚀 Voz do Assessor (Pitch)**
+  - fluxo guiado para montar pitch comercial:
+    - intenção de contato,
+    - seleção de fontes,
+    - opções de narrativa,
+    - geração e ajuste final do texto.
+
+- **📝 Reuniões**
+  - gravação/upload de áudio da reunião,
+  - transcrição automática,
+  - resumo com próximos passos,
+  - histórico por cliente.
+
+- **📊 Talk to your Data**
+  - perguntas em linguagem natural para gerar SQL,
+  - execução da consulta,
+  - resposta explicada e visualização de dados.
+
+- **🤖 Pergunte à IA**
+  - upload de arquivos para base vetorial (knowledge base),
+  - perguntas e respostas com contexto dos documentos.
+
+- **⚙️ Configurações**
+  - configuração de chaves (sessão),
+  - teste de tracing (LangSmith),
+  - reindexação da base vetorial.
+
+---
+
+## Como executar com Docker (principal)
+
+### 1) Pré-requisitos
+
+- Docker instalado (Docker Desktop ou Docker Engine + Compose).
+- Arquivo `.env` na raiz do projeto.
+
+Exemplo de `.env`:
+
+```env
 OPENAI_API_KEY=...
 LANGSMITH_API_KEY=...
 LANGSMITH_TRACING=true
@@ -13,76 +69,66 @@ LANGSMITH_PROJECT=poc_datamasters
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
 
-## Observabilidade (LangSmith)
+> Se usar recursos de busca externa, também pode ser necessário:
+>
+> `TAVILY_API_KEY=...`
 
-Os fluxos de **PITCH** e **REUNIÃO** usam run config com `run_name`, `tags` e `metadata` para facilitar o rastreamento.
-
-### Como validar no LangSmith
-
-1. Configure as variáveis acima.
-2. Execute o app:
-   ```bash
-   streamlit run app.py
-   ```
-3. Rode um fluxo completo de Pitch (passos 1, 4, 5, 7 e opcionalmente 8).
-4. Rode um fluxo de Reunião (upload de áudio e geração de resumo).
-5. Na UI do LangSmith, abra o projeto `poc_datamasters` e confira:
-   - Run pai de cada fluxo (`pitch_step_*` e `meeting_end_to_end`);
-   - Child runs de prompt/model/parser/tools;
-   - Tags e metadata (`feature`, `step`, `parent_run_id`).
-
-## Testes locais
-
-```bash
-python -m unittest discover -s tests -p 'test_*.py'
-```
-
-
-## Rodando com Docker
-
-A imagem foi adaptada para usar **uv** no lugar de `pip` na etapa de instalação de dependências, o que normalmente reduz bastante o tempo de build em comparação ao `pip install -r requirements.txt`.
-
-### Pré-requisitos
-
-- Docker Desktop (Windows/Mac) ou Docker Engine + Docker Compose (Linux).
-- Arquivo `.env` configurado na raiz do projeto (mesmas variáveis da seção de configuração).
-
-### Build e execução (Docker Compose)
+### 2) Subir aplicação com Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-O Streamlit ficará disponível em `http://localhost:8501`.
+A aplicação ficará disponível em:
 
-> Observação: o `docker-compose.yml` está em modo mais portátil (sem volume bind por padrão), para reproduzir melhor o ambiente entre máquinas.
+- `http://localhost:8501`
 
-### Execução em modo detached
+### 3) Rodar em segundo plano (detached)
 
 ```bash
 docker compose up --build -d
 ```
 
-Para parar:
+### 4) Parar aplicação
 
 ```bash
 docker compose down
 ```
 
-### Build e execução (somente Docker)
+---
+
+## Execução alternativa (sem Compose)
 
 ```bash
 docker build -t assessor-aaai:latest .
 docker run --rm -p 8501:8501 --env-file .env assessor-aaai:latest
 ```
 
+---
 
-### Desenvolvimento com hot reload (opcional)
+## Desenvolvimento com hot reload (opcional)
 
-Se quiser refletir mudanças do código local imediatamente no container, rode com bind mount manual:
+Para refletir mudanças locais no container:
 
 ```bash
 docker run --rm -p 8501:8501 --env-file .env -v ${PWD}:/app assessor-aaai:latest
 ```
 
-No PowerShell (Windows), use `${PWD}` normalmente; no CMD, substitua por `%cd%`.
+No Windows CMD, troque `${PWD}` por `%cd%`.
+
+---
+
+## Execução local (sem Docker)
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+---
+
+## Testes
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py'
+```
