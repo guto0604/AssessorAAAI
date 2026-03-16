@@ -16,6 +16,8 @@ SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
+SESSION_RAG_TOP_K = "rag_top_k"
+SESSION_RAG_SEMANTIC_WEIGHT = "rag_semantic_weight"
 TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 
@@ -121,6 +123,12 @@ def init_session_state():
 
     if SESSION_LANGSMITH_TRACER not in st.session_state:
         st.session_state[SESSION_LANGSMITH_TRACER] = None
+
+    if SESSION_RAG_TOP_K not in st.session_state:
+        st.session_state[SESSION_RAG_TOP_K] = 5
+
+    if SESSION_RAG_SEMANTIC_WEIGHT not in st.session_state:
+        st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = 0.8
 
     if "talk_to_data_last_llm_output" not in st.session_state:
         st.session_state.talk_to_data_last_llm_output = None

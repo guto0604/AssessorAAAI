@@ -11,7 +11,7 @@ from ui.guardrails import (
     handle_guardrail_exception,
 )
 from ui.rag_service_provider import get_rag_service
-from ui.state import get_tracer
+from ui.state import SESSION_RAG_SEMANTIC_WEIGHT, SESSION_RAG_TOP_K, get_tracer
 
 
 
@@ -28,6 +28,9 @@ def render_ask_ai_tab():
 
     rag = get_rag_service()
     tracer = get_tracer()
+    top_k = int(st.session_state.get(SESSION_RAG_TOP_K, 5) or 5)
+    semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
+    bm25_weight = 1.0 - semantic_weight
 
     st.subheader("📥 Upload para knowledge base")
     folders = _list_kb_folders()
@@ -91,7 +94,12 @@ def render_ask_ai_tab():
             ask_ai_run_id = tracer.start_run(
                 name=f"ask_ai_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                 run_type="chain",
-                inputs={"question": question, "top_k": 4},
+                inputs={
+                    "question": question,
+                    "top_k": top_k,
+                    "semantic_weight": semantic_weight,
+                    "bm25_weight": bm25_weight,
+                },
                 tags=["ask_ai", "streamlit", "rag"],
                 metadata={
                     "feature": "ask_ai",
@@ -134,7 +142,13 @@ def render_ask_ai_tab():
 
             with st.spinner("Consultando base vetorial..."):
                 try:
-                    rag_result = rag.answer_question(question, top_k=4, include_api_metrics=True)
+                    rag_result = rag.answer_question(
+                        question,
+                        top_k=top_k,
+                        semantic_weight=semantic_weight,
+                        bm25_weight=bm25_weight,
+                        include_api_metrics=True,
+                    )
                     answer = rag_result["answer"]
                     sources = rag_result["sources"]
 
@@ -145,7 +159,12 @@ def render_ask_ai_tab():
                             ask_ai_run_id,
                             name=f"ask_ai_{step}",
                             run_type=run_type,
-                            inputs={"question": question, "top_k": 4},
+                            inputs={
+                                "question": question,
+                                "top_k": top_k,
+                                "semantic_weight": semantic_weight,
+                                "bm25_weight": bm25_weight,
+                            },
                             outputs={"status": "success"},
                             metadata=api_call,
                             tags=["ask_ai", step or "unknown"],

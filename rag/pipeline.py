@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
+import math
+import re
 from time import perf_counter
 from typing import Any
 
@@ -109,6 +111,96 @@ class RagService:
         }
         return {"parsed_query": parsed_query, "api_metrics": parser_metrics}
 
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        return re.findall(r"\w+", (text or "").lower(), flags=re.UNICODE)
+
+    def _bm25_search(self, query: str, k: int = 5) -> list[tuple[ChunkMetadata, float]]:
+        if not self.store.metadata:
+            return []
+
+        tokenized_docs = [self._tokenize(meta.text) for meta in self.store.metadata]
+        doc_count = len(tokenized_docs)
+        avg_doc_len = sum(len(doc) for doc in tokenized_docs) / max(doc_count, 1)
+        if avg_doc_len == 0:
+            return []
+
+        doc_freqs: dict[str, int] = {}
+        term_freq_per_doc: list[dict[str, int]] = []
+        for doc_tokens in tokenized_docs:
+            term_freq: dict[str, int] = {}
+            seen = set()
+            for token in doc_tokens:
+                term_freq[token] = term_freq.get(token, 0) + 1
+                if token not in seen:
+                    doc_freqs[token] = doc_freqs.get(token, 0) + 1
+                    seen.add(token)
+            term_freq_per_doc.append(term_freq)
+
+        query_terms = self._tokenize(query)
+        if not query_terms:
+            return []
+
+        k1 = 1.5
+        b = 0.75
+        scores = [0.0] * doc_count
+        for term in query_terms:
+            df = doc_freqs.get(term, 0)
+            if df == 0:
+                continue
+            idf = math.log((doc_count - df + 0.5) / (df + 0.5) + 1.0)
+            for idx, term_freq in enumerate(term_freq_per_doc):
+                tf = term_freq.get(term, 0)
+                if tf == 0:
+                    continue
+                doc_len = len(tokenized_docs[idx])
+                numerator = tf * (k1 + 1)
+                denominator = tf + k1 * (1 - b + b * (doc_len / avg_doc_len))
+                scores[idx] += idf * (numerator / denominator)
+
+        ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
+        results: list[tuple[ChunkMetadata, float]] = []
+        for idx, score in ranked[: min(k, len(ranked))]:
+            if score <= 0:
+                continue
+            results.append((self.store.metadata[idx], float(score)))
+        return results
+
+    def _hybrid_search(
+        self,
+        parsed_query: str,
+        query_embedding: list[float],
+        top_k: int = 5,
+        semantic_weight: float = 0.8,
+        bm25_weight: float = 0.2,
+    ) -> list[tuple[ChunkMetadata, float]]:
+        retrieval_depth = max(top_k * 4, top_k)
+        semantic_results = self.store.search(query_embedding, k=retrieval_depth)
+        bm25_results = self._bm25_search(parsed_query, k=retrieval_depth)
+
+        # Weighted Reciprocal Rank Fusion (RRF)
+        rrf_constant = 60
+        fused_scores: dict[tuple[str, int], dict[str, Any]] = {}
+
+        for rank, (meta, _score) in enumerate(semantic_results, start=1):
+            key = (meta.source_path, meta.chunk_id)
+            if key not in fused_scores:
+                fused_scores[key] = {"meta": meta, "score": 0.0}
+            fused_scores[key]["score"] += semantic_weight * (1.0 / (rrf_constant + rank))
+
+        for rank, (meta, _score) in enumerate(bm25_results, start=1):
+            key = (meta.source_path, meta.chunk_id)
+            if key not in fused_scores:
+                fused_scores[key] = {"meta": meta, "score": 0.0}
+            fused_scores[key]["score"] += bm25_weight * (1.0 / (rrf_constant + rank))
+
+        ranked = sorted(
+            ((item["meta"], float(item["score"])) for item in fused_scores.values()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+        return ranked[:top_k]
+
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
         text = extract_text_from_bytes(file_name=file_name, content=content)
         file_hash = sha256_bytes(content)
@@ -200,8 +292,25 @@ class RagService:
         if not self.store.exists() or not self.store.metadata:
             self.reindex_all_documents()
 
-    def answer_question(self, question: str, top_k: int = 4, include_api_metrics: bool = False):
+    def answer_question(
+        self,
+        question: str,
+        top_k: int = 5,
+        semantic_weight: float = 0.8,
+        bm25_weight: float = 0.2,
+        include_api_metrics: bool = False,
+    ):
         self.ensure_index_exists()
+
+        top_k = max(1, int(top_k))
+        semantic_weight = max(0.0, min(1.0, float(semantic_weight)))
+        bm25_weight = max(0.0, min(1.0, float(bm25_weight)))
+        weights_sum = semantic_weight + bm25_weight
+        if weights_sum <= 0:
+            semantic_weight, bm25_weight = 0.8, 0.2
+        else:
+            semantic_weight /= weights_sum
+            bm25_weight /= weights_sum
 
         parsed_query_result = self._parse_query_for_retrieval(question, include_api_metrics=include_api_metrics)
         if include_api_metrics:
@@ -219,7 +328,13 @@ class RagService:
             query_embedding = query_embedding_result[0]
             query_embedding_metrics = None
 
-        retrieved = self.store.search(query_embedding, k=top_k)
+        retrieved = self._hybrid_search(
+            parsed_query=parsed_query,
+            query_embedding=query_embedding,
+            top_k=top_k,
+            semantic_weight=semantic_weight,
+            bm25_weight=bm25_weight,
+        )
 
         if not retrieved:
             fallback_answer = "Não encontrei trechos relevantes na base para responder com segurança."
@@ -255,6 +370,7 @@ class RagService:
         user_message = (
             f"Pergunta original do usuário: {question}\n"
             f"Consulta usada para recuperação vetorial: {parsed_query}\n\n"
+            f"Configuração de recuperação híbrida (RRF): top_k={top_k}, peso_semantico={semantic_weight:.2f}, peso_bm25={bm25_weight:.2f}\n\n"
             "Trechos recuperados:\n"
             + "\n\n".join(context_parts)
             + "\n\nRegras: não invente informações, cite limitações quando necessário."
