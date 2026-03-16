@@ -10,3 +10,8 @@ SUPPORTED_EXTENSIONS = {".txt", ".pdf"}
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHAT_MODEL = "gpt-5-mini"
 QUERY_PARSER_MODEL = "gpt-5-mini"
+
+# HNSW parameters for FAISS ANN retrieval
+FAISS_HNSW_M = 32
+FAISS_HNSW_EF_CONSTRUCTION = 200
+FAISS_HNSW_EF_SEARCH = 64

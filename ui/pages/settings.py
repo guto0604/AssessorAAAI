@@ -117,7 +117,9 @@ def render_settings_tab():
 
     st.divider()
     st.subheader("Knowledge Base Vetorial")
-    st.caption("Reconstrói o índice FAISS local usando todos os arquivos PDF/TXT da pasta knowledge_base.")
+    st.caption(
+        "Reconstrói o índice vetorial FAISS (HNSW) usando todos os arquivos PDF/TXT da pasta knowledge_base."
+    )
 
     if st.button("🔁 Reindexar base vetorial", key="settings_reindex_vectorstore"):
         with st.spinner("Reindexando documentos da knowledge base..."):
