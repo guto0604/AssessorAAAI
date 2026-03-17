@@ -1,7 +1,6 @@
 import json
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
 from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
@@ -41,14 +40,17 @@ def read_kb_files_tool(payload: dict) -> list[dict]:
     max_chars_each = payload.get("max_chars_each", 3500)
     docs = []
     for path in file_paths:
+        normalized = str(path or "").strip()
+        if not normalized.endswith(".txt"):
+            continue
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(normalized, "r", encoding="utf-8") as f:
                 txt = f.read().strip()
                 if len(txt) > max_chars_each:
                     txt = txt[:max_chars_each] + "\n...[TRUNCADO]"
-                docs.append({"path": path, "content": txt})
+                docs.append({"path": normalized, "content": txt})
         except Exception as e:
-            docs.append({"path": path, "content": f"[ERRO AO LER: {e}]"})
+            docs.append({"path": normalized, "content": f"[ERRO AO LER: {e}]"})
     return docs
 
 
@@ -82,6 +84,19 @@ def build_pitch_options_step5(
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     """
     kb_docs = read_kb_files_tool.invoke({"file_paths": kb_files_selected, "max_chars_each": 3500})
+
+
+    tracer = (trace_context or {}).get("tracer")
+    parent_run_id = (trace_context or {}).get("parent_run_id")
+    if tracer and parent_run_id:
+        tracer.log_event(
+            parent_run_id,
+            "pitch_step_5_documents_consulted",
+            {
+                "documents": [doc.get("path") for doc in kb_docs],
+                "total_documents": len(kb_docs),
+            },
+        )
 
     investimentos_list = investimentos_cliente_df[["Produto", "Categoria", "Valor_Investido"]].to_dict(orient="records")
 
