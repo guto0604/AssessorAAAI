@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pandas as pd
 import streamlit as st
 
-from ui.pages.talk_to_data import _build_rls_filter_sql, build_llm_prompt, render_visual
+from ui.pages.talk_to_data import _build_patrimonio_rls_condition_sql, build_llm_prompt, render_visual
 
 
 class TalkToDataVisualizationTests(unittest.TestCase):
@@ -23,23 +23,25 @@ class TalkToDataVisualizationTests(unittest.TestCase):
         self.assertIn('"color": "campo ou vazio"', prompt)
 
     def test_prompt_includes_rls_instruction(self):
-        prompt = build_llm_prompt("teste", "schema", allowed_cliente_ids=["A_001", "A_002"])
-        self.assertIn("Aplique RLS SEMPRE", prompt)
-        self.assertIn("A_001, A_002", prompt)
+        prompt = build_llm_prompt("teste", "schema")
+        self.assertIn("RLS por patrimônio já é aplicado de forma oculta", prompt)
+        self.assertNotIn("Cliente_ID na lista permitida", prompt)
 
-    @patch("ui.pages.talk_to_data.pd.read_parquet")
-    def test_build_rls_filter_sql_escapes_ids(self, mock_read_parquet):
-        mock_read_parquet.return_value = pd.DataFrame(
-            {
-                "Cliente_ID": ["A_001", "X_'42"],
-                "Patrimonio_Investido_Conosco": [100_000, 3_000_000],
-            }
-        )
+    def test_build_patrimonio_rls_condition_sql_by_selected_segments(self):
         st.session_state["rls_allowed_segments"] = ["Até 300k", "2M+"]
 
-        rls_sql = _build_rls_filter_sql()
+        rls_sql = _build_patrimonio_rls_condition_sql()
 
-        self.assertEqual(rls_sql, "'A_001', 'X_''42'")
+        self.assertIn("Patrimonio_Investido_Conosco <= 300000", rls_sql)
+        self.assertIn("Patrimonio_Investido_Conosco > 2000000", rls_sql)
+        self.assertNotIn("Patrimonio_Investido_Conosco > 300000 AND Patrimonio_Investido_Conosco <= 2000000", rls_sql)
+
+    def test_build_patrimonio_rls_condition_sql_without_segments(self):
+        st.session_state["rls_allowed_segments"] = []
+
+        rls_sql = _build_patrimonio_rls_condition_sql()
+
+        self.assertEqual(rls_sql, "FALSE")
 
     @patch("ui.pages.talk_to_data.st.plotly_chart")
     @patch("ui.pages.talk_to_data.st.subheader")
@@ -110,7 +112,27 @@ class TalkToDataVisualizationTests(unittest.TestCase):
         render_visual(df, spec)
 
         mock_info.assert_called_once()
-        mock_bar.assert_not_called()
+        mock_bar.assert_called_once()
+
+    @patch("ui.pages.talk_to_data.st.plotly_chart")
+    @patch("ui.pages.talk_to_data.st.subheader")
+    @patch("ui.pages.talk_to_data.px.line")
+    def test_render_without_color_when_llm_returns_empty_color(self, mock_line, _mock_subheader, mock_plotly_chart):
+        mock_line.return_value = object()
+        df = pd.DataFrame({"mes": ["jan"], "valor": [10]})
+        spec = {
+            "needed": True,
+            "type": "line",
+            "x": "mes",
+            "y": "valor",
+            "color": "",
+            "title": "Sem cor",
+        }
+
+        render_visual(df, spec)
+
+        mock_line.assert_called_once_with(df, x="mes", y="valor", color=None, title="Sem cor")
+        mock_plotly_chart.assert_called_once()
 
 
 if __name__ == "__main__":

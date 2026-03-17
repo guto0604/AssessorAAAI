@@ -56,13 +56,22 @@ def _rls_filtered_clientes_df() -> pd.DataFrame:
     return segmented[segmented["_segmento_rls"].isin(allowed_segments)].drop(columns=["_segmento_rls"])
 
 
-def _build_rls_filter_sql() -> str:
-    filtered_clientes = _rls_filtered_clientes_df()
-    ids = filtered_clientes["Cliente_ID"].dropna().astype(str).tolist()
-    if not ids:
-        return "NULL"
-    safe_ids = [cliente_id.replace("'", "''") for cliente_id in ids]
-    return ", ".join([f"'{cliente_id}'" for cliente_id in safe_ids])
+def _build_patrimonio_rls_condition_sql() -> str:
+    allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RLS_SEGMENT_OPTIONS)
+    if not allowed_segments:
+        return "FALSE"
+
+    conditions = []
+    if "Até 300k" in allowed_segments:
+        conditions.append("Patrimonio_Investido_Conosco <= 300000")
+    if "300k-2M" in allowed_segments:
+        conditions.append("Patrimonio_Investido_Conosco > 300000 AND Patrimonio_Investido_Conosco <= 2000000")
+    if "2M+" in allowed_segments:
+        conditions.append("Patrimonio_Investido_Conosco > 2000000")
+
+    if not conditions:
+        return "FALSE"
+    return " OR ".join([f"({condition})" for condition in conditions])
 
 def _reset_talk_to_data_state() -> None:
     """Responsável por reiniciar talk to data state no contexto da aplicação de assessoria.
@@ -288,7 +297,6 @@ def render_talk_to_your_data_page():
             prompt = build_llm_prompt(
                 question=question.strip(),
                 reference_text=reference_text,
-                allowed_cliente_ids=allowed_cliente_ids,
             )
             tracer.log_event(talk_to_data_run_id, "talk_to_data_llm_call_started")
             llm_started_at = time.perf_counter()
@@ -455,20 +463,15 @@ def load_reference_text() -> str:
 def build_llm_prompt(
     question: str,
     reference_text: str,
-    allowed_cliente_ids: list[str] | None = None,
 ) -> str:
     """Monta a estrutura de dados usada nas próximas etapas do fluxo.
 
     Args:
         question: Pergunta do usuário que direciona a busca ou geração da resposta.
         reference_text: Valor de entrada necessário para processar 'reference_text'.
-        allowed_cliente_ids: Lista de clientes permitidos pelo filtro RLS da sessão.
-
     Returns:
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     """
-    allowed_ids_clause = ", ".join(allowed_cliente_ids) if allowed_cliente_ids else "(nenhum cliente permitido)"
-
     return f"""
 Você é um analista de dados de uma assessoria de investimentos.
 
@@ -486,7 +489,7 @@ Regras:
 - Nunca gere código Python para visualização.
 - Se o usuário pedir para colorir o visual por uma coluna, inclua essa coluna no SELECT final do SQL e preencha visualization.color com o nome exato da coluna.
 - Retorne APENAS JSON válido.
-- Aplique RLS SEMPRE: a consulta deve considerar apenas Cliente_ID na lista permitida [{allowed_ids_clause}].
+- O RLS por patrimônio já é aplicado de forma oculta antes da consulta; nunca tente remover ou contornar esse filtro.
 
 Formato de saída JSON:
 {{
@@ -622,6 +625,9 @@ def validate_read_only_sql(sql: str) -> None:
     if re.search(blocked_pattern, sql, flags=re.IGNORECASE):
         raise ValueError("A consulta contém comandos bloqueados para segurança.")
 
+    if re.search(r"\b(read_parquet|parquet_scan)\s*\(", sql, flags=re.IGNORECASE):
+        raise ValueError("A consulta deve usar apenas as tabelas permitidas do ambiente.")
+
 
 def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
     """Responsável por criar talk to data views no contexto da aplicação de assessoria.
@@ -633,20 +639,40 @@ def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     
     """
-    rls_ids = _build_rls_filter_sql()
+    patrimonio_rls_condition = _build_patrimonio_rls_condition_sql()
+    info_path = str(TALK_TO_DATA_FILES["Informacoes_Cliente"]).replace("'", "''")
+    investimentos_path = str(TALK_TO_DATA_FILES["Investimentos_Cliente"]).replace("'", "''")
+    produtos_path = str(TALK_TO_DATA_FILES["Produtos"]).replace("'", "''")
 
-    for table_name, file_path in TALK_TO_DATA_FILES.items():
-        escaped_path = str(file_path).replace("'", "''")
-        if table_name in {"Informacoes_Cliente", "Investimentos_Cliente"}:
-            con.execute(
-                f"""
-                CREATE OR REPLACE VIEW "{table_name}" AS
-                SELECT * FROM read_parquet('{escaped_path}')
-                WHERE CAST(Cliente_ID AS VARCHAR) IN ({rls_ids})
-                """
-            )
-        else:
-            con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
+    con.execute(
+        f"""
+        CREATE OR REPLACE VIEW "Informacoes_Cliente" AS
+        SELECT *
+        FROM read_parquet('{info_path}')
+        WHERE {patrimonio_rls_condition}
+        """
+    )
+
+    con.execute(
+        f"""
+        CREATE OR REPLACE VIEW "Investimentos_Cliente" AS
+        SELECT inv.*
+        FROM read_parquet('{investimentos_path}') inv
+        INNER JOIN (
+            SELECT DISTINCT CAST(Cliente_ID AS VARCHAR) AS Cliente_ID
+            FROM "Informacoes_Cliente"
+        ) cli
+            ON CAST(inv.Cliente_ID AS VARCHAR) = cli.Cliente_ID
+        """
+    )
+
+    con.execute(
+        f"""
+        CREATE OR REPLACE VIEW "Produtos" AS
+        SELECT *
+        FROM read_parquet('{produtos_path}')
+        """
+    )
 
 
 def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) -> pd.DataFrame:
@@ -695,6 +721,10 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
     x = visualization_spec.get("x")
     y = visualization_spec.get("y")
     color = visualization_spec.get("color")
+    if isinstance(color, str):
+        color = color.strip()
+        if color.lower() in {"", "vazio", "none", "null", "sem cor", "sem_color"}:
+            color = None
     title = visualization_spec.get("title") or "Visual gerado"
 
     if vis_type == "table":
@@ -710,8 +740,8 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
         return
 
     if color and color not in result_df.columns:
-        st.info(f"Não foi possível renderizar o visual: coluna de cor '{color}' não encontrada no resultado.")
-        return
+        st.info(f"Coluna de cor '{color}' não encontrada; o gráfico será exibido sem cor.")
+        color = None
 
     if vis_type == "bar":
         fig = px.bar(result_df, x=x, y=y, color=color, title=title)
