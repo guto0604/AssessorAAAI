@@ -21,6 +21,15 @@ class InputGuardrailResult:
 
 
 def evaluate_input_guardrails(user_input: str) -> InputGuardrailResult:
+    """Responsável por processar input guardrails no contexto da aplicação de assessoria.
+
+    Args:
+        user_input: Valor de entrada necessário para processar 'user_input'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     normalized_input = (user_input or "").strip()
     if not normalized_input:
         return InputGuardrailResult(
@@ -77,6 +86,16 @@ def evaluate_input_guardrails(user_input: str) -> InputGuardrailResult:
 
 
 def handle_guardrail_exception(user_input: str, exc: Exception) -> InputGuardrailResult:
+    """Aplica regras de segurança e conformidade antes de processar a solicitação do usuário.
+
+    Args:
+        user_input: Valor de entrada necessário para processar 'user_input'.
+        exc: Valor de entrada necessário para processar 'exc'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     LOGGER.warning("Falha ao avaliar guardrail para entrada: %s", user_input[:120], exc_info=exc)
     return InputGuardrailResult(
         allowed=True,
@@ -87,6 +106,15 @@ def handle_guardrail_exception(user_input: str, exc: Exception) -> InputGuardrai
 
 
 def guardrail_warning_message(violation_type: str | None) -> str:
+    """Aplica regras de segurança e conformidade antes de processar a solicitação do usuário.
+
+    Args:
+        violation_type: Valor de entrada necessário para processar 'violation_type'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if violation_type == "jailbreak":
         return "⚠️ Detectamos uma tentativa de jailbreak/prompt injection. Ajuste a solicitação para continuar no escopo do assistente."
     if violation_type == "off_topic":

@@ -8,6 +8,18 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """Responsável por montar api metrics no contexto da aplicação de assessoria.
+
+    Args:
+        response: Valor de entrada necessário para processar 'response'.
+        provider: Identificador usado para referenciar 'provider'.
+        prompt: Valor de entrada necessário para processar 'prompt'.
+        output: Valor de entrada necessário para processar 'output'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -52,6 +64,23 @@ def build_pitch_options_step5(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Monta a estrutura de dados usada nas próximas etapas do fluxo.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        prompt_assessor: Valor de entrada necessário para processar 'prompt_assessor'.
+        jornada_selecionada: Valor de entrada necessário para processar 'jornada_selecionada'.
+        carteira_summary: Valor de entrada necessário para processar 'carteira_summary'.
+        investimentos_cliente_df: Valor de entrada necessário para processar 'investimentos_cliente_df'.
+        produtos_selecionados_df: Valor de entrada necessário para processar 'produtos_selecionados_df'.
+        kb_files_selected: Caminho ou arquivo de entrada relacionado a 'kb_files_selected'.
+        model: Modelo utilizado para executar a etapa 'model'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     kb_docs = read_kb_files_tool.invoke({"file_paths": kb_files_selected, "max_chars_each": 3500})
 
     investimentos_list = investimentos_cliente_df[["Produto", "Categoria", "Valor_Investido"]].to_dict(orient="records")

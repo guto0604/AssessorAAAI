@@ -31,19 +31,42 @@ class ChunkMetadata:
 
 class LocalFaissStore:
     def __init__(self):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+        """
         self.index = None
         self.metadata: list[ChunkMetadata] = []
         self.manifest: dict[str, str] = {}
 
     @staticmethod
     def _ensure_faiss_available():
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if faiss is None:
             raise RuntimeError("Dependência 'faiss-cpu' não instalada. Instale para habilitar a base vetorial.")
 
     def _ensure_dir(self):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
 
     def _build_hnsw_index(self, dimension: int):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            dimension: Valor de entrada necessário para processar 'dimension'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         self._ensure_faiss_available()
         index = faiss.IndexHNSWFlat(dimension, FAISS_HNSW_M, faiss.METRIC_INNER_PRODUCT)
         index.hnsw.efConstruction = FAISS_HNSW_EF_CONSTRUCTION
@@ -51,9 +74,20 @@ class LocalFaissStore:
         return index
 
     def exists(self) -> bool:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         return VECTORSTORE_INDEX_PATH.exists() and VECTORSTORE_METADATA_PATH.exists()
 
     def load(self):
+        """Carrega dados da fonte esperada e devolve a estrutura pronta para uso no fluxo.
+
+        Returns:
+            Dados carregados e prontos para consumo no fluxo da aplicação.
+        """
         if not self.exists():
             self.index = None
             self.metadata = []
@@ -70,6 +104,11 @@ class LocalFaissStore:
             self.manifest = {}
 
     def save(self):
+        """Salva o resultado processado para persistir histórico e permitir consulta posterior.
+
+        Returns:
+            Referência do recurso salvo para uso posterior.
+        """
         self._ensure_dir()
         if self.index is None:
             return
@@ -85,6 +124,12 @@ class LocalFaissStore:
         )
 
     def clear(self):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         self.index = None
         self.metadata = []
         self.manifest = {}
@@ -93,6 +138,16 @@ class LocalFaissStore:
                 path.unlink()
 
     def add_embeddings(self, embeddings: list[list[float]], metadata: list[ChunkMetadata]):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            embeddings: Valor de entrada necessário para processar 'embeddings'.
+            metadata: Valor de entrada necessário para processar 'metadata'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not embeddings:
             return
 
@@ -109,6 +164,15 @@ class LocalFaissStore:
         self.metadata.extend(metadata)
 
     def search(self, query_embedding: list[float], k: int = 4) -> list[tuple[ChunkMetadata, float]]:
+        """Realiza a busca de informações com os filtros definidos para o contexto atual.
+
+        Args:
+            query_embedding: Valor de entrada necessário para processar 'query_embedding'.
+            k: Valor de entrada necessário para processar 'k'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        """
         if self.index is None or not self.metadata:
             return []
 

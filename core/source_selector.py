@@ -8,6 +8,18 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """Responsável por montar api metrics no contexto da aplicação de assessoria.
+
+    Args:
+        response: Valor de entrada necessário para processar 'response'.
+        provider: Identificador usado para referenciar 'provider'.
+        prompt: Valor de entrada necessário para processar 'prompt'.
+        output: Valor de entrada necessário para processar 'output'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -23,6 +35,14 @@ def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | Non
 
 
 def list_kb_files(kb_dir: str = "knowledge_base"):
+    """Lista os elementos disponíveis para apoiar a navegação e seleção no fluxo.
+
+    Args:
+        kb_dir: Valor de entrada necessário para processar 'kb_dir'.
+
+    Returns:
+        Lista com os itens encontrados para a etapa solicitada.
+    """
     kb_path = Path(kb_dir)
     if not kb_path.exists():
         return []
@@ -30,6 +50,15 @@ def list_kb_files(kb_dir: str = "knowledge_base"):
 
 
 def _sanitize_step4_output(parsed: dict) -> dict:
+    """Responsável por sanitizar step4 output no contexto da aplicação de assessoria.
+
+    Args:
+        parsed: Valor de entrada necessário para processar 'parsed'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     parsed["data_sources"] = parsed.get("data_sources", [])
     parsed["products_selected_ids"] = parsed.get("products_selected_ids", [])
     parsed["kb_files_selected"] = parsed.get("kb_files_selected", [])[:5]
@@ -49,6 +78,24 @@ def select_sources_step4(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Responsável por selecionar sources step4 no contexto da aplicação de assessoria.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        prompt_assessor: Valor de entrada necessário para processar 'prompt_assessor'.
+        jornada_selecionada: Valor de entrada necessário para processar 'jornada_selecionada'.
+        carteira_summary: Valor de entrada necessário para processar 'carteira_summary'.
+        produtos_df: Valor de entrada necessário para processar 'produtos_df'.
+        investimentos_cliente_df: Valor de entrada necessário para processar 'investimentos_cliente_df'.
+        kb_dir: Valor de entrada necessário para processar 'kb_dir'.
+        model: Modelo utilizado para executar a etapa 'model'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     kb_files = list_kb_files(kb_dir)
 
     produtos_catalogo = produtos_df[[

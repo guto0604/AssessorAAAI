@@ -10,10 +10,29 @@ from core.data_loader import load_clientes_full, load_investimentos_full, load_p
 
 
 def _is_missing(value: Any) -> bool:
+    """Responsável por processar missing no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     return value is None or (isinstance(value, float) and pd.isna(value)) or pd.isna(value)
 
 
 def _to_float(value: Any, default: float = 0.0) -> float:
+    """Responsável por processar float no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+        default: Valor de entrada necessário para processar 'default'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if _is_missing(value):
         return default
     try:
@@ -23,6 +42,15 @@ def _to_float(value: Any, default: float = 0.0) -> float:
 
 
 def _to_datetime(value: Any) -> datetime | None:
+    """Responsável por processar datetime no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if _is_missing(value):
         return None
     ts = pd.to_datetime(value, errors="coerce")
@@ -32,18 +60,46 @@ def _to_datetime(value: Any) -> datetime | None:
 
 
 def _format_currency(value: Any) -> str:
+    """Responsável por formatar currency no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     number = _to_float(value, default=0.0)
     formatted = f"R$ {number:,.2f}"
     return formatted.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _format_percent(value: Any, as_fraction: bool = True) -> str:
+    """Responsável por formatar percent no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+        as_fraction: Valor de entrada necessário para processar 'as_fraction'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     number = _to_float(value, default=0.0)
     pct = number * 100 if as_fraction else number
     return f"{pct:.1f}%"
 
 
 def _format_date(value: Any) -> str:
+    """Responsável por formatar date no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     dt = _to_datetime(value)
     if not dt:
         return "-"
@@ -51,6 +107,16 @@ def _format_date(value: Any) -> str:
 
 
 def _safe_text(value: Any, default: str = "-") -> str:
+    """Responsável por processar text no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+        default: Valor de entrada necessário para processar 'default'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if _is_missing(value):
         return default
     text = str(value).strip()
@@ -58,6 +124,16 @@ def _safe_text(value: Any, default: str = "-") -> str:
 
 
 def _priority_badge(label: str, value: str) -> str:
+    """Responsável por processar badge no contexto da aplicação de assessoria.
+
+    Args:
+        label: Valor de entrada necessário para processar 'label'.
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     palette = {
         "Ativo": "#1B5E20",
         "Morno": "#9A3412",
@@ -77,10 +153,29 @@ def _priority_badge(label: str, value: str) -> str:
 
 
 def _section_title(title: str, description: str) -> None:
+    """Responsável por processar title no contexto da aplicação de assessoria.
+
+    Args:
+        title: Valor de entrada necessário para processar 'title'.
+        description: Valor de entrada necessário para processar 'description'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     st.subheader(title, help=description)
 
 
 def _calculate_kpis(cliente: dict[str, Any]) -> dict[str, float]:
+    """Responsável por calcular kpis no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     patrimonio_conosco = _to_float(cliente.get("Patrimonio_Investido_Conosco"))
     patrimonio_fora = _to_float(cliente.get("Patrimonio_Investido_Outros"))
     total = patrimonio_conosco + patrimonio_fora
@@ -99,6 +194,15 @@ def _calculate_kpis(cliente: dict[str, Any]) -> dict[str, float]:
 
 
 def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Responsável por processar carteira no contexto da aplicação de assessoria.
+
+    Args:
+        investimentos_df: Valor de entrada necessário para processar 'investimentos_df'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if investimentos_df.empty:
         empty = pd.DataFrame(columns=["Grupo", "Valor"])
         return {
@@ -116,6 +220,16 @@ def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFram
         base["Valor_Atual"] = base.get("Valor_Investido", 0)
 
     def _group(col: str, out_col: str = "Grupo") -> pd.DataFrame:
+        """Responsável por executar uma etapa do fluxo da aplicação de assessoria.
+
+        Args:
+            col: Valor de entrada necessário para processar 'col'.
+            out_col: Valor de entrada necessário para processar 'out_col'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if col not in base.columns:
             return pd.DataFrame(columns=[out_col, "Valor"])
         g = (
@@ -142,6 +256,16 @@ def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFram
 
 
 def _calculate_aderencia(cliente: dict[str, Any], investimentos_df: pd.DataFrame) -> dict[str, float]:
+    """Responsável por calcular aderencia no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        investimentos_df: Valor de entrada necessário para processar 'investimentos_df'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if investimentos_df.empty:
         return {
             "pct_adequado": 0.0,
@@ -185,6 +309,17 @@ def _calculate_aderencia(cliente: dict[str, Any], investimentos_df: pd.DataFrame
 
 
 def _generate_alertas(cliente: dict[str, Any], kpis: dict[str, float], aderencia: dict[str, float]) -> list[dict[str, str]]:
+    """Responsável por gerar alertas no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        kpis: Valor de entrada necessário para processar 'kpis'.
+        aderencia: Valor de entrada necessário para processar 'aderencia'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     alertas: list[dict[str, str]] = []
 
     score_churn = _to_float(cliente.get("Score_Risco_Churn"))
@@ -219,6 +354,17 @@ def _generate_alertas(cliente: dict[str, Any], kpis: dict[str, float], aderencia
 
 
 def _insights_automaticos(cliente: dict[str, Any], kpis: dict[str, float], aderencia: dict[str, float]) -> list[str]:
+    """Responsável por processar automaticos no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        kpis: Valor de entrada necessário para processar 'kpis'.
+        aderencia: Valor de entrada necessário para processar 'aderencia'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     insights: list[str] = []
     if _safe_text(cliente.get("Potencial_Captacao")) == "Alto" and kpis["pct_conosco"] < 0.4:
         insights.append("Cliente com alto potencial de captação e baixo share of wallet.")
@@ -232,6 +378,16 @@ def _insights_automaticos(cliente: dict[str, Any], kpis: dict[str, float], adere
 
 
 def _horizonte_compatibilidade(horizonte: str, prazo_produto: str) -> bool:
+    """Responsável por processar compatibilidade no contexto da aplicação de assessoria.
+
+    Args:
+        horizonte: Valor de entrada necessário para processar 'horizonte'.
+        prazo_produto: Valor de entrada necessário para processar 'prazo_produto'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not horizonte or not prazo_produto:
         return True
     mapa = {
@@ -243,6 +399,16 @@ def _horizonte_compatibilidade(horizonte: str, prazo_produto: str) -> bool:
 
 
 def _suitability_compatibilidade(perfil: str, suitability_ideal: str) -> bool:
+    """Responsável por processar compatibilidade no contexto da aplicação de assessoria.
+
+    Args:
+        perfil: Valor de entrada necessário para processar 'perfil'.
+        suitability_ideal: Identificador usado para referenciar 'suitability_ideal'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not perfil or not suitability_ideal:
         return True
     perfis_aceitos = {s.strip() for s in suitability_ideal.split("/")}
@@ -250,6 +416,16 @@ def _suitability_compatibilidade(perfil: str, suitability_ideal: str) -> bool:
 
 
 def _liquidez_compatibilidade(necessidade: str, liquidez_produto: str) -> bool:
+    """Responsável por processar compatibilidade no contexto da aplicação de assessoria.
+
+    Args:
+        necessidade: Identificador usado para referenciar 'necessidade'.
+        liquidez_produto: Identificador usado para referenciar 'liquidez_produto'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not necessidade or not liquidez_produto:
         return True
     regras = {
@@ -261,6 +437,17 @@ def _liquidez_compatibilidade(necessidade: str, liquidez_produto: str) -> bool:
 
 
 def _montar_oportunidades(cliente: dict[str, Any], produtos_df: pd.DataFrame, kpis: dict[str, float]) -> pd.DataFrame:
+    """Responsável por processar oportunidades no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        produtos_df: Valor de entrada necessário para processar 'produtos_df'.
+        kpis: Valor de entrada necessário para processar 'kpis'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if produtos_df.empty:
         return pd.DataFrame()
 
@@ -322,6 +509,15 @@ def _montar_oportunidades(cliente: dict[str, Any], produtos_df: pd.DataFrame, kp
 
 
 def _render_alertas(alertas: list[dict[str, str]]) -> None:
+    """Responsável por renderizar alertas no contexto da aplicação de assessoria.
+
+    Args:
+        alertas: Valor de entrada necessário para processar 'alertas'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not alertas:
         st.info("Sem alertas prioritários para este cliente no momento.")
         return
@@ -345,12 +541,32 @@ def _render_alertas(alertas: list[dict[str, str]]) -> None:
 
 
 def _filter_selected_client(clientes_df: pd.DataFrame, selected_cliente_id: Any) -> pd.DataFrame:
+    """Responsável por filtrar selected client no contexto da aplicação de assessoria.
+
+    Args:
+        clientes_df: Valor de entrada necessário para processar 'clientes_df'.
+        selected_cliente_id: Identificador usado para referenciar 'selected_cliente_id'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if "Cliente_ID" not in clientes_df.columns:
         return pd.DataFrame()
     return clientes_df[clientes_df["Cliente_ID"] == selected_cliente_id]
 
 
 def _build_objetivo_financeiro(cliente: dict[str, Any], patrimonio_conosco: float) -> dict[str, Any]:
+    """Responsável por montar objetivo financeiro no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        patrimonio_conosco: Valor de entrada necessário para processar 'patrimonio_conosco'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     valor_alvo = _to_float(cliente.get("Valor_Objetivo_Financeiro"))
     progresso = (patrimonio_conosco / valor_alvo) if valor_alvo > 0 else 0.0
     progresso = max(progresso, 0.0)
@@ -365,6 +581,15 @@ def _build_objetivo_financeiro(cliente: dict[str, Any], patrimonio_conosco: floa
 
 
 def _format_positions_table(inv_cliente: pd.DataFrame) -> pd.DataFrame:
+    """Responsável por formatar positions table no contexto da aplicação de assessoria.
+
+    Args:
+        inv_cliente: Valor de entrada necessário para processar 'inv_cliente'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if inv_cliente.empty:
         return pd.DataFrame(columns=["Produto", "Categoria", "Valor atual", "Peso na carteira", "Liquidez"])
 
@@ -386,6 +611,18 @@ def _format_positions_table(inv_cliente: pd.DataFrame) -> pd.DataFrame:
 
 
 def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpis: dict[str, float], carteira: dict[str, pd.DataFrame]) -> None:
+    """Responsável por renderizar cliente view no contexto da aplicação de assessoria.
+
+    Args:
+        cliente: Valor de entrada necessário para processar 'cliente'.
+        inv_cliente: Valor de entrada necessário para processar 'inv_cliente'.
+        kpis: Valor de entrada necessário para processar 'kpis'.
+        carteira: Valor de entrada necessário para processar 'carteira'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     st.header("Acompanhamento do seu patrimônio")
     st.caption("Aqui você acompanha sua carteira, seus objetivos e a composição dos seus investimentos.")
 
@@ -504,6 +741,14 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
 
 
 def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Args:
+        selected_cliente_id: Identificador usado para referenciar 'selected_cliente_id'.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     clientes_df = load_clientes_full()
     cliente_df = _filter_selected_client(clientes_df, selected_cliente_id)
 

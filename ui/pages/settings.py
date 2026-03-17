@@ -15,6 +15,11 @@ from ui.state import (
 )
 from ui.rag_service_provider import get_rag_service
 def render_settings_tab():
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     st.title("Configurações")
     st.caption("Preencha apenas as credenciais essenciais da sessão (quando necessário).")
 

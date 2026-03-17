@@ -10,37 +10,90 @@ from core.meetings import summarize_transcript
 
 class MiniDF:
     def __init__(self, rows):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            rows: Valor de entrada necessário para processar 'rows'.
+        """
         self.rows = rows
         self.empty = len(rows) == 0
 
     def iterrows(self):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         for i, r in enumerate(self.rows):
             yield i, r
 
     def __getitem__(self, cols):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Args:
+            cols: Valor de entrada necessário para processar 'cols'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         return MiniDF([{k: r.get(k) for k in cols} for r in self.rows])
 
     def to_dict(self, orient="records"):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Args:
+            orient: Valor de entrada necessário para processar 'orient'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         return self.rows
 
 
 class _Msg:
     def __init__(self, content):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            content: Valor de entrada necessário para processar 'content'.
+        """
         self.content = content
 
 
 class _Choice:
     def __init__(self, content):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            content: Valor de entrada necessário para processar 'content'.
+        """
         self.message = _Msg(content)
 
 
 class _Resp:
     def __init__(self, content):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            content: Valor de entrada necessário para processar 'content'.
+        """
         self.choices = [_Choice(content)]
 
 
 class _Completions:
     def create(self, **kwargs):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Args:
+            kwargs: Parâmetros adicionais repassados para a chamada interna.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         system = kwargs["messages"][0]["content"]
         if "ranquear jornadas" in system:
             return _Resp('{"ranking":[{"jornada_id":"J1","nome_jornada":"Teste","score":0.9}]}')
@@ -66,6 +119,15 @@ class _FakeClient:
 class FlowTests(unittest.TestCase):
     @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
     def test_pitch_langchain_steps(self, _mock_client):
+        """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
+
+        Args:
+            _mock_client: Valor de entrada necessário para processar '_mock_client'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         jornadas_df = MiniDF([
             {"Jornada_ID": "J1", "Nome_Jornada": "A", "Categoria": "C", "Objetivo_Principal": "O", "Descricao_Resumida": "D"}
         ])
@@ -106,6 +168,15 @@ class FlowTests(unittest.TestCase):
 
     @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
     def test_meeting_summary(self, _mock_client):
+        """Executa uma etapa do fluxo de reuniões, incluindo registro, transcrição ou sumarização.
+
+        Args:
+            _mock_client: Valor de entrada necessário para processar '_mock_client'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         out = summarize_transcript({"Nome": "Cli"}, "texto")
         self.assertTrue(isinstance(out, str))
 

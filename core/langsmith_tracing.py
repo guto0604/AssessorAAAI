@@ -7,15 +7,32 @@ from langsmith import Client
 
 
 def _now_utc() -> datetime:
+    """Retorna o timestamp atual em formato padronizado para registros e rastreabilidade.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return datetime.now(timezone.utc)
 
 
 def _iso_now() -> str:
+    """Retorna o timestamp atual em formato padronizado para registros e rastreabilidade.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return _now_utc().isoformat()
 
 
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            api_key: Valor de entrada necessário para processar 'api_key'.
+            enabled: Valor de entrada necessário para processar 'enabled'.
+            base_url: Valor de entrada necessário para processar 'base_url'.
+        """
         self.api_key = (os.getenv("LANGSMITH_API_KEY") or api_key or "").strip()
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
@@ -34,6 +51,20 @@ class LangSmithTracer:
         metadata: dict[str, Any] | None = None,
         project_name: str | None = None,
     ) -> str | None:
+        """Responsável por processar run no contexto da aplicação de assessoria.
+
+        Args:
+            name: Valor de entrada necessário para processar 'name'.
+            run_type: Valor de entrada necessário para processar 'run_type'.
+            inputs: Valor de entrada necessário para processar 'inputs'.
+            tags: Valor de entrada necessário para processar 'tags'.
+            metadata: Valor de entrada necessário para processar 'metadata'.
+            project_name: Valor de entrada necessário para processar 'project_name'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.enabled:
             return None
 
@@ -52,6 +83,17 @@ class LangSmithTracer:
         return run_id
 
     def log_event(self, run_id: str | None, event_name: str, details: dict[str, Any] | None = None) -> None:
+        """Responsável por processar event no contexto da aplicação de assessoria.
+
+        Args:
+            run_id: Identificador usado para referenciar 'run_id'.
+            event_name: Valor de entrada necessário para processar 'event_name'.
+            details: Valor de entrada necessário para processar 'details'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.enabled or not run_id:
             return
         run_state = self._runs.get(run_id)
@@ -80,6 +122,24 @@ class LangSmithTracer:
         start_time: str | None = None,
         end_time: str | None = None,
     ) -> str | None:
+        """Responsável por processar child run no contexto da aplicação de assessoria.
+
+        Args:
+            parent_run_id: Identificador usado para referenciar 'parent_run_id'.
+            name: Valor de entrada necessário para processar 'name'.
+            run_type: Valor de entrada necessário para processar 'run_type'.
+            inputs: Valor de entrada necessário para processar 'inputs'.
+            outputs: Valor de entrada necessário para processar 'outputs'.
+            metadata: Valor de entrada necessário para processar 'metadata'.
+            error: Valor de entrada necessário para processar 'error'.
+            tags: Valor de entrada necessário para processar 'tags'.
+            start_time: Valor de entrada necessário para processar 'start_time'.
+            end_time: Valor de entrada necessário para processar 'end_time'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.enabled or not parent_run_id:
             return None
 
@@ -107,6 +167,18 @@ class LangSmithTracer:
         outputs: dict[str, Any] | None = None,
         error: str | None = None,
     ) -> bool:
+        """Responsável por processar run no contexto da aplicação de assessoria.
+
+        Args:
+            run_id: Identificador usado para referenciar 'run_id'.
+            status: Valor de entrada necessário para processar 'status'.
+            outputs: Valor de entrada necessário para processar 'outputs'.
+            error: Valor de entrada necessário para processar 'error'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.enabled or not run_id:
             return False
 

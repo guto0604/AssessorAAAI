@@ -29,6 +29,12 @@ REFERENCE_FILE_PATH = DATA_DIR / "referencia_base_dados.txt"
 LOGGER = logging.getLogger(__name__)
 
 def _reset_talk_to_data_state() -> None:
+    """Responsável por reiniciar talk to data state no contexto da aplicação de assessoria.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     st.session_state.talk_to_data_question = ""
     st.session_state.talk_to_data_last_llm_output = None
     st.session_state.talk_to_data_generated_sql = ""
@@ -37,6 +43,12 @@ def _reset_talk_to_data_state() -> None:
 
 
 def _reset_talk_to_data_page() -> None:
+    """Responsável por reiniciar talk to data page no contexto da aplicação de assessoria.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     try:
         _reset_talk_to_data_state()
         st.session_state["talk_to_data_next_question_feedback"] = {
@@ -56,6 +68,12 @@ def _reset_talk_to_data_page() -> None:
 
 def _render_talk_to_data_samples() -> None:
 
+    """Responsável por renderizar talk to data samples no contexto da aplicação de assessoria.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     for table_name, file_path in TALK_TO_DATA_FILES.items():
         with st.expander(f"📦 Prévia tabela {table_name}", expanded=False):
             try:
@@ -74,11 +92,25 @@ def _render_talk_to_data_samples() -> None:
 
 
 def _apply_talk_to_data_template_question(question: str) -> None:
+    """Responsável por aplicar talk to data template question no contexto da aplicação de assessoria.
+
+    Args:
+        question: Pergunta do usuário que direciona a busca ou geração da resposta.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     _reset_talk_to_data_page()
     st.session_state.talk_to_data_question = question
 
 
 def render_talk_to_your_data_page():
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     tracer = get_tracer()
 
     sample_questions = {
@@ -361,10 +393,24 @@ def render_talk_to_your_data_page():
 
 
 def load_reference_text() -> str:
+    """Carrega dados da fonte esperada e devolve a estrutura pronta para uso no fluxo.
+
+    Returns:
+        Dados carregados e prontos para consumo no fluxo da aplicação.
+    """
     return REFERENCE_FILE_PATH.read_text(encoding="utf-8")
 
 
 def build_llm_prompt(question: str, reference_text: str) -> str:
+    """Monta a estrutura de dados usada nas próximas etapas do fluxo.
+
+    Args:
+        question: Pergunta do usuário que direciona a busca ou geração da resposta.
+        reference_text: Valor de entrada necessário para processar 'reference_text'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return f"""
 Você é um analista de dados de uma assessoria de investimentos.
 
@@ -411,6 +457,16 @@ Referência completa da base:
 
 
 def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict:
+    """Responsável por processar talk to data llm no contexto da aplicação de assessoria.
+
+    Args:
+        prompt: Valor de entrada necessário para processar 'prompt'.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     client = get_openai_client()
     response = client.chat.completions.create(
         model="gpt-5.1",
@@ -450,6 +506,14 @@ def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict
 
 
 def sanitize_duckdb_sql(sql: str) -> str:
+    """Sanitiza a entrada removendo padrões inseguros antes da execução.
+
+    Args:
+        sql: Consulta SQL a ser validada ou executada em modo seguro.
+
+    Returns:
+        Consulta validada ou resultado tabular da execução, conforme a etapa.
+    """
     normalized_sql = sql.strip()
     normalized_sql = re.sub(r";\s*$", "", normalized_sql)
     normalized_sql = normalized_sql.replace("`", "")
@@ -476,6 +540,14 @@ def sanitize_duckdb_sql(sql: str) -> str:
 
 
 def validate_read_only_sql(sql: str) -> None:
+    """Valida a entrada para garantir segurança e aderência às regras de execução.
+
+    Args:
+        sql: Consulta SQL a ser validada ou executada em modo seguro.
+
+    Returns:
+        Booleano indicando se a condição esperada foi atendida.
+    """
     if not sql:
         raise ValueError("A consulta SQL está vazia.")
     if ";" in sql:
@@ -493,12 +565,31 @@ def validate_read_only_sql(sql: str) -> None:
 
 
 def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
+    """Responsável por criar talk to data views no contexto da aplicação de assessoria.
+
+    Args:
+        con: Valor de entrada necessário para processar 'con'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     for table_name, file_path in TALK_TO_DATA_FILES.items():
         escaped_path = str(file_path).replace("'", "''")
         con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
 
 
 def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) -> pd.DataFrame:
+    """Trata consultas e resultados de dados para o fluxo Talk to Data com segurança.
+
+    Args:
+        sql: Consulta SQL a ser validada ou executada em modo seguro.
+        conn: Conexão ativa com o DuckDB para execução de consultas.
+
+    Returns:
+        Consulta validada ou resultado tabular da execução, conforme a etapa.
+    
+    """
     normalized_sql = sanitize_duckdb_sql(sql)
     validate_read_only_sql(normalized_sql)
     LOGGER.info("Executando SQL DuckDB: %s", normalized_sql)
@@ -513,6 +604,15 @@ def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) ->
 
 
 def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Args:
+        result_df: Valor de entrada necessário para processar 'result_df'.
+        visualization_spec: Valor de entrada necessário para processar 'visualization_spec'.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     vis_type = str(visualization_spec.get("type", "none")).lower()
     if not visualization_spec.get("needed") or vis_type == "none":
         return

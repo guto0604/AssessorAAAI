@@ -6,6 +6,18 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, str_ou
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """Responsável por montar api metrics no contexto da aplicação de assessoria.
+
+    Args:
+        response: Valor de entrada necessário para processar 'response'.
+        provider: Identificador usado para referenciar 'provider'.
+        prompt: Valor de entrada necessário para processar 'prompt'.
+        output: Valor de entrada necessário para processar 'output'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -29,6 +41,21 @@ def generate_final_pitch_step7(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        prompt_assessor: Valor de entrada necessário para processar 'prompt_assessor'.
+        jornada_selecionada: Valor de entrada necessário para processar 'jornada_selecionada'.
+        step5_selection: Valor de entrada necessário para processar 'step5_selection'.
+        model: Modelo utilizado para executar a etapa 'model'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     system_prompt = """
 Você é um assessor de investimentos escrevendo uma mensagem para um cliente.
 
@@ -99,6 +126,20 @@ def revise_pitch_step8(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
+
+    Args:
+        current_pitch: Valor de entrada necessário para processar 'current_pitch'.
+        edit_instruction: Valor de entrada necessário para processar 'edit_instruction'.
+        target_excerpt: Valor de entrada necessário para processar 'target_excerpt'.
+        model: Modelo utilizado para executar a etapa 'model'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     system_prompt = """
 Você é um revisor de texto comercial para assessoria de investimentos.
 

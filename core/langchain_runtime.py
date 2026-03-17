@@ -25,6 +25,16 @@ def configure_langsmith() -> None:
 
 
 def get_chat_model(model: str, temperature: float = 1, response_format: dict[str, Any] | None = None) -> ChatOpenAI:
+    """Obtém a informação necessária para a etapa atual do processo.
+
+    Args:
+        model: Modelo utilizado para executar a etapa 'model'.
+        temperature: Valor de entrada necessário para processar 'temperature'.
+        response_format: Valor de entrada necessário para processar 'response_format'.
+
+    Returns:
+        Dados carregados e prontos para consumo no fluxo da aplicação.
+    """
     api_key = get_effective_openai_api_key()
     kwargs: dict[str, Any] = {"model": model, "temperature": temperature}
     if api_key:
@@ -40,6 +50,16 @@ def build_runnable_config(
     tags: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> RunnableConfig:
+    """Monta a estrutura de dados usada nas próximas etapas do fluxo.
+
+    Args:
+        run_name: Valor de entrada necessário para processar 'run_name'.
+        tags: Valor de entrada necessário para processar 'tags'.
+        metadata: Valor de entrada necessário para processar 'metadata'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     configure_langsmith()
     return RunnableConfig(
         run_name=run_name,
@@ -49,6 +69,14 @@ def build_runnable_config(
 
 
 def parse_json_output(text: str) -> Any:
+    """Interpreta e normaliza a entrada para manter consistência no processamento.
+
+    Args:
+        text: Texto de entrada a ser processado pela função.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return json.loads(text)
 
 
