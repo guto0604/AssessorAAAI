@@ -103,37 +103,37 @@ def main():
         if _is_tab_enabled("🏠 Início"):
             render_home_tab()
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_clientes:
         if _is_tab_enabled("👤 Visualização clientes"):
             render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_pitch:
         if _is_tab_enabled("🚀 Voz do Assessor (Pitch)"):
             render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_meetings:
         if _is_tab_enabled("📝 Reuniões"):
             render_meetings_tab(st.session_state.selected_cliente_id, cliente_info)
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_portfolio:
         if _is_tab_enabled("📊 Talk to your Data"):
             render_talk_to_your_data_page()
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_ask_ai:
         if _is_tab_enabled("🤖 Pergunte à IA"):
             render_ask_ai_tab()
         else:
-            st.info("Tela desabilitada pelo perfil RBAC simulado.")
+            st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_settings:
         render_settings_tab()

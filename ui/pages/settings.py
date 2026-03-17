@@ -130,42 +130,6 @@ def render_settings_tab():
         st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = float(rag_semantic_weight)
         st.success("Configuração de busca híbrida salva na sessão.")
 
-    if st.button("🩺 Testar tracing LangSmith", key="settings_test_tracing"):
-        tracer = get_tracer()
-        if not tracer.enabled:
-            st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
-            st.error("Tracing inativo: informe a LANGSMITH_API_KEY para validar.")
-        else:
-            healthcheck_run_id = tracer.start_run(
-                name=f"settings_healthcheck_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                run_type="tool",
-                inputs={"source": "settings_tab_healthcheck"},
-                tags=["settings", "healthcheck"],
-                metadata={"checked_at": _iso_now()},
-            )
-
-            if healthcheck_run_id:
-                sent_ok = tracer.end_run(
-                    healthcheck_run_id,
-                    status="success",
-                    outputs={"status": "ok", "message": "healthcheck_passed"},
-                )
-                if sent_ok:
-                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
-                    st.success("Tracing validado com sucesso no LangSmith.")
-                else:
-                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
-                    st.error(
-                        "Run de teste criada, mas não foi enviada ao LangSmith. "
-                        f"{tracer.last_error or ''}".strip()
-                    )
-            else:
-                st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
-                st.error("Falha ao criar run de teste no LangSmith.")
-
-
-
-
     st.divider()
     st.subheader("Simulação de acesso (RLS e RBAC)")
     st.caption("Configure escopo de clientes (RLS) e telas visíveis (RBAC) para simular perfis.")
@@ -209,3 +173,37 @@ def render_settings_tab():
                     st.warning("Arquivos ignorados: " + ", ".join(result.skipped_files))
             except Exception as exc:
                 st.error(f"Falha na reindexação: {exc}")
+
+    st.divider()
+    if st.button("🩺 Testar tracing LangSmith", key="settings_test_tracing"):
+        tracer = get_tracer()
+        if not tracer.enabled:
+            st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
+            st.error("Tracing inativo: informe a LANGSMITH_API_KEY para validar.")
+        else:
+            healthcheck_run_id = tracer.start_run(
+                name=f"settings_healthcheck_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                run_type="tool",
+                inputs={"source": "settings_tab_healthcheck"},
+                tags=["settings", "healthcheck"],
+                metadata={"checked_at": _iso_now()},
+            )
+
+            if healthcheck_run_id:
+                sent_ok = tracer.end_run(
+                    healthcheck_run_id,
+                    status="success",
+                    outputs={"status": "ok", "message": "healthcheck_passed"},
+                )
+                if sent_ok:
+                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
+                    st.success("Tracing validado com sucesso no LangSmith.")
+                else:
+                    st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
+                    st.error(
+                        "Run de teste criada, mas não foi enviada ao LangSmith. "
+                        f"{tracer.last_error or ''}".strip()
+                    )
+            else:
+                st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
+                st.error("Falha ao criar run de teste no LangSmith.")
