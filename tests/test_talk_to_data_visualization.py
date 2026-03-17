@@ -2,11 +2,15 @@ import unittest
 from unittest.mock import patch
 
 import pandas as pd
+import streamlit as st
 
-from ui.pages.talk_to_data import build_llm_prompt, render_visual
+from ui.pages.talk_to_data import _build_rls_filter_sql, build_llm_prompt, render_visual
 
 
 class TalkToDataVisualizationTests(unittest.TestCase):
+    def tearDown(self):
+        st.session_state.pop("rls_allowed_segments", None)
+
     def test_prompt_includes_color_field_instruction(self):
         """Valida o comportamento esperado deste fluxo por meio de um teste automatizado.
 
@@ -17,6 +21,25 @@ class TalkToDataVisualizationTests(unittest.TestCase):
         prompt = build_llm_prompt("teste", "schema")
         self.assertIn("visualization.color", prompt)
         self.assertIn('"color": "campo ou vazio"', prompt)
+
+    def test_prompt_includes_rls_instruction(self):
+        prompt = build_llm_prompt("teste", "schema", allowed_cliente_ids=["A_001", "A_002"])
+        self.assertIn("Aplique RLS SEMPRE", prompt)
+        self.assertIn("A_001, A_002", prompt)
+
+    @patch("ui.pages.talk_to_data.pd.read_parquet")
+    def test_build_rls_filter_sql_escapes_ids(self, mock_read_parquet):
+        mock_read_parquet.return_value = pd.DataFrame(
+            {
+                "Cliente_ID": ["A_001", "X_'42"],
+                "Patrimonio_Investido_Conosco": [100_000, 3_000_000],
+            }
+        )
+        st.session_state["rls_allowed_segments"] = ["Até 300k", "2M+"]
+
+        rls_sql = _build_rls_filter_sql()
+
+        self.assertEqual(rls_sql, "'A_001', 'X_''42'")
 
     @patch("ui.pages.talk_to_data.st.plotly_chart")
     @patch("ui.pages.talk_to_data.st.subheader")

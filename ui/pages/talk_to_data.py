@@ -16,7 +16,13 @@ from ui.guardrails import (
     guardrail_warning_message,
     handle_guardrail_exception,
 )
-from ui.state import TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION, _iso_now, get_tracer
+from ui.state import (
+    RLS_SEGMENT_OPTIONS,
+    SESSION_RLS_ALLOWED_SEGMENTS,
+    TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION,
+    _iso_now,
+    get_tracer,
+)
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
@@ -27,6 +33,36 @@ TALK_TO_DATA_FILES = {
 }
 REFERENCE_FILE_PATH = DATA_DIR / "referencia_base_dados.txt"
 LOGGER = logging.getLogger(__name__)
+
+
+def _segment_label(patrimonio):
+    if patrimonio is None:
+        return None
+    if patrimonio <= 300_000:
+        return "Até 300k"
+    if patrimonio <= 2_000_000:
+        return "300k-2M"
+    return "2M+"
+
+
+def _rls_filtered_clientes_df() -> pd.DataFrame:
+    clientes_df = pd.read_parquet(TALK_TO_DATA_FILES["Informacoes_Cliente"])
+    allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RLS_SEGMENT_OPTIONS)
+    if not allowed_segments:
+        return clientes_df.iloc[0:0]
+
+    segmented = clientes_df.copy()
+    segmented["_segmento_rls"] = segmented["Patrimonio_Investido_Conosco"].apply(_segment_label)
+    return segmented[segmented["_segmento_rls"].isin(allowed_segments)].drop(columns=["_segmento_rls"])
+
+
+def _build_rls_filter_sql() -> str:
+    filtered_clientes = _rls_filtered_clientes_df()
+    ids = filtered_clientes["Cliente_ID"].dropna().astype(str).tolist()
+    if not ids:
+        return "NULL"
+    safe_ids = [cliente_id.replace("'", "''") for cliente_id in ids]
+    return ", ".join([f"'{cliente_id}'" for cliente_id in safe_ids])
 
 def _reset_talk_to_data_state() -> None:
     """Responsável por reiniciar talk to data state no contexto da aplicação de assessoria.
@@ -66,7 +102,7 @@ def _reset_talk_to_data_page() -> None:
         }
 
 
-def _render_talk_to_data_samples() -> None:
+def _render_talk_to_data_samples(allowed_cliente_ids: list[str]) -> None:
 
     """Responsável por renderizar talk to data samples no contexto da aplicação de assessoria.
 
@@ -81,6 +117,9 @@ def _render_talk_to_data_samples() -> None:
             except Exception as exc:
                 st.error(f"Não foi possível carregar {table_name}: {exc}")
                 continue
+
+            if "Cliente_ID" in table_df.columns:
+                table_df = table_df[table_df["Cliente_ID"].astype(str).isin(set(allowed_cliente_ids))]
 
             sample_size = min(6, len(table_df))
             if sample_size == 0:
@@ -141,6 +180,14 @@ def render_talk_to_your_data_page():
     st.title("Talk to your Data")
     st.caption("Faça perguntas em linguagem natural, e visualize os resultados.")
 
+    allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RLS_SEGMENT_OPTIONS)
+    if not allowed_segments:
+        st.warning("Nenhum segmento RLS selecionado. Não há clientes visíveis para consulta.")
+        return
+
+    st.caption(f"RLS ativo para segmentos: {', '.join(allowed_segments)}")
+    allowed_cliente_ids = _rls_filtered_clientes_df()["Cliente_ID"].astype(str).tolist()
+
     feedback = st.session_state.pop("talk_to_data_next_question_feedback", None)
     if feedback:
         if feedback.get("status") == "error":
@@ -150,7 +197,7 @@ def render_talk_to_your_data_page():
         else:
             st.success(feedback.get("message", "Tela atualizada."))
 
-    _render_talk_to_data_samples()
+    _render_talk_to_data_samples(allowed_cliente_ids)
 
     dropdown_options = [TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION]
     for category, questions in sample_questions.items():
@@ -238,7 +285,11 @@ def render_talk_to_your_data_page():
                 return
 
             reference_text = load_reference_text()
-            prompt = build_llm_prompt(question=question.strip(), reference_text=reference_text)
+            prompt = build_llm_prompt(
+                question=question.strip(),
+                reference_text=reference_text,
+                allowed_cliente_ids=allowed_cliente_ids,
+            )
             tracer.log_event(talk_to_data_run_id, "talk_to_data_llm_call_started")
             llm_started_at = time.perf_counter()
             llm_result = ask_talk_to_data_llm(prompt, include_api_metrics=True)
@@ -401,16 +452,23 @@ def load_reference_text() -> str:
     return REFERENCE_FILE_PATH.read_text(encoding="utf-8")
 
 
-def build_llm_prompt(question: str, reference_text: str) -> str:
+def build_llm_prompt(
+    question: str,
+    reference_text: str,
+    allowed_cliente_ids: list[str] | None = None,
+) -> str:
     """Monta a estrutura de dados usada nas próximas etapas do fluxo.
 
     Args:
         question: Pergunta do usuário que direciona a busca ou geração da resposta.
         reference_text: Valor de entrada necessário para processar 'reference_text'.
+        allowed_cliente_ids: Lista de clientes permitidos pelo filtro RLS da sessão.
 
     Returns:
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     """
+    allowed_ids_clause = ", ".join(allowed_cliente_ids) if allowed_cliente_ids else "(nenhum cliente permitido)"
+
     return f"""
 Você é um analista de dados de uma assessoria de investimentos.
 
@@ -428,6 +486,7 @@ Regras:
 - Nunca gere código Python para visualização.
 - Se o usuário pedir para colorir o visual por uma coluna, inclua essa coluna no SELECT final do SQL e preencha visualization.color com o nome exato da coluna.
 - Retorne APENAS JSON válido.
+- Aplique RLS SEMPRE: a consulta deve considerar apenas Cliente_ID na lista permitida [{allowed_ids_clause}].
 
 Formato de saída JSON:
 {{
@@ -574,9 +633,20 @@ def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     
     """
+    rls_ids = _build_rls_filter_sql()
+
     for table_name, file_path in TALK_TO_DATA_FILES.items():
         escaped_path = str(file_path).replace("'", "''")
-        con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
+        if table_name in {"Informacoes_Cliente", "Investimentos_Cliente"}:
+            con.execute(
+                f"""
+                CREATE OR REPLACE VIEW "{table_name}" AS
+                SELECT * FROM read_parquet('{escaped_path}')
+                WHERE CAST(Cliente_ID AS VARCHAR) IN ({rls_ids})
+                """
+            )
+        else:
+            con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
 
 
 def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) -> pd.DataFrame:

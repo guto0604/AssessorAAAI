@@ -18,7 +18,24 @@ SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
 SESSION_RAG_TOP_K = "rag_top_k"
 SESSION_RAG_SEMANTIC_WEIGHT = "rag_semantic_weight"
+SESSION_RLS_ALLOWED_SEGMENTS = "rls_allowed_segments"
+SESSION_RBAC_ENABLED_TABS = "rbac_enabled_tabs"
 TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
+
+RLS_SEGMENT_OPTIONS = [
+    "Até 300k",
+    "300k-2M",
+    "2M+",
+]
+
+RBAC_AVAILABLE_TABS = [
+    "🏠 Início",
+    "👤 Visualização clientes",
+    "🚀 Voz do Assessor (Pitch)",
+    "📝 Reuniões",
+    "📊 Talk to your Data",
+    "🤖 Pergunte à IA",
+]
 
 
 def _iso_now() -> str:
@@ -163,6 +180,12 @@ def init_session_state():
 
     if SESSION_RAG_SEMANTIC_WEIGHT not in st.session_state:
         st.session_state[SESSION_RAG_SEMANTIC_WEIGHT] = 0.8
+
+    if SESSION_RLS_ALLOWED_SEGMENTS not in st.session_state:
+        st.session_state[SESSION_RLS_ALLOWED_SEGMENTS] = RLS_SEGMENT_OPTIONS.copy()
+
+    if SESSION_RBAC_ENABLED_TABS not in st.session_state:
+        st.session_state[SESSION_RBAC_ENABLED_TABS] = RBAC_AVAILABLE_TABS.copy()
 
     if "talk_to_data_last_llm_output" not in st.session_state:
         st.session_state.talk_to_data_last_llm_output = None

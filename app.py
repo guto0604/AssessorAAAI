@@ -14,9 +14,41 @@ from ui.pages.talk_to_data import (
     validate_read_only_sql,
     render_talk_to_your_data_page,
 )
-from ui.state import build_cliente_sidebar_table, init_session_state
+from ui.state import (
+    RBAC_AVAILABLE_TABS,
+    RLS_SEGMENT_OPTIONS,
+    SESSION_RBAC_ENABLED_TABS,
+    SESSION_RLS_ALLOWED_SEGMENTS,
+    build_cliente_sidebar_table,
+    init_session_state,
+)
 
 st.set_page_config(page_title="POC Jornada Comercial", layout="wide")
+
+
+def _segment_label(patrimonio):
+    if patrimonio is None:
+        return None
+    if patrimonio <= 300_000:
+        return "Até 300k"
+    if patrimonio <= 2_000_000:
+        return "300k-2M"
+    return "2M+"
+
+
+def _filter_clientes_by_rls(clientes_df):
+    allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RLS_SEGMENT_OPTIONS)
+    if not allowed_segments:
+        return clientes_df.iloc[0:0]
+
+    segmented = clientes_df.copy()
+    segmented["_segmento_rls"] = segmented["Patrimonio_Investido_Conosco"].apply(_segment_label)
+    return segmented[segmented["_segmento_rls"].isin(allowed_segments)].drop(columns=["_segmento_rls"])
+
+
+def _is_tab_enabled(tab_label: str) -> bool:
+    enabled_tabs = st.session_state.get(SESSION_RBAC_ENABLED_TABS, RBAC_AVAILABLE_TABS)
+    return tab_label in enabled_tabs
 
 
 def main():
@@ -31,7 +63,12 @@ def main():
     st.title("AssessorAAAI")
 
     st.sidebar.header("Selecionar Cliente")
-    clientes_df = load_clientes()
+    clientes_df = _filter_clientes_by_rls(load_clientes())
+
+    if clientes_df.empty:
+        st.sidebar.warning("Nenhum cliente disponível para os segmentos RLS selecionados.")
+        st.info("Ajuste os segmentos na aba de Configurações para visualizar clientes.")
+        return
 
     cliente_ids = clientes_df["Cliente_ID"].tolist()
     selected_index = 0
@@ -63,25 +100,40 @@ def main():
     ])
 
     with tab_home:
-        render_home_tab()
+        if _is_tab_enabled("🏠 Início"):
+            render_home_tab()
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_clientes:
-        render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
+        if _is_tab_enabled("👤 Visualização clientes"):
+            render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_pitch:
-        render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
+        if _is_tab_enabled("🚀 Voz do Assessor (Pitch)"):
+            render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_meetings:
-        render_meetings_tab(st.session_state.selected_cliente_id, cliente_info)
+        if _is_tab_enabled("📝 Reuniões"):
+            render_meetings_tab(st.session_state.selected_cliente_id, cliente_info)
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_portfolio:
-        render_talk_to_your_data_page()
-
-    #with tab_market:
-    #    render_market_intelligence_tab()
+        if _is_tab_enabled("📊 Talk to your Data"):
+            render_talk_to_your_data_page()
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_ask_ai:
-        render_ask_ai_tab()
+        if _is_tab_enabled("🤖 Pergunte à IA"):
+            render_ask_ai_tab()
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC simulado.")
 
     with tab_settings:
         render_settings_tab()
