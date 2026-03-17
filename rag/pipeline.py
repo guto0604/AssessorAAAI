@@ -364,14 +364,13 @@ class RagService:
             )
 
         prompt = (
-            "Você é um assistente de suporte operacional. "
+            "Você é um assistente de suporte para responder dúvidas de assessores com base em documentos. "
             "Responda SOMENTE com base nos trechos fornecidos. "
             "Se não houver informação suficiente, diga explicitamente que não há base."
         )
 
         user_message = (
             f"Pergunta original do usuário: {question}\n"
-            f"Consulta usada para recuperação vetorial: {parsed_query}\n\n"
             f"Configuração de recuperação híbrida (RRF): top_k={top_k}, peso_semantico={semantic_weight:.2f}, peso_bm25={bm25_weight:.2f}\n\n"
             "Trechos recuperados:\n"
             + "\n\n".join(context_parts)
