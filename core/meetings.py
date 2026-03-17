@@ -146,8 +146,9 @@ Próximos passos sugeridos para o assessor:
         },
     )
 
+    payload = json.dumps({"cliente_info": cliente_info, "transcricao": transcript}, ensure_ascii=False)
     messages = prompt.invoke(
-        {"payload": json.dumps({"cliente_info": cliente_info, "transcricao": transcript}, ensure_ascii=False)},
+        {"payload": payload},
         config=config,
     )
     response = llm.invoke(messages, config=config)
@@ -166,6 +167,11 @@ Próximos passos sugeridos para o assessor:
                 "output_tokens": usage.get("completion_tokens"),
                 "total_tokens": usage.get("total_tokens"),
                 "response_id": getattr(response, "response_id", None),
+                "prompt": {
+                    "system": system_prompt.strip(),
+                    "user": payload,
+                },
+                "output": summary,
             },
         }
     return summary

@@ -108,6 +108,8 @@ class RagService:
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
+            "prompt": {"system": parser_prompt, "user": question},
+            "output": parsed_query,
         }
         return {"parsed_query": parsed_query, "api_metrics": parser_metrics}
 
@@ -399,6 +401,8 @@ class RagService:
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
+            "prompt": {"system": prompt, "user": user_message},
+            "output": answer,
         }
         api_calls = [query_parser_metrics, query_embedding_metrics, completion_metrics]
         return {
