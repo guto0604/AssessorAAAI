@@ -5,10 +5,14 @@ import streamlit as st
 from core.openai_client import SESSION_OPENAI_KEY, get_effective_openai_api_key
 from core.tavily_client import SESSION_TAVILY_KEY, get_effective_tavily_api_key
 from ui.state import (
+    RBAC_AVAILABLE_TABS,
+    RLS_SEGMENT_OPTIONS,
     SESSION_LANGSMITH_KEY,
     SESSION_LANGSMITH_TRACING_ENABLED,
     SESSION_RAG_SEMANTIC_WEIGHT,
     SESSION_RAG_TOP_K,
+    SESSION_RBAC_ENABLED_TABS,
+    SESSION_RLS_ALLOWED_SEGMENTS,
     SESSION_TRACING_HEALTH_STATUS,
     _iso_now,
     get_tracer,
@@ -160,6 +164,32 @@ def render_settings_tab():
                 st.error("Falha ao criar run de teste no LangSmith.")
 
 
+
+
+    st.divider()
+    st.subheader("Simulação de acesso (RLS e RBAC)")
+    st.caption("Configure escopo de clientes (RLS) e telas visíveis (RBAC) para simular perfis.")
+
+    allowed_segments = st.multiselect(
+        "RLS: Segmentos permitidos por patrimônio investido",
+        options=RLS_SEGMENT_OPTIONS,
+        default=st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RLS_SEGMENT_OPTIONS),
+        help="Restringe os clientes e consultas ao(s) segmento(s) selecionado(s).",
+        key="settings_rls_segments_input",
+    )
+
+    enabled_tabs = st.multiselect(
+        "RBAC: Telas habilitadas",
+        options=RBAC_AVAILABLE_TABS,
+        default=st.session_state.get(SESSION_RBAC_ENABLED_TABS, RBAC_AVAILABLE_TABS),
+        help="Selecione as telas que devem aparecer para o perfil simulado.",
+        key="settings_rbac_tabs_input",
+    )
+
+    if st.button("💾 Salvar simulação de acesso", key="settings_save_access_simulation"):
+        st.session_state[SESSION_RLS_ALLOWED_SEGMENTS] = allowed_segments
+        st.session_state[SESSION_RBAC_ENABLED_TABS] = enabled_tabs
+        st.success("Simulação de acesso atualizada.")
 
     st.divider()
     st.subheader("Knowledge Base Vetorial")
