@@ -7,6 +7,18 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """Responsável por montar api metrics no contexto da aplicação de assessoria.
+
+    Args:
+        response: Valor de entrada necessário para processar 'response'.
+        provider: Identificador usado para referenciar 'provider'.
+        prompt: Valor de entrada necessário para processar 'prompt'.
+        output: Valor de entrada necessário para processar 'output'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -22,6 +34,19 @@ def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | Non
 
 
 def rank_journeys(cliente_info, prompt_assessor, jornadas_df, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Responsável por priorizar journeys no contexto da aplicação de assessoria.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        prompt_assessor: Valor de entrada necessário para processar 'prompt_assessor'.
+        jornadas_df: Valor de entrada necessário para processar 'jornadas_df'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     jornadas_texto = ""
     for _, row in jornadas_df.iterrows():
         jornadas_texto += f"""

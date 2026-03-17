@@ -26,6 +26,17 @@ from ui.state import (
 )
 
 def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str) -> str | None:
+    """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
+
+    Args:
+        tracer: Valor de entrada necessário para processar 'tracer'.
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+        prompt_assessor: Valor de entrada necessário para processar 'prompt_assessor'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     active_trace = st.session_state.get(SESSION_PITCH_TRACE)
     if active_trace and active_trace.get("run_id") and active_trace.get("status") == "in_progress":
         tracer.log_event(active_trace["run_id"], "pitch_interrupted", {
@@ -54,6 +65,12 @@ def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str
 
 
 def _reset_pitch_flow_state():
+    """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     st.session_state.etapa = 1
     st.session_state.ranking_resultado = None
 
@@ -77,6 +94,15 @@ def _reset_pitch_flow_state():
 
 
 def render_pitch_tab(cliente_id, cliente_info):
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Args:
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     st.header("🚀 Iniciar fluxo de pitch")
 
     prompt_assessor = st.text_area(
@@ -379,6 +405,17 @@ def render_pitch_tab(cliente_id, cliente_info):
             st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
 
             def _checkbox_list(title, items, key_prefix):
+                """Responsável por processar list no contexto da aplicação de assessoria.
+
+                Args:
+                    title: Valor de entrada necessário para processar 'title'.
+                    items: Valor de entrada necessário para processar 'items'.
+                    key_prefix: Valor de entrada necessário para processar 'key_prefix'.
+
+                Returns:
+                    Resultado da rotina, no tipo esperado pelo fluxo chamador.
+                
+                """
                 st.subheader(title)
                 selected = []
                 for item in items:

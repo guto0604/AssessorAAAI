@@ -5,6 +5,11 @@ try:
     from dotenv import load_dotenv
 except Exception:
     def load_dotenv():
+        """Carrega dados da fonte esperada e devolve a estrutura pronta para uso no fluxo.
+
+        Returns:
+            Dados carregados e prontos para consumo no fluxo da aplicação.
+        """
         return None
 
 try:
@@ -29,6 +34,11 @@ SESSION_TAVILY_KEY = "user_tavily_api_key"
 
 
 def get_effective_tavily_api_key() -> str | None:
+    """Obtém a informação necessária para a etapa atual do processo.
+
+    Returns:
+        Dados carregados e prontos para consumo no fluxo da aplicação.
+    """
     env_key = (os.getenv("TAVILY_API_KEY") or "").strip()
     if env_key:
         return env_key
@@ -39,6 +49,15 @@ def get_effective_tavily_api_key() -> str | None:
 
 
 def _extract_domain(url: str) -> str:
+    """Responsável por extrair domain no contexto da aplicação de assessoria.
+
+    Args:
+        url: Valor de entrada necessário para processar 'url'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not url:
         return ""
     return url.split("//")[-1].split("/")[0].lower()
@@ -52,6 +71,18 @@ def search_tavily(
     include_domains: list[str] | None = None,
     lightweight: bool = False,
 ) -> list[dict[str, Any]]:
+    """Realiza a busca de informações com os filtros definidos para o contexto atual.
+
+    Args:
+        query: Consulta usada para buscar dados ou informações externas.
+        days: Valor de entrada necessário para processar 'days'.
+        num_results: Quantidade máxima de resultados retornados pela busca.
+        include_domains: Valor de entrada necessário para processar 'include_domains'.
+        lightweight: Se verdadeiro, reduz payload para uma busca mais leve.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     api_key = get_effective_tavily_api_key()
     if not api_key:
         raise ValueError("TAVILY_API_KEY não configurada.")

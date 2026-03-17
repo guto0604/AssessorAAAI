@@ -18,21 +18,52 @@ MEETINGS_DIR = BASE_DIR / "meetings"
 
 
 def _iso_now() -> str:
+    """Retorna o timestamp atual em formato padronizado para registros e rastreabilidade.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return datetime.now(timezone.utc).isoformat()
 
 
 def ensure_client_meetings_dir(cliente_id) -> Path:
+    """Responsável por garantir client meetings dir no contexto da aplicação de assessoria.
+
+    Args:
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     client_dir = MEETINGS_DIR / str(cliente_id)
     client_dir.mkdir(parents=True, exist_ok=True)
     return client_dir
 
 
 def list_client_meetings(cliente_id) -> list[Path]:
+    """Lista os elementos disponíveis para apoiar a navegação e seleção no fluxo.
+
+    Args:
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+
+    Returns:
+        Lista com os itens encontrados para a etapa solicitada.
+    """
     client_dir = ensure_client_meetings_dir(cliente_id)
     return sorted(client_dir.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def _build_cliente_context(cliente_info: dict) -> str:
+    """Transforma informações do cliente para uso direto nas telas e decisões do fluxo.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     perfil = cliente_info.get("Perfil_Suitability", "não mencionado")
     patrimonio = cliente_info.get("Patrimonio_Investido_Conosco", "não mencionado")
     disponivel = cliente_info.get("Dinheiro_Disponivel_Para_Investir", "não mencionado")
@@ -48,6 +79,19 @@ def _build_cliente_context(cliente_info: dict) -> str:
 
 
 def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary, api_calls: list[dict] | None = None) -> Path:
+    """Salva o resultado processado para persistir histórico e permitir consulta posterior.
+
+    Args:
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+        cliente_nome: Nome do cliente exibido no conteúdo gerado e nos registros.
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        transcript: Transcrição de áudio utilizada como base para sumarização.
+        summary: Resumo final gerado para registro da reunião.
+        api_calls: Lista de chamadas de API registradas durante o fluxo.
+
+    Returns:
+        Referência do recurso salvo para uso posterior.
+    """
     client_dir = ensure_client_meetings_dir(cliente_id)
     now = datetime.now()
     file_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_reuniao.txt"
@@ -84,6 +128,18 @@ def transcribe_audio_tool(payload: dict) -> str:
 
 
 def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Transcreve o áudio enviado para texto, habilitando o restante do fluxo de reunião.
+
+    Args:
+        file_bytes: Conteúdo do arquivo em bytes enviado pela interface.
+        filename: Nome original do arquivo utilizado para identificação do conteúdo.
+        mime_type: Tipo MIME do arquivo para orientar o processamento.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Texto transcrito a partir do áudio de entrada.
+    """
     config = build_runnable_config(
         run_name="meeting_transcription",
         tags=["meeting", "transcription", "langchain"],
@@ -115,6 +171,17 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
 
 
 def summarize_transcript(cliente_info, transcript, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Gera um resumo objetivo do conteúdo para apoiar o assessor no acompanhamento.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        transcript: Transcrição de áudio utilizada como base para sumarização.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resumo objetivo do conteúdo analisado.
+    """
     system_prompt = """
 Você é um assistente para assessores de investimentos.
 
@@ -185,6 +252,20 @@ def process_meeting_with_langchain(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ) -> dict:
+    """Executa uma etapa do fluxo de reuniões, incluindo registro, transcrição ou sumarização.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+        audio_bytes: Valor de entrada necessário para processar 'audio_bytes'.
+        audio_name: Valor de entrada necessário para processar 'audio_name'.
+        audio_type: Valor de entrada necessário para processar 'audio_type'.
+        trace_context: Contexto de rastreio da execução para observabilidade.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     config = build_runnable_config(
         run_name="meeting_end_to_end",
         tags=["meeting", "langchain", "e2e"],

@@ -5,6 +5,15 @@ from core.openai_client import get_openai_client
 
 class _Resp:
     def __init__(self, content, *, model=None, usage=None, elapsed_ms=None, response_id=None):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            content: Valor de entrada necessário para processar 'content'.
+            model: Modelo utilizado para executar a etapa 'model'.
+            usage: Valor de entrada necessário para processar 'usage'.
+            elapsed_ms: Valor de entrada necessário para processar 'elapsed_ms'.
+            response_id: Identificador usado para referenciar 'response_id'.
+        """
         self.content = content
         self.model = model
         self.usage = usage or {}
@@ -14,12 +23,30 @@ class _Resp:
 
 class ChatOpenAI:
     def __init__(self, model: str, temperature: float = 1, model_kwargs=None, api_key=None):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+
+        Args:
+            model: Modelo utilizado para executar a etapa 'model'.
+            temperature: Valor de entrada necessário para processar 'temperature'.
+            model_kwargs: Modelo utilizado para executar a etapa 'model_kwargs'.
+            api_key: Valor de entrada necessário para processar 'api_key'.
+        """
         self.model = model
         self.temperature = temperature
         self.model_kwargs = model_kwargs or {}
         self.api_key = api_key
 
     def invoke(self, input_value, config=None):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Args:
+            input_value: Valor de entrada necessário para processar 'input_value'.
+            config: Valor de entrada necessário para processar 'config'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         params = {
             "model": self.model,
             "temperature": self.temperature,
@@ -45,6 +72,15 @@ class ChatOpenAI:
         )
 
     def __or__(self, other):
+        """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+        Args:
+            other: Valor de entrada necessário para processar 'other'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         from langchain_core.runnables import RunnableSequence
 
         return RunnableSequence([self, other])

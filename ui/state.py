@@ -22,10 +22,20 @@ TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 
 def _iso_now() -> str:
+    """Retorna o timestamp atual em formato padronizado para registros e rastreabilidade.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     return datetime.now(timezone.utc).isoformat()
 
 
 def get_tracer() -> LangSmithTracer:
+    """Obtém a informação necessária para a etapa atual do processo.
+
+    Returns:
+        Dados carregados e prontos para consumo no fluxo da aplicação.
+    """
     env_langsmith_key = (os.getenv("LANGSMITH_API_KEY") or "").strip()
     session_langsmith_key = (st.session_state.get(SESSION_LANGSMITH_KEY, "") or "").strip()
     effective_langsmith_key = env_langsmith_key or session_langsmith_key
@@ -44,6 +54,16 @@ def get_tracer() -> LangSmithTracer:
 
 
 def _format_cliente_value(campo: str, valor):
+    """Transforma informações do cliente para uso direto nas telas e decisões do fluxo.
+
+    Args:
+        campo: Valor de entrada necessário para processar 'campo'.
+        valor: Valor de entrada necessário para processar 'valor'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     campos_monetarios = {
         "Patrimonio_Investido_Conosco",
         "Patrimonio_Investido_Outros",
@@ -65,6 +85,14 @@ def _format_cliente_value(campo: str, valor):
 
 
 def build_cliente_sidebar_table(cliente_info: dict) -> pd.DataFrame:
+    """Monta a estrutura de dados usada nas próximas etapas do fluxo.
+
+    Args:
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    """
     labels = {
         "Cliente_ID": "ID",
         "Nome": "Nome",
@@ -87,6 +115,12 @@ def build_cliente_sidebar_table(cliente_info: dict) -> pd.DataFrame:
 
 
 def init_session_state():
+    """Responsável por processar session state no contexto da aplicação de assessoria.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if "etapa" not in st.session_state:
         st.session_state.etapa = 1
 

@@ -13,6 +13,15 @@ TIME_RANGE_OPTIONS = {
 
 
 def _format_date(date_str: str) -> str:
+    """Responsável por formatar date no contexto da aplicação de assessoria.
+
+    Args:
+        date_str: Data utilizada no contexto de 'date_str'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not date_str:
         return "-"
     try:
@@ -23,6 +32,19 @@ def _format_date(date_str: str) -> str:
 
 
 def _filter_news(items: list[dict], selected_event_type: str, selected_sector: str, selected_company: str, selected_source: str) -> list[dict]:
+    """Processa dados de mercado para gerar contexto acionável ao assessor.
+
+    Args:
+        items: Valor de entrada necessário para processar 'items'.
+        selected_event_type: Valor de entrada necessário para processar 'selected_event_type'.
+        selected_sector: Valor de entrada necessário para processar 'selected_sector'.
+        selected_company: Valor de entrada necessário para processar 'selected_company'.
+        selected_source: Valor de entrada necessário para processar 'selected_source'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     filtered = []
     for item in items:
         if selected_event_type != "Todos" and item.get("event_type") != selected_event_type:
@@ -38,6 +60,15 @@ def _filter_news(items: list[dict], selected_event_type: str, selected_sector: s
 
 
 def _render_news_card(item: dict):
+    """Processa dados de mercado para gerar contexto acionável ao assessor.
+
+    Args:
+        item: Valor de entrada necessário para processar 'item'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     score = item.get("relevance_score", 0)
     header = f"**{item.get('title', 'Sem título')}**"
     if score >= 80:
@@ -59,12 +90,26 @@ def _render_news_card(item: dict):
 
 
 def _is_tavily_credits_error(exc: Exception) -> bool:
+    """Configura integração com provedores externos usados nos fluxos de IA da aplicação.
+
+    Args:
+        exc: Valor de entrada necessário para processar 'exc'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     error_msg = str(exc).lower()
     tavily_credit_terms = ["credit", "credits", "insufficient", "quota", "429", "rate limit", "too many requests"]
     return "tavily" in error_msg and any(term in error_msg for term in tavily_credit_terms)
 
 
 def render_market_intelligence_tab():
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     st.title("📈 Market Intelligence")
     st.caption("Notícias relevantes do mercado brasileiro ranqueadas por impacto e recência.")
     tracer = get_tracer()

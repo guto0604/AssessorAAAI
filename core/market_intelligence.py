@@ -53,6 +53,15 @@ EVENT_TYPES = ["earnings", "regulatório", "macro", "M&A", "corporate", "crédit
 
 
 def _parse_date(value: str | None) -> datetime:
+    """Responsável por interpretar date no contexto da aplicação de assessoria.
+
+    Args:
+        value: Valor de entrada necessário para processar 'value'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if not value:
         return datetime.min
     try:
@@ -62,6 +71,18 @@ def _parse_date(value: str | None) -> datetime:
 
 
 def _normalize_result(item: dict[str, Any], source_type: str, sector: str | None = None, company: str | None = None) -> dict[str, Any]:
+    """Responsável por processar result no contexto da aplicação de assessoria.
+
+    Args:
+        item: Valor de entrada necessário para processar 'item'.
+        source_type: Valor de entrada necessário para processar 'source_type'.
+        sector: Valor de entrada necessário para processar 'sector'.
+        company: Valor de entrada necessário para processar 'company'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     title = (item.get("title") or "Sem título").strip()
     content = item.get("content") or item.get("raw_content") or ""
     summary_seed = (content or title)[:280]
@@ -79,6 +100,15 @@ def _normalize_result(item: dict[str, Any], source_type: str, sector: str | None
 
 
 def _dedupe(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Responsável por executar uma etapa do fluxo da aplicação de assessoria.
+
+    Args:
+        items: Valor de entrada necessário para processar 'items'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     seen = set()
     deduped = []
     for item in items:
@@ -91,6 +121,16 @@ def _dedupe(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _classify_and_summarize(items: list[dict[str, Any]], include_api_metrics: bool = False):
+    """Responsável por processar and summarize no contexto da aplicação de assessoria.
+
+    Args:
+        items: Valor de entrada necessário para processar 'items'.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resumo objetivo do conteúdo analisado.
+    
+    """
     if not items:
         return {"items": [], "api_metrics": None} if include_api_metrics else []
 
@@ -161,6 +201,16 @@ def _classify_and_summarize(items: list[dict[str, Any]], include_api_metrics: bo
 
 
 def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
+    """Responsável por montar macro queries no contexto da aplicação de assessoria.
+
+    Args:
+        sector_name: Valor de entrada necessário para processar 'sector_name'.
+        companies: Valor de entrada necessário para processar 'companies'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     companies_text = " ou ".join(companies)
     return [
         f"Brasil {sector_name} mercado financeiro resultados guidance dividendos",
@@ -171,6 +221,15 @@ def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
 
 
 def _build_company_queries(company: str) -> list[str]:
+    """Responsável por montar company queries no contexto da aplicação de assessoria.
+
+    Args:
+        company: Valor de entrada necessário para processar 'company'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     return [
         f"Brasil {company} resultado guidance receita lucro ebitda",
         f"Brasil {company} M&A aquisição venda ativo parceria",
@@ -180,6 +239,17 @@ def _build_company_queries(company: str) -> list[str]:
 
 
 def fetch_market_intelligence(days: int = 7, sector: str | None = None, include_api_metrics: bool = False) -> dict[str, Any]:
+    """Processa dados de mercado para gerar contexto acionável ao assessor.
+
+    Args:
+        days: Valor de entrada necessário para processar 'days'.
+        sector: Valor de entrada necessário para processar 'sector'.
+        include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     if sector not in SECTOR_COMPANIES:
         sectors_to_fetch = SECTOR_COMPANIES
     else:

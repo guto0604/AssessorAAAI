@@ -2,6 +2,11 @@ import streamlit as st
 
 
 def render_home_tab():
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     st.title("Potencializando assessores com IA")
 
     st.subheader("🎯 Objetivo da ferramenta")

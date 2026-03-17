@@ -20,6 +20,12 @@ st.set_page_config(page_title="POC Jornada Comercial", layout="wide")
 
 
 def main():
+    """Responsável por executar uma etapa do fluxo da aplicação de assessoria.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     init_session_state()
 
     st.title("AssessorAAAI")

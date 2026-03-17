@@ -7,6 +7,17 @@ from core.meetings import list_client_meetings, process_meeting_with_langchain, 
 from ui.state import SESSION_MEETING_TRACE, _iso_now, get_tracer
 
 def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
+    """Executa uma etapa do fluxo de reuniões, incluindo registro, transcrição ou sumarização.
+
+    Args:
+        tracer: Valor de entrada necessário para processar 'tracer'.
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+        audio_name: Valor de entrada necessário para processar 'audio_name'.
+
+    Returns:
+        Resultado da rotina, no tipo esperado pelo fluxo chamador.
+    
+    """
     run_id = tracer.start_run(
         name=f"meeting_cliente_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         run_type="chain",
@@ -24,6 +35,15 @@ def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | 
 
 
 def render_meetings_tab(cliente_id, cliente_info):
+    """Renderiza a seção da interface correspondente a este fluxo da aplicação.
+
+    Args:
+        cliente_id: Identificador único do cliente usado para filtrar dados e arquivos relacionados.
+        cliente_info: Dicionário com os dados consolidados do cliente para personalizar a resposta.
+
+    Returns:
+        Não retorna valor; atualiza diretamente os componentes da interface.
+    """
     st.title("Reuniões")
 
     tracer = get_tracer()

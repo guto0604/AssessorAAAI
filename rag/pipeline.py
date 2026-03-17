@@ -27,11 +27,22 @@ class IngestResult:
 
 class RagService:
     def __init__(self):
+        """Inicializa a classe com dependências e estado necessários para o fluxo.
+        """
         self.store = LocalFaissStore()
         self.store.load()
         self.client = get_openai_client()
 
     def _extract_usage(self, usage: Any) -> tuple[int | None, int | None, int | None]:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            usage: Valor de entrada necessário para processar 'usage'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if usage is None:
             return None, None, None
 
@@ -50,6 +61,16 @@ class RagService:
         return None, None, None
 
     def _embed_texts(self, texts: list[str], include_api_metrics: bool = False):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            texts: Lista de textos processados em lote.
+            include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         started_at = perf_counter()
         response = self.client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
         latency_ms = int((perf_counter() - started_at) * 1000)
@@ -74,6 +95,16 @@ class RagService:
 
 
     def _parse_query_for_retrieval(self, question: str, include_api_metrics: bool = False):
+        """Trata consultas e resultados de dados para o fluxo Talk to Data com segurança.
+
+        Args:
+            question: Pergunta do usuário que direciona a busca ou geração da resposta.
+            include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+        Returns:
+            Consulta validada ou resultado tabular da execução, conforme a etapa.
+        
+        """
         parser_prompt = (
             """ 
             Você é um parser de consultas para busca vetorial em assessoria de investimentos.
@@ -125,9 +156,28 @@ class RagService:
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            text: Texto de entrada a ser processado pela função.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         return re.findall(r"\w+", (text or "").lower(), flags=re.UNICODE)
 
     def _bm25_search(self, query: str, k: int = 5) -> list[tuple[ChunkMetadata, float]]:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            query: Consulta usada para buscar dados ou informações externas.
+            k: Valor de entrada necessário para processar 'k'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.store.metadata:
             return []
 
@@ -186,6 +236,19 @@ class RagService:
         semantic_weight: float = 0.8,
         bm25_weight: float = 0.2,
     ) -> list[tuple[ChunkMetadata, float]]:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            parsed_query: Valor de entrada necessário para processar 'parsed_query'.
+            query_embedding: Valor de entrada necessário para processar 'query_embedding'.
+            top_k: Valor de entrada necessário para processar 'top_k'.
+            semantic_weight: Valor de entrada necessário para processar 'semantic_weight'.
+            bm25_weight: Valor de entrada necessário para processar 'bm25_weight'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         retrieval_depth = max(top_k * 4, top_k)
         semantic_results = self.store.search(query_embedding, k=retrieval_depth)
         bm25_results = self._bm25_search(parsed_query, k=retrieval_depth)
@@ -214,6 +277,17 @@ class RagService:
         return ranked[:top_k]
 
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            folder: Valor de entrada necessário para processar 'folder'.
+            file_name: Caminho ou arquivo de entrada relacionado a 'file_name'.
+            content: Valor de entrada necessário para processar 'content'.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         text = extract_text_from_bytes(file_name=file_name, content=content)
         file_hash = sha256_bytes(content)
 
@@ -250,6 +324,12 @@ class RagService:
         return IngestResult(added_files=1, added_chunks=len(chunks), skipped_files=[])
 
     def reindex_all_documents(self) -> IngestResult:
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         files = [
             path
             for path in KNOWLEDGE_BASE_DIR.rglob("*")
@@ -301,6 +381,12 @@ class RagService:
         )
 
     def ensure_index_exists(self):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         if not self.store.exists() or not self.store.metadata:
             self.reindex_all_documents()
 
@@ -312,6 +398,19 @@ class RagService:
         bm25_weight: float = 0.2,
         include_api_metrics: bool = False,
     ):
+        """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
+
+        Args:
+            question: Pergunta do usuário que direciona a busca ou geração da resposta.
+            top_k: Valor de entrada necessário para processar 'top_k'.
+            semantic_weight: Valor de entrada necessário para processar 'semantic_weight'.
+            bm25_weight: Valor de entrada necessário para processar 'bm25_weight'.
+            include_api_metrics: Indica se a função deve retornar métricas de uso de API junto ao resultado.
+
+        Returns:
+            Resultado da rotina, no tipo esperado pelo fluxo chamador.
+        
+        """
         self.ensure_index_exists()
 
         top_k = max(1, int(top_k))
