@@ -118,7 +118,7 @@ def render_ask_ai_tab():
             )
 
             try:
-                guardrail_result = evaluate_input_guardrails(question)
+                guardrail_result = evaluate_input_guardrails(question, context="ask_ai")
             except Exception as exc:
                 guardrail_result = handle_guardrail_exception(question, exc)
 
@@ -148,7 +148,7 @@ def render_ask_ai_tab():
                         },
                     },
                 )
-                st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                st.warning(guardrail_warning_message(guardrail_result.violation_type, context="ask_ai"))
                 return
 
             with st.spinner("Consultando base vetorial..."):

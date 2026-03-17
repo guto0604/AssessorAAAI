@@ -204,7 +204,7 @@ def render_talk_to_your_data_page():
 
         try:
             try:
-                guardrail_result = evaluate_input_guardrails(question.strip())
+                guardrail_result = evaluate_input_guardrails(question.strip(), context="talk_to_data")
             except Exception as exc:
                 guardrail_result = handle_guardrail_exception(question.strip(), exc)
 
@@ -234,7 +234,7 @@ def render_talk_to_your_data_page():
                         },
                     },
                 )
-                st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                st.warning(guardrail_warning_message(guardrail_result.violation_type, context="talk_to_data"))
                 return
 
             reference_text = load_reference_text()
