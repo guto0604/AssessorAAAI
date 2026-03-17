@@ -162,6 +162,22 @@ def render_ask_ai_tab():
                     )
                     answer = rag_result["answer"]
                     sources = rag_result["sources"]
+                    tracer.log_event(
+                        ask_ai_run_id,
+                        "ask_ai_documents_consulted",
+                        {
+                            "documents": [source.get("source_path") for source in sources],
+                            "chunks": [
+                                {
+                                    "source_path": source.get("source_path"),
+                                    "chunk_id": source.get("chunk_id"),
+                                }
+                                for source in sources
+                            ],
+                            "total_documents": len({source.get("source_path") for source in sources}),
+                            "total_chunks": len(sources),
+                        },
+                    )
 
                     for api_call in rag_result.get("api_calls", []):
                         step = api_call.get("step")

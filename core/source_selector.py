@@ -66,6 +66,20 @@ def _sanitize_step4_output(parsed: dict) -> dict:
     return parsed
 
 
+def _filter_selected_txt_files(selected_files: list[str], available_txt_files: list[str]) -> list[str]:
+    """Filtra arquivos selecionados para manter apenas .txt válidos disponíveis na base."""
+    available_set = set(available_txt_files)
+    filtered: list[str] = []
+    for file_path in selected_files:
+        normalized = str(file_path or "").strip()
+        if not normalized.endswith(".txt"):
+            continue
+        if normalized not in available_set:
+            continue
+        filtered.append(normalized)
+    return filtered
+
+
 def select_sources_step4(
     cliente_info: dict,
     prompt_assessor: str,
@@ -164,6 +178,19 @@ Formato obrigatório:
     messages = (payload_builder | prompt).invoke(payload, config=config)
     response = llm.invoke(messages, config=config)
     parsed = _sanitize_step4_output(parse_json_output(str_output_parser.invoke(response, config=config)))
+    parsed["kb_files_selected"] = _filter_selected_txt_files(parsed.get("kb_files_selected", []), kb_files)
+
+    tracer = (trace_context or {}).get("tracer")
+    parent_run_id = (trace_context or {}).get("parent_run_id")
+    if tracer and parent_run_id:
+        tracer.log_event(
+            parent_run_id,
+            "pitch_step_4_documents_consulted",
+            {
+                "documents": parsed.get("kb_files_selected", []),
+                "total_documents": len(parsed.get("kb_files_selected", [])),
+            },
+        )
 
     if include_api_metrics:
         return {
