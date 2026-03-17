@@ -21,7 +21,7 @@ _CONTEXT_DESCRIPTIONS: dict[GuardrailContext, str] = {
         "Fluxo Talk to your Data com dados estruturados de CRM e investimentos: perfil/profissão/idade de clientes, suitability, carteira, aportes/resgates, produtos, campanhas e pedidos analíticos como tabelas e gráficos."
     ),
     "ask_ai": (
-        "Fluxo Ask AI sobre documentos e relatórios da knowledge base, incluindo pesquisas, políticas, normativos e conteúdos por setor/tema para apoio ao assessor."
+        "Fluxo Ask AI sobre informações e relatórios da knowledge base, incluindo pesquisas, políticas, normativos e conteúdos por setor/tema para apoio ao assessor.\n EX: Como me preparar para uma reunião com cliente? Como consultar posição do cliente? Como fazer aporte?"
     ),
 }
 

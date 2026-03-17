@@ -258,7 +258,7 @@ def render_pitch_tab(cliente_id, cliente_info):
     if "jornada_selecionada" in st.session_state and st.session_state["jornada_selecionada"]:
 
         st.divider()
-        st.header("4️⃣ Seleção de Fontes (Agent Router)")
+        st.header("4️⃣ Seleção de Fontes - LLM as Retriever")
 
         investimentos_cliente_df = get_investimentos_by_cliente(cliente_id)
         produtos_df = load_produtos()
