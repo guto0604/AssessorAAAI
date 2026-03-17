@@ -75,11 +75,21 @@ class RagService:
 
     def _parse_query_for_retrieval(self, question: str, include_api_metrics: bool = False):
         parser_prompt = (
-            "Você é um parser de consultas para recuperação semântica em assessoria de investimentos. "
-            "Reescreva a pergunta do assessor para busca vetorial em português do Brasil, "
-            "mantendo intenção original, incluindo termos financeiros e operacionais relevantes, "
-            "sinônimos úteis, e contexto de suitability/compliance quando aplicável. "
-            "Não responda à pergunta; apenas devolva a consulta expandida em uma única linha."
+            """ 
+            Você é um parser de consultas para busca vetorial em assessoria de investimentos.
+
+            Reescreva a pergunta do usuário para melhorar a recuperação de documentos, mantendo a intenção original.
+
+            Diretrizes:
+            - Seja objetivo e conciso
+            - Preserve apenas termos relevantes para busca
+            - Remova palavras genéricas, redundantes ou irrelevantes.
+            - NÃO invente contexto (ex: suitability, compliance, produto específico) se não estiver implícito.
+            - Use sinônimos apenas se aumentarem claramente a chance de recuperação.
+            - Priorize termos que possam existir em documentos como: relatórios, políticas e processos operacionais.
+
+            Não responda a pergunta. Retorne apenas a consulta otimizada.
+            """
         )
 
         llm_started_at = perf_counter()
