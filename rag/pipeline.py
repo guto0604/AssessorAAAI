@@ -27,11 +27,21 @@ class IngestResult:
 
 class RagService:
     def __init__(self):
+        """  init  .
+        """
         self.store = LocalFaissStore()
         self.store.load()
         self.client = get_openai_client()
 
     def _extract_usage(self, usage: Any) -> tuple[int | None, int | None, int | None]:
+        """ extract usage.
+
+        Args:
+            usage: Descrição do parâmetro `usage`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if usage is None:
             return None, None, None
 
@@ -50,6 +60,15 @@ class RagService:
         return None, None, None
 
     def _embed_texts(self, texts: list[str], include_api_metrics: bool = False):
+        """ embed texts.
+
+        Args:
+            texts: Descrição do parâmetro `texts`.
+            include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         started_at = perf_counter()
         response = self.client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
         latency_ms = int((perf_counter() - started_at) * 1000)
@@ -74,6 +93,15 @@ class RagService:
 
 
     def _parse_query_for_retrieval(self, question: str, include_api_metrics: bool = False):
+        """ parse query for retrieval.
+
+        Args:
+            question: Descrição do parâmetro `question`.
+            include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         parser_prompt = (
             """ 
             Você é um parser de consultas para busca vetorial em assessoria de investimentos.
@@ -125,9 +153,26 @@ class RagService:
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
+        """ tokenize.
+
+        Args:
+            text: Descrição do parâmetro `text`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return re.findall(r"\w+", (text or "").lower(), flags=re.UNICODE)
 
     def _bm25_search(self, query: str, k: int = 5) -> list[tuple[ChunkMetadata, float]]:
+        """ bm25 search.
+
+        Args:
+            query: Descrição do parâmetro `query`.
+            k: Descrição do parâmetro `k`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.store.metadata:
             return []
 
@@ -186,6 +231,18 @@ class RagService:
         semantic_weight: float = 0.8,
         bm25_weight: float = 0.2,
     ) -> list[tuple[ChunkMetadata, float]]:
+        """ hybrid search.
+
+        Args:
+            parsed_query: Descrição do parâmetro `parsed_query`.
+            query_embedding: Descrição do parâmetro `query_embedding`.
+            top_k: Descrição do parâmetro `top_k`.
+            semantic_weight: Descrição do parâmetro `semantic_weight`.
+            bm25_weight: Descrição do parâmetro `bm25_weight`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         retrieval_depth = max(top_k * 4, top_k)
         semantic_results = self.store.search(query_embedding, k=retrieval_depth)
         bm25_results = self._bm25_search(parsed_query, k=retrieval_depth)
@@ -214,6 +271,16 @@ class RagService:
         return ranked[:top_k]
 
     def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
+        """Ingest uploaded file.
+
+        Args:
+            folder: Descrição do parâmetro `folder`.
+            file_name: Descrição do parâmetro `file_name`.
+            content: Descrição do parâmetro `content`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         text = extract_text_from_bytes(file_name=file_name, content=content)
         file_hash = sha256_bytes(content)
 
@@ -250,6 +317,11 @@ class RagService:
         return IngestResult(added_files=1, added_chunks=len(chunks), skipped_files=[])
 
     def reindex_all_documents(self) -> IngestResult:
+        """Reindex all documents.
+
+        Returns:
+            Valor de retorno da função.
+        """
         files = [
             path
             for path in KNOWLEDGE_BASE_DIR.rglob("*")
@@ -301,6 +373,11 @@ class RagService:
         )
 
     def ensure_index_exists(self):
+        """Ensure index exists.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.store.exists() or not self.store.metadata:
             self.reindex_all_documents()
 
@@ -312,6 +389,18 @@ class RagService:
         bm25_weight: float = 0.2,
         include_api_metrics: bool = False,
     ):
+        """Answer question.
+
+        Args:
+            question: Descrição do parâmetro `question`.
+            top_k: Descrição do parâmetro `top_k`.
+            semantic_weight: Descrição do parâmetro `semantic_weight`.
+            bm25_weight: Descrição do parâmetro `bm25_weight`.
+            include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self.ensure_index_exists()
 
         top_k = max(1, int(top_k))

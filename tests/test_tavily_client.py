@@ -7,12 +7,25 @@ from core import tavily_client
 
 class TavilyClientTests(unittest.TestCase):
     def test_env_key_has_precedence_over_session_key(self):
+        """Test env key has precedence over session key.
+
+        Returns:
+            Valor de retorno da função.
+        """
         with patch.dict(os.environ, {"TAVILY_API_KEY": "env-key"}, clear=False):
             with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
                 self.assertEqual(tavily_client.get_effective_tavily_api_key(), "env-key")
 
     @patch("core.tavily_client.TavilyClient")
     def test_search_uses_tavily_client_with_api_key(self, client_mock):
+        """Test search uses tavily client with api key.
+
+        Args:
+            client_mock: Descrição do parâmetro `client_mock`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         client_mock.return_value.search.return_value = {"results": []}
 
         with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
@@ -26,6 +39,14 @@ class TavilyClientTests(unittest.TestCase):
 
     @patch("core.tavily_client.TavilyClient")
     def test_search_uses_lightweight_payload_when_requested(self, client_mock):
+        """Test search uses lightweight payload when requested.
+
+        Args:
+            client_mock: Descrição do parâmetro `client_mock`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         client_mock.return_value.search.return_value = {"results": []}
 
         with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):
@@ -36,6 +57,14 @@ class TavilyClientTests(unittest.TestCase):
 
     @patch("core.tavily_client.TavilyClient")
     def test_search_retries_with_smaller_payload_on_timeout(self, client_mock):
+        """Test search retries with smaller payload on timeout.
+
+        Args:
+            client_mock: Descrição do parâmetro `client_mock`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         client_mock.return_value.search.side_effect = [Exception("Read timed out"), {"results": []}]
 
         with patch.object(tavily_client.st, "session_state", {tavily_client.SESSION_TAVILY_KEY: "session-key"}):

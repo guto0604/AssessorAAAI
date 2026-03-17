@@ -6,21 +6,44 @@ from core.market_intelligence import _dedupe, _normalize_result, fetch_market_in
 
 class _Msg:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.content = content
 
 
 class _Choice:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.message = _Msg(content)
 
 
 class _Resp:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.choices = [_Choice(content)]
 
 
 class _Completions:
     def create(self, **kwargs):
+        """Create.
+
+        Args:
+            kwargs: Descrição do parâmetro `kwargs`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         system = kwargs["messages"][0]["content"]
         if "Classifique cada notícia" in system:
             return _Resp('{"items":[{"idx":0,"resumo_pt":"Resumo 1","tipo_evento":"macro","tema_relacionado":"Brasil","score_relevancia":85}]}')
@@ -37,6 +60,11 @@ class _FakeClient:
 
 class MarketIntelligenceTests(unittest.TestCase):
     def test_dedupe_by_url_and_title(self):
+        """Test dedupe by url and title.
+
+        Returns:
+            Valor de retorno da função.
+        """
         items = [
             {"url": "https://a", "title": "A"},
             {"url": "https://a", "title": "A"},
@@ -46,6 +74,11 @@ class MarketIntelligenceTests(unittest.TestCase):
         self.assertEqual(len(deduped), 2)
 
     def test_normalize_result(self):
+        """Test normalize result.
+
+        Returns:
+            Valor de retorno da função.
+        """
         source = {"title": "Notícia", "url": "https://x", "highlights": ["h1"], "publishedDate": "2026-01-01T00:00:00Z"}
         normalized = _normalize_result(source, source_type="radar", sector="Bancos", company="Itaú")
         self.assertEqual(normalized["title"], "Notícia")
@@ -54,6 +87,15 @@ class MarketIntelligenceTests(unittest.TestCase):
     @patch("core.market_intelligence.get_openai_client", return_value=_FakeClient())
     @patch("core.market_intelligence.search_tavily", return_value=[{"title": "T", "url": "https://u", "published_date": "2026-01-01T00:00:00Z", "content": "x"}])
     def test_fetch_market_intelligence_shape(self, _search_mock, _openai_mock):
+        """Test fetch market intelligence shape.
+
+        Args:
+            _search_mock: Descrição do parâmetro `_search_mock`.
+            _openai_mock: Descrição do parâmetro `_openai_mock`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         out = fetch_market_intelligence(days=1)
         self.assertIn("ranked_news", out)
         self.assertIn("sectors", out)
@@ -63,6 +105,15 @@ class MarketIntelligenceTests(unittest.TestCase):
     @patch("core.market_intelligence.get_openai_client", return_value=_FakeClient())
     @patch("core.market_intelligence.search_tavily", return_value=[{"title": "T", "url": "https://u", "published_date": "2026-01-01T00:00:00Z", "content": "x"}])
     def test_fetch_market_intelligence_sector_filter(self, _search_mock, _openai_mock):
+        """Test fetch market intelligence sector filter.
+
+        Args:
+            _search_mock: Descrição do parâmetro `_search_mock`.
+            _openai_mock: Descrição do parâmetro `_openai_mock`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         out = fetch_market_intelligence(days=1, sector="Bancos")
         self.assertEqual(len(out["sectors"]), 1)
         self.assertEqual(out["sectors"][0]["sector"], "Bancos")

@@ -18,21 +18,50 @@ MEETINGS_DIR = BASE_DIR / "meetings"
 
 
 def _iso_now() -> str:
+    """ iso now.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return datetime.now(timezone.utc).isoformat()
 
 
 def ensure_client_meetings_dir(cliente_id) -> Path:
+    """Ensure client meetings dir.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     client_dir = MEETINGS_DIR / str(cliente_id)
     client_dir.mkdir(parents=True, exist_ok=True)
     return client_dir
 
 
 def list_client_meetings(cliente_id) -> list[Path]:
+    """List client meetings.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     client_dir = ensure_client_meetings_dir(cliente_id)
     return sorted(client_dir.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def _build_cliente_context(cliente_info: dict) -> str:
+    """ build cliente context.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     perfil = cliente_info.get("Perfil_Suitability", "não mencionado")
     patrimonio = cliente_info.get("Patrimonio_Investido_Conosco", "não mencionado")
     disponivel = cliente_info.get("Dinheiro_Disponivel_Para_Investir", "não mencionado")
@@ -48,6 +77,19 @@ def _build_cliente_context(cliente_info: dict) -> str:
 
 
 def save_meeting(cliente_id, cliente_nome, cliente_info, transcript, summary, api_calls: list[dict] | None = None) -> Path:
+    """Save meeting.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+        cliente_nome: Descrição do parâmetro `cliente_nome`.
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        transcript: Descrição do parâmetro `transcript`.
+        summary: Descrição do parâmetro `summary`.
+        api_calls: Descrição do parâmetro `api_calls`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     client_dir = ensure_client_meetings_dir(cliente_id)
     now = datetime.now()
     file_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_reuniao.txt"
@@ -84,6 +126,18 @@ def transcribe_audio_tool(payload: dict) -> str:
 
 
 def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Transcribe audio.
+
+    Args:
+        file_bytes: Descrição do parâmetro `file_bytes`.
+        filename: Descrição do parâmetro `filename`.
+        mime_type: Descrição do parâmetro `mime_type`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     config = build_runnable_config(
         run_name="meeting_transcription",
         tags=["meeting", "transcription", "langchain"],
@@ -115,6 +169,17 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
 
 
 def summarize_transcript(cliente_info, transcript, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Summarize transcript.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        transcript: Descrição do parâmetro `transcript`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     system_prompt = """
 Você é um assistente para assessores de investimentos.
 
@@ -185,6 +250,19 @@ def process_meeting_with_langchain(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ) -> dict:
+    """Process meeting with langchain.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        audio_bytes: Descrição do parâmetro `audio_bytes`.
+        audio_name: Descrição do parâmetro `audio_name`.
+        audio_type: Descrição do parâmetro `audio_type`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     config = build_runnable_config(
         run_name="meeting_end_to_end",
         tags=["meeting", "langchain", "e2e"],

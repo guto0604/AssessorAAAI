@@ -21,6 +21,14 @@ class InputGuardrailResult:
 
 
 def evaluate_input_guardrails(user_input: str) -> InputGuardrailResult:
+    """Evaluate input guardrails.
+
+    Args:
+        user_input: Descrição do parâmetro `user_input`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     normalized_input = (user_input or "").strip()
     if not normalized_input:
         return InputGuardrailResult(
@@ -77,6 +85,15 @@ def evaluate_input_guardrails(user_input: str) -> InputGuardrailResult:
 
 
 def handle_guardrail_exception(user_input: str, exc: Exception) -> InputGuardrailResult:
+    """Handle guardrail exception.
+
+    Args:
+        user_input: Descrição do parâmetro `user_input`.
+        exc: Descrição do parâmetro `exc`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     LOGGER.warning("Falha ao avaliar guardrail para entrada: %s", user_input[:120], exc_info=exc)
     return InputGuardrailResult(
         allowed=True,
@@ -87,6 +104,14 @@ def handle_guardrail_exception(user_input: str, exc: Exception) -> InputGuardrai
 
 
 def guardrail_warning_message(violation_type: str | None) -> str:
+    """Guardrail warning message.
+
+    Args:
+        violation_type: Descrição do parâmetro `violation_type`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if violation_type == "jailbreak":
         return "⚠️ Detectamos uma tentativa de jailbreak/prompt injection. Ajuste a solicitação para continuar no escopo do assistente."
     if violation_type == "off_topic":

@@ -53,6 +53,14 @@ EVENT_TYPES = ["earnings", "regulatório", "macro", "M&A", "corporate", "crédit
 
 
 def _parse_date(value: str | None) -> datetime:
+    """ parse date.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not value:
         return datetime.min
     try:
@@ -62,6 +70,17 @@ def _parse_date(value: str | None) -> datetime:
 
 
 def _normalize_result(item: dict[str, Any], source_type: str, sector: str | None = None, company: str | None = None) -> dict[str, Any]:
+    """ normalize result.
+
+    Args:
+        item: Descrição do parâmetro `item`.
+        source_type: Descrição do parâmetro `source_type`.
+        sector: Descrição do parâmetro `sector`.
+        company: Descrição do parâmetro `company`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     title = (item.get("title") or "Sem título").strip()
     content = item.get("content") or item.get("raw_content") or ""
     summary_seed = (content or title)[:280]
@@ -79,6 +98,14 @@ def _normalize_result(item: dict[str, Any], source_type: str, sector: str | None
 
 
 def _dedupe(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """ dedupe.
+
+    Args:
+        items: Descrição do parâmetro `items`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     seen = set()
     deduped = []
     for item in items:
@@ -91,6 +118,15 @@ def _dedupe(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _classify_and_summarize(items: list[dict[str, Any]], include_api_metrics: bool = False):
+    """ classify and summarize.
+
+    Args:
+        items: Descrição do parâmetro `items`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not items:
         return {"items": [], "api_metrics": None} if include_api_metrics else []
 
@@ -161,6 +197,15 @@ def _classify_and_summarize(items: list[dict[str, Any]], include_api_metrics: bo
 
 
 def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
+    """ build macro queries.
+
+    Args:
+        sector_name: Descrição do parâmetro `sector_name`.
+        companies: Descrição do parâmetro `companies`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     companies_text = " ou ".join(companies)
     return [
         f"Brasil {sector_name} mercado financeiro resultados guidance dividendos",
@@ -171,6 +216,14 @@ def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
 
 
 def _build_company_queries(company: str) -> list[str]:
+    """ build company queries.
+
+    Args:
+        company: Descrição do parâmetro `company`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return [
         f"Brasil {company} resultado guidance receita lucro ebitda",
         f"Brasil {company} M&A aquisição venda ativo parceria",
@@ -180,6 +233,16 @@ def _build_company_queries(company: str) -> list[str]:
 
 
 def fetch_market_intelligence(days: int = 7, sector: str | None = None, include_api_metrics: bool = False) -> dict[str, Any]:
+    """Fetch market intelligence.
+
+    Args:
+        days: Descrição do parâmetro `days`.
+        sector: Descrição do parâmetro `sector`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if sector not in SECTOR_COMPANIES:
         sectors_to_fetch = SECTOR_COMPANIES
     else:

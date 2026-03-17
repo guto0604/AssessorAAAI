@@ -13,11 +13,22 @@ from rag.pipeline import RagService
 
 class _EmbeddingRow:
     def __init__(self, embedding):
+        """  init  .
+
+        Args:
+            embedding: Descrição do parâmetro `embedding`.
+        """
         self.embedding = embedding
 
 
 class _Response:
     def __init__(self, content, model):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+            model: Descrição do parâmetro `model`.
+        """
         self.choices = [type("_Choice", (), {"message": type("_Message", (), {"content": content})()})()]
         self.model = model
         self.usage = {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}
@@ -25,6 +36,8 @@ class _Response:
 
 class _EmbeddingsResponse:
     def __init__(self):
+        """  init  .
+        """
         self.data = [_EmbeddingRow([0.1, 0.2, 0.3])]
         self.model = "text-embedding-3-small"
         self.usage = {"prompt_tokens": 3, "completion_tokens": 0, "total_tokens": 3}
@@ -32,9 +45,19 @@ class _EmbeddingsResponse:
 
 class _Completions:
     def __init__(self):
+        """  init  .
+        """
         self.calls = []
 
     def create(self, **kwargs):
+        """Create.
+
+        Args:
+            kwargs: Descrição do parâmetro `kwargs`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self.calls.append(kwargs)
         system_prompt = kwargs["messages"][0]["content"]
         if "parser de consultas" in system_prompt:
@@ -44,20 +67,34 @@ class _Completions:
 
 class _Chat:
     def __init__(self):
+        """  init  .
+        """
         self.completions = _Completions()
 
 
 class _Embeddings:
     def __init__(self):
+        """  init  .
+        """
         self.calls = []
 
     def create(self, **kwargs):
+        """Create.
+
+        Args:
+            kwargs: Descrição do parâmetro `kwargs`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self.calls.append(kwargs)
         return _EmbeddingsResponse()
 
 
 class _FakeClient:
     def __init__(self):
+        """  init  .
+        """
         self.chat = _Chat()
         self.embeddings = _Embeddings()
 
@@ -66,6 +103,15 @@ class RagQueryParsingTests(unittest.TestCase):
     @patch("rag.pipeline.LocalFaissStore.load", return_value=None)
     @patch("rag.pipeline.get_openai_client")
     def test_answer_question_uses_parsed_query_for_retrieval(self, mock_client_factory, _mock_store_load):
+        """Test answer question uses parsed query for retrieval.
+
+        Args:
+            mock_client_factory: Descrição do parâmetro `mock_client_factory`.
+            _mock_store_load: Descrição do parâmetro `_mock_store_load`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         fake_client = _FakeClient()
         mock_client_factory.return_value = fake_client
 

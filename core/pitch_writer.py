@@ -6,6 +6,17 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, str_ou
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """ build api metrics.
+
+    Args:
+        response: Descrição do parâmetro `response`.
+        provider: Descrição do parâmetro `provider`.
+        prompt: Descrição do parâmetro `prompt`.
+        output: Descrição do parâmetro `output`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -29,6 +40,20 @@ def generate_final_pitch_step7(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Generate final pitch step7.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        prompt_assessor: Descrição do parâmetro `prompt_assessor`.
+        jornada_selecionada: Descrição do parâmetro `jornada_selecionada`.
+        step5_selection: Descrição do parâmetro `step5_selection`.
+        model: Descrição do parâmetro `model`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     system_prompt = """
 Você é um assessor de investimentos escrevendo uma mensagem para um cliente.
 
@@ -99,6 +124,19 @@ def revise_pitch_step8(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Revise pitch step8.
+
+    Args:
+        current_pitch: Descrição do parâmetro `current_pitch`.
+        edit_instruction: Descrição do parâmetro `edit_instruction`.
+        target_excerpt: Descrição do parâmetro `target_excerpt`.
+        model: Descrição do parâmetro `model`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     system_prompt = """
 Você é um revisor de texto comercial para assessoria de investimentos.
 

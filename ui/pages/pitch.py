@@ -26,6 +26,16 @@ from ui.state import (
 )
 
 def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str) -> str | None:
+    """ start pitch trace.
+
+    Args:
+        tracer: Descrição do parâmetro `tracer`.
+        cliente_id: Descrição do parâmetro `cliente_id`.
+        prompt_assessor: Descrição do parâmetro `prompt_assessor`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     active_trace = st.session_state.get(SESSION_PITCH_TRACE)
     if active_trace and active_trace.get("run_id") and active_trace.get("status") == "in_progress":
         tracer.log_event(active_trace["run_id"], "pitch_interrupted", {
@@ -54,6 +64,11 @@ def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str
 
 
 def _reset_pitch_flow_state():
+    """ reset pitch flow state.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.session_state.etapa = 1
     st.session_state.ranking_resultado = None
 
@@ -77,6 +92,15 @@ def _reset_pitch_flow_state():
 
 
 def render_pitch_tab(cliente_id, cliente_info):
+    """Render pitch tab.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+        cliente_info: Descrição do parâmetro `cliente_info`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.header("🚀 Iniciar fluxo de pitch")
 
     prompt_assessor = st.text_area(
@@ -379,6 +403,16 @@ def render_pitch_tab(cliente_id, cliente_info):
             st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
 
             def _checkbox_list(title, items, key_prefix):
+                """ checkbox list.
+
+                Args:
+                    title: Descrição do parâmetro `title`.
+                    items: Descrição do parâmetro `items`.
+                    key_prefix: Descrição do parâmetro `key_prefix`.
+
+                Returns:
+                    Valor de retorno da função.
+                """
                 st.subheader(title)
                 selected = []
                 for item in items:

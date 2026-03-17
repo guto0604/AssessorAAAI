@@ -4,6 +4,11 @@ try:
     from dotenv import load_dotenv
 except Exception:
     def load_dotenv():
+        """Load dotenv.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return None
 
 try:
@@ -11,6 +16,12 @@ try:
 except Exception:
     class OpenAI:
         def __init__(self, *args, **kwargs):
+            """  init  .
+
+            Args:
+                args: Descrição do parâmetro `args`.
+                kwargs: Descrição do parâmetro `kwargs`.
+            """
             raise RuntimeError("openai package is required to execute real LLM calls")
 try:
     import streamlit as st
@@ -28,10 +39,20 @@ SESSION_OPENAI_KEY = "user_openai_api_key"
 
 
 def has_env_openai_api_key() -> bool:
+    """Has env openai api key.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return bool((os.getenv("OPENAI_API_KEY") or "").strip())
 
 
 def get_effective_openai_api_key() -> str | None:
+    """Get effective openai api key.
+
+    Returns:
+        Valor de retorno da função.
+    """
     env_key = (os.getenv("OPENAI_API_KEY") or "").strip()
     if env_key:
         return env_key
@@ -41,6 +62,11 @@ def get_effective_openai_api_key() -> str | None:
 
 
 def get_openai_client() -> OpenAI:
+    """Get openai client.
+
+    Returns:
+        Valor de retorno da função.
+    """
     api_key = get_effective_openai_api_key()
     if api_key:
         return OpenAI(api_key=api_key)

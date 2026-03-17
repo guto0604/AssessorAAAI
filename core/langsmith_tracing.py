@@ -7,15 +7,32 @@ from langsmith import Client
 
 
 def _now_utc() -> datetime:
+    """ now utc.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return datetime.now(timezone.utc)
 
 
 def _iso_now() -> str:
+    """ iso now.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return _now_utc().isoformat()
 
 
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
+        """  init  .
+
+        Args:
+            api_key: Descrição do parâmetro `api_key`.
+            enabled: Descrição do parâmetro `enabled`.
+            base_url: Descrição do parâmetro `base_url`.
+        """
         self.api_key = (os.getenv("LANGSMITH_API_KEY") or api_key or "").strip()
         self.enabled = bool(enabled and self.api_key)
         self.base_url = (base_url or os.getenv("LANGSMITH_ENDPOINT") or "https://api.smith.langchain.com").rstrip("/")
@@ -34,6 +51,19 @@ class LangSmithTracer:
         metadata: dict[str, Any] | None = None,
         project_name: str | None = None,
     ) -> str | None:
+        """Start run.
+
+        Args:
+            name: Descrição do parâmetro `name`.
+            run_type: Descrição do parâmetro `run_type`.
+            inputs: Descrição do parâmetro `inputs`.
+            tags: Descrição do parâmetro `tags`.
+            metadata: Descrição do parâmetro `metadata`.
+            project_name: Descrição do parâmetro `project_name`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.enabled:
             return None
 
@@ -52,6 +82,16 @@ class LangSmithTracer:
         return run_id
 
     def log_event(self, run_id: str | None, event_name: str, details: dict[str, Any] | None = None) -> None:
+        """Log event.
+
+        Args:
+            run_id: Descrição do parâmetro `run_id`.
+            event_name: Descrição do parâmetro `event_name`.
+            details: Descrição do parâmetro `details`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.enabled or not run_id:
             return
         run_state = self._runs.get(run_id)
@@ -80,6 +120,23 @@ class LangSmithTracer:
         start_time: str | None = None,
         end_time: str | None = None,
     ) -> str | None:
+        """Log child run.
+
+        Args:
+            parent_run_id: Descrição do parâmetro `parent_run_id`.
+            name: Descrição do parâmetro `name`.
+            run_type: Descrição do parâmetro `run_type`.
+            inputs: Descrição do parâmetro `inputs`.
+            outputs: Descrição do parâmetro `outputs`.
+            metadata: Descrição do parâmetro `metadata`.
+            error: Descrição do parâmetro `error`.
+            tags: Descrição do parâmetro `tags`.
+            start_time: Descrição do parâmetro `start_time`.
+            end_time: Descrição do parâmetro `end_time`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.enabled or not parent_run_id:
             return None
 
@@ -107,6 +164,17 @@ class LangSmithTracer:
         outputs: dict[str, Any] | None = None,
         error: str | None = None,
     ) -> bool:
+        """End run.
+
+        Args:
+            run_id: Descrição do parâmetro `run_id`.
+            status: Descrição do parâmetro `status`.
+            outputs: Descrição do parâmetro `outputs`.
+            error: Descrição do parâmetro `error`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.enabled or not run_id:
             return False
 

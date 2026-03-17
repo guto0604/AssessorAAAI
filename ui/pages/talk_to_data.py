@@ -29,6 +29,11 @@ REFERENCE_FILE_PATH = DATA_DIR / "referencia_base_dados.txt"
 LOGGER = logging.getLogger(__name__)
 
 def _reset_talk_to_data_state() -> None:
+    """ reset talk to data state.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.session_state.talk_to_data_question = ""
     st.session_state.talk_to_data_last_llm_output = None
     st.session_state.talk_to_data_generated_sql = ""
@@ -37,6 +42,11 @@ def _reset_talk_to_data_state() -> None:
 
 
 def _reset_talk_to_data_page() -> None:
+    """ reset talk to data page.
+
+    Returns:
+        Valor de retorno da função.
+    """
     try:
         _reset_talk_to_data_state()
         st.session_state["talk_to_data_next_question_feedback"] = {
@@ -56,6 +66,11 @@ def _reset_talk_to_data_page() -> None:
 
 def _render_talk_to_data_samples() -> None:
 
+    """ render talk to data samples.
+
+    Returns:
+        Valor de retorno da função.
+    """
     for table_name, file_path in TALK_TO_DATA_FILES.items():
         with st.expander(f"📦 Prévia tabela {table_name}", expanded=False):
             try:
@@ -74,11 +89,24 @@ def _render_talk_to_data_samples() -> None:
 
 
 def _apply_talk_to_data_template_question(question: str) -> None:
+    """ apply talk to data template question.
+
+    Args:
+        question: Descrição do parâmetro `question`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     _reset_talk_to_data_page()
     st.session_state.talk_to_data_question = question
 
 
 def render_talk_to_your_data_page():
+    """Render talk to your data page.
+
+    Returns:
+        Valor de retorno da função.
+    """
     tracer = get_tracer()
 
     sample_questions = {
@@ -361,10 +389,24 @@ def render_talk_to_your_data_page():
 
 
 def load_reference_text() -> str:
+    """Load reference text.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return REFERENCE_FILE_PATH.read_text(encoding="utf-8")
 
 
 def build_llm_prompt(question: str, reference_text: str) -> str:
+    """Build llm prompt.
+
+    Args:
+        question: Descrição do parâmetro `question`.
+        reference_text: Descrição do parâmetro `reference_text`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return f"""
 Você é um analista de dados de uma assessoria de investimentos.
 
@@ -411,6 +453,15 @@ Referência completa da base:
 
 
 def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict:
+    """Ask talk to data llm.
+
+    Args:
+        prompt: Descrição do parâmetro `prompt`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     client = get_openai_client()
     response = client.chat.completions.create(
         model="gpt-5.1",
@@ -450,6 +501,14 @@ def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict
 
 
 def sanitize_duckdb_sql(sql: str) -> str:
+    """Sanitize duckdb sql.
+
+    Args:
+        sql: Descrição do parâmetro `sql`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     normalized_sql = sql.strip()
     normalized_sql = re.sub(r";\s*$", "", normalized_sql)
     normalized_sql = normalized_sql.replace("`", "")
@@ -476,6 +535,14 @@ def sanitize_duckdb_sql(sql: str) -> str:
 
 
 def validate_read_only_sql(sql: str) -> None:
+    """Validate read only sql.
+
+    Args:
+        sql: Descrição do parâmetro `sql`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not sql:
         raise ValueError("A consulta SQL está vazia.")
     if ";" in sql:
@@ -493,12 +560,29 @@ def validate_read_only_sql(sql: str) -> None:
 
 
 def _create_talk_to_data_views(con: duckdb.DuckDBPyConnection) -> None:
+    """ create talk to data views.
+
+    Args:
+        con: Descrição do parâmetro `con`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     for table_name, file_path in TALK_TO_DATA_FILES.items():
         escaped_path = str(file_path).replace("'", "''")
         con.execute(f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{escaped_path}\')')
 
 
 def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) -> pd.DataFrame:
+    """Run duckdb query.
+
+    Args:
+        sql: Descrição do parâmetro `sql`.
+        conn: Descrição do parâmetro `conn`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     normalized_sql = sanitize_duckdb_sql(sql)
     validate_read_only_sql(normalized_sql)
     LOGGER.info("Executando SQL DuckDB: %s", normalized_sql)
@@ -513,6 +597,15 @@ def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) ->
 
 
 def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
+    """Render visual.
+
+    Args:
+        result_df: Descrição do parâmetro `result_df`.
+        visualization_spec: Descrição do parâmetro `visualization_spec`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     vis_type = str(visualization_spec.get("type", "none")).lower()
     if not visualization_spec.get("needed") or vis_type == "none":
         return

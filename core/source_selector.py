@@ -8,6 +8,17 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """ build api metrics.
+
+    Args:
+        response: Descrição do parâmetro `response`.
+        provider: Descrição do parâmetro `provider`.
+        prompt: Descrição do parâmetro `prompt`.
+        output: Descrição do parâmetro `output`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -23,6 +34,14 @@ def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | Non
 
 
 def list_kb_files(kb_dir: str = "knowledge_base"):
+    """List kb files.
+
+    Args:
+        kb_dir: Descrição do parâmetro `kb_dir`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     kb_path = Path(kb_dir)
     if not kb_path.exists():
         return []
@@ -30,6 +49,14 @@ def list_kb_files(kb_dir: str = "knowledge_base"):
 
 
 def _sanitize_step4_output(parsed: dict) -> dict:
+    """ sanitize step4 output.
+
+    Args:
+        parsed: Descrição do parâmetro `parsed`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     parsed["data_sources"] = parsed.get("data_sources", [])
     parsed["products_selected_ids"] = parsed.get("products_selected_ids", [])
     parsed["kb_files_selected"] = parsed.get("kb_files_selected", [])[:5]
@@ -49,6 +76,23 @@ def select_sources_step4(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Select sources step4.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        prompt_assessor: Descrição do parâmetro `prompt_assessor`.
+        jornada_selecionada: Descrição do parâmetro `jornada_selecionada`.
+        carteira_summary: Descrição do parâmetro `carteira_summary`.
+        produtos_df: Descrição do parâmetro `produtos_df`.
+        investimentos_cliente_df: Descrição do parâmetro `investimentos_cliente_df`.
+        kb_dir: Descrição do parâmetro `kb_dir`.
+        model: Descrição do parâmetro `model`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     kb_files = list_kb_files(kb_dir)
 
     produtos_catalogo = produtos_df[[

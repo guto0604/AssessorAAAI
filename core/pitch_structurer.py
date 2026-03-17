@@ -8,6 +8,17 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """ build api metrics.
+
+    Args:
+        response: Descrição do parâmetro `response`.
+        provider: Descrição do parâmetro `provider`.
+        prompt: Descrição do parâmetro `prompt`.
+        output: Descrição do parâmetro `output`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -52,6 +63,23 @@ def build_pitch_options_step5(
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
+    """Build pitch options step5.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        prompt_assessor: Descrição do parâmetro `prompt_assessor`.
+        jornada_selecionada: Descrição do parâmetro `jornada_selecionada`.
+        carteira_summary: Descrição do parâmetro `carteira_summary`.
+        investimentos_cliente_df: Descrição do parâmetro `investimentos_cliente_df`.
+        produtos_selecionados_df: Descrição do parâmetro `produtos_selecionados_df`.
+        kb_files_selected: Descrição do parâmetro `kb_files_selected`.
+        model: Descrição do parâmetro `model`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     kb_docs = read_kb_files_tool.invoke({"file_paths": kb_files_selected, "max_chars_each": 3500})
 
     investimentos_list = investimentos_cliente_df[["Produto", "Categoria", "Valor_Investido"]].to_dict(orient="records")

@@ -7,6 +7,16 @@ from core.meetings import list_client_meetings, process_meeting_with_langchain, 
 from ui.state import SESSION_MEETING_TRACE, _iso_now, get_tracer
 
 def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
+    """ start meeting trace.
+
+    Args:
+        tracer: Descrição do parâmetro `tracer`.
+        cliente_id: Descrição do parâmetro `cliente_id`.
+        audio_name: Descrição do parâmetro `audio_name`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     run_id = tracer.start_run(
         name=f"meeting_cliente_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         run_type="chain",
@@ -24,6 +34,15 @@ def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | 
 
 
 def render_meetings_tab(cliente_id, cliente_info):
+    """Render meetings tab.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+        cliente_info: Descrição do parâmetro `cliente_info`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.title("Reuniões")
 
     tracer = get_tracer()

@@ -10,37 +10,86 @@ from core.meetings import summarize_transcript
 
 class MiniDF:
     def __init__(self, rows):
+        """  init  .
+
+        Args:
+            rows: Descrição do parâmetro `rows`.
+        """
         self.rows = rows
         self.empty = len(rows) == 0
 
     def iterrows(self):
+        """Iterrows.
+
+        Returns:
+            Valor de retorno da função.
+        """
         for i, r in enumerate(self.rows):
             yield i, r
 
     def __getitem__(self, cols):
+        """  getitem  .
+
+        Args:
+            cols: Descrição do parâmetro `cols`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return MiniDF([{k: r.get(k) for k in cols} for r in self.rows])
 
     def to_dict(self, orient="records"):
+        """To dict.
+
+        Args:
+            orient: Descrição do parâmetro `orient`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return self.rows
 
 
 class _Msg:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.content = content
 
 
 class _Choice:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.message = _Msg(content)
 
 
 class _Resp:
     def __init__(self, content):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+        """
         self.choices = [_Choice(content)]
 
 
 class _Completions:
     def create(self, **kwargs):
+        """Create.
+
+        Args:
+            kwargs: Descrição do parâmetro `kwargs`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         system = kwargs["messages"][0]["content"]
         if "ranquear jornadas" in system:
             return _Resp('{"ranking":[{"jornada_id":"J1","nome_jornada":"Teste","score":0.9}]}')
@@ -66,6 +115,14 @@ class _FakeClient:
 class FlowTests(unittest.TestCase):
     @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
     def test_pitch_langchain_steps(self, _mock_client):
+        """Test pitch langchain steps.
+
+        Args:
+            _mock_client: Descrição do parâmetro `_mock_client`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         jornadas_df = MiniDF([
             {"Jornada_ID": "J1", "Nome_Jornada": "A", "Categoria": "C", "Objetivo_Principal": "O", "Descricao_Resumida": "D"}
         ])
@@ -106,6 +163,14 @@ class FlowTests(unittest.TestCase):
 
     @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
     def test_meeting_summary(self, _mock_client):
+        """Test meeting summary.
+
+        Args:
+            _mock_client: Descrição do parâmetro `_mock_client`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         out = summarize_transcript({"Nome": "Cli"}, "texto")
         self.assertTrue(isinstance(out, str))
 

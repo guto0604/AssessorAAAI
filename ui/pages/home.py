@@ -2,6 +2,11 @@ import streamlit as st
 
 
 def render_home_tab():
+    """Render home tab.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.title("Potencializando assessores com IA")
 
     st.subheader("🎯 Objetivo da ferramenta")

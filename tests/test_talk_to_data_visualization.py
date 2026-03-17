@@ -8,6 +8,11 @@ from ui.pages.talk_to_data import build_llm_prompt, render_visual
 
 class TalkToDataVisualizationTests(unittest.TestCase):
     def test_prompt_includes_color_field_instruction(self):
+        """Test prompt includes color field instruction.
+
+        Returns:
+            Valor de retorno da função.
+        """
         prompt = build_llm_prompt("teste", "schema")
         self.assertIn("visualization.color", prompt)
         self.assertIn('"color": "campo ou vazio"', prompt)
@@ -16,6 +21,16 @@ class TalkToDataVisualizationTests(unittest.TestCase):
     @patch("ui.pages.talk_to_data.st.subheader")
     @patch("ui.pages.talk_to_data.px.scatter")
     def test_scatter_uses_color_column_when_provided(self, mock_scatter, _mock_subheader, mock_plotly_chart):
+        """Test scatter uses color column when provided.
+
+        Args:
+            mock_scatter: Descrição do parâmetro `mock_scatter`.
+            _mock_subheader: Descrição do parâmetro `_mock_subheader`.
+            mock_plotly_chart: Descrição do parâmetro `mock_plotly_chart`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         mock_scatter.return_value = object()
         df = pd.DataFrame(
             {
@@ -47,6 +62,15 @@ class TalkToDataVisualizationTests(unittest.TestCase):
     @patch("ui.pages.talk_to_data.st.info")
     @patch("ui.pages.talk_to_data.px.bar")
     def test_shows_info_when_color_column_missing(self, mock_bar, mock_info):
+        """Test shows info when color column missing.
+
+        Args:
+            mock_bar: Descrição do parâmetro `mock_bar`.
+            mock_info: Descrição do parâmetro `mock_info`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         df = pd.DataFrame({"categoria": ["A"], "total": [1]})
         spec = {
             "needed": True,

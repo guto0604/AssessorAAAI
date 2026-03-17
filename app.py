@@ -20,6 +20,11 @@ st.set_page_config(page_title="POC Jornada Comercial", layout="wide")
 
 
 def main():
+    """Main.
+
+    Returns:
+        Valor de retorno da função.
+    """
     init_session_state()
 
     st.title("AssessorAAAI")

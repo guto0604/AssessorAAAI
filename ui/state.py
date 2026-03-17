@@ -22,10 +22,20 @@ TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 
 def _iso_now() -> str:
+    """ iso now.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return datetime.now(timezone.utc).isoformat()
 
 
 def get_tracer() -> LangSmithTracer:
+    """Get tracer.
+
+    Returns:
+        Valor de retorno da função.
+    """
     env_langsmith_key = (os.getenv("LANGSMITH_API_KEY") or "").strip()
     session_langsmith_key = (st.session_state.get(SESSION_LANGSMITH_KEY, "") or "").strip()
     effective_langsmith_key = env_langsmith_key or session_langsmith_key
@@ -44,6 +54,15 @@ def get_tracer() -> LangSmithTracer:
 
 
 def _format_cliente_value(campo: str, valor):
+    """ format cliente value.
+
+    Args:
+        campo: Descrição do parâmetro `campo`.
+        valor: Descrição do parâmetro `valor`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     campos_monetarios = {
         "Patrimonio_Investido_Conosco",
         "Patrimonio_Investido_Outros",
@@ -65,6 +84,14 @@ def _format_cliente_value(campo: str, valor):
 
 
 def build_cliente_sidebar_table(cliente_info: dict) -> pd.DataFrame:
+    """Build cliente sidebar table.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     labels = {
         "Cliente_ID": "ID",
         "Nome": "Nome",
@@ -87,6 +114,11 @@ def build_cliente_sidebar_table(cliente_info: dict) -> pd.DataFrame:
 
 
 def init_session_state():
+    """Init session state.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if "etapa" not in st.session_state:
         st.session_state.etapa = 1
 

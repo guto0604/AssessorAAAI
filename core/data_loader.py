@@ -37,38 +37,98 @@ PRODUTOS_COLUMNS = [
 ]
 
 def load_clientes():
+    """Load clientes.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(CLIENTES_PATH, columns=CLIENTES_COLUMNS)
 
 
 def load_clientes_full():
+    """Load clientes full.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(CLIENTES_PATH)
 
 def load_jornadas():
+    """Load jornadas.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_excel(JORNADAS_PATH)
 
 def load_investimentos():
+    """Load investimentos.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(INVESTIMENTOS_PATH, columns=INVESTIMENTOS_COLUMNS)
 
 
 def load_investimentos_full():
+    """Load investimentos full.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(INVESTIMENTOS_PATH)
 
 def load_produtos():
+    """Load produtos.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(PRODUTOS_PATH, columns=PRODUTOS_COLUMNS)
 
 
 def load_produtos_full():
+    """Load produtos full.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return pd.read_parquet(PRODUTOS_PATH)
 
 def get_cliente_by_id(cliente_id):
+    """Get cliente by id.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     df = load_clientes()
     return df[df["Cliente_ID"] == cliente_id].iloc[0].to_dict()
 
 def get_investimentos_by_cliente(cliente_id):
+    """Get investimentos by cliente.
+
+    Args:
+        cliente_id: Descrição do parâmetro `cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     df = load_investimentos()
     return df[df["Cliente_ID"] == cliente_id].copy()
 
 def carteira_summary_for_llm(cliente_info, investimentos_df):
+    """Carteira summary for llm.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        investimentos_df: Descrição do parâmetro `investimentos_df`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     total = float(investimentos_df["Valor_Investido"].sum()) if not investimentos_df.empty else 0.0
     categorias = (
         investimentos_df.groupby("Categoria")["Valor_Investido"].sum().sort_values(ascending=False).to_dict()

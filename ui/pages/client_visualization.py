@@ -10,10 +10,27 @@ from core.data_loader import load_clientes_full, load_investimentos_full, load_p
 
 
 def _is_missing(value: Any) -> bool:
+    """ is missing.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return value is None or (isinstance(value, float) and pd.isna(value)) or pd.isna(value)
 
 
 def _to_float(value: Any, default: float = 0.0) -> float:
+    """ to float.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+        default: Descrição do parâmetro `default`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if _is_missing(value):
         return default
     try:
@@ -23,6 +40,14 @@ def _to_float(value: Any, default: float = 0.0) -> float:
 
 
 def _to_datetime(value: Any) -> datetime | None:
+    """ to datetime.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if _is_missing(value):
         return None
     ts = pd.to_datetime(value, errors="coerce")
@@ -32,18 +57,43 @@ def _to_datetime(value: Any) -> datetime | None:
 
 
 def _format_currency(value: Any) -> str:
+    """ format currency.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     number = _to_float(value, default=0.0)
     formatted = f"R$ {number:,.2f}"
     return formatted.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _format_percent(value: Any, as_fraction: bool = True) -> str:
+    """ format percent.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+        as_fraction: Descrição do parâmetro `as_fraction`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     number = _to_float(value, default=0.0)
     pct = number * 100 if as_fraction else number
     return f"{pct:.1f}%"
 
 
 def _format_date(value: Any) -> str:
+    """ format date.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     dt = _to_datetime(value)
     if not dt:
         return "-"
@@ -51,6 +101,15 @@ def _format_date(value: Any) -> str:
 
 
 def _safe_text(value: Any, default: str = "-") -> str:
+    """ safe text.
+
+    Args:
+        value: Descrição do parâmetro `value`.
+        default: Descrição do parâmetro `default`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if _is_missing(value):
         return default
     text = str(value).strip()
@@ -58,6 +117,15 @@ def _safe_text(value: Any, default: str = "-") -> str:
 
 
 def _priority_badge(label: str, value: str) -> str:
+    """ priority badge.
+
+    Args:
+        label: Descrição do parâmetro `label`.
+        value: Descrição do parâmetro `value`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     palette = {
         "Ativo": "#1B5E20",
         "Morno": "#9A3412",
@@ -77,10 +145,27 @@ def _priority_badge(label: str, value: str) -> str:
 
 
 def _section_title(title: str, description: str) -> None:
+    """ section title.
+
+    Args:
+        title: Descrição do parâmetro `title`.
+        description: Descrição do parâmetro `description`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.subheader(title, help=description)
 
 
 def _calculate_kpis(cliente: dict[str, Any]) -> dict[str, float]:
+    """ calculate kpis.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     patrimonio_conosco = _to_float(cliente.get("Patrimonio_Investido_Conosco"))
     patrimonio_fora = _to_float(cliente.get("Patrimonio_Investido_Outros"))
     total = patrimonio_conosco + patrimonio_fora
@@ -99,6 +184,14 @@ def _calculate_kpis(cliente: dict[str, Any]) -> dict[str, float]:
 
 
 def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """ aggregate carteira.
+
+    Args:
+        investimentos_df: Descrição do parâmetro `investimentos_df`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if investimentos_df.empty:
         empty = pd.DataFrame(columns=["Grupo", "Valor"])
         return {
@@ -116,6 +209,15 @@ def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFram
         base["Valor_Atual"] = base.get("Valor_Investido", 0)
 
     def _group(col: str, out_col: str = "Grupo") -> pd.DataFrame:
+        """ group.
+
+        Args:
+            col: Descrição do parâmetro `col`.
+            out_col: Descrição do parâmetro `out_col`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if col not in base.columns:
             return pd.DataFrame(columns=[out_col, "Valor"])
         g = (
@@ -142,6 +244,15 @@ def _aggregate_carteira(investimentos_df: pd.DataFrame) -> dict[str, pd.DataFram
 
 
 def _calculate_aderencia(cliente: dict[str, Any], investimentos_df: pd.DataFrame) -> dict[str, float]:
+    """ calculate aderencia.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        investimentos_df: Descrição do parâmetro `investimentos_df`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if investimentos_df.empty:
         return {
             "pct_adequado": 0.0,
@@ -185,6 +296,16 @@ def _calculate_aderencia(cliente: dict[str, Any], investimentos_df: pd.DataFrame
 
 
 def _generate_alertas(cliente: dict[str, Any], kpis: dict[str, float], aderencia: dict[str, float]) -> list[dict[str, str]]:
+    """ generate alertas.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        kpis: Descrição do parâmetro `kpis`.
+        aderencia: Descrição do parâmetro `aderencia`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     alertas: list[dict[str, str]] = []
 
     score_churn = _to_float(cliente.get("Score_Risco_Churn"))
@@ -219,6 +340,16 @@ def _generate_alertas(cliente: dict[str, Any], kpis: dict[str, float], aderencia
 
 
 def _insights_automaticos(cliente: dict[str, Any], kpis: dict[str, float], aderencia: dict[str, float]) -> list[str]:
+    """ insights automaticos.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        kpis: Descrição do parâmetro `kpis`.
+        aderencia: Descrição do parâmetro `aderencia`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     insights: list[str] = []
     if _safe_text(cliente.get("Potencial_Captacao")) == "Alto" and kpis["pct_conosco"] < 0.4:
         insights.append("Cliente com alto potencial de captação e baixo share of wallet.")
@@ -232,6 +363,15 @@ def _insights_automaticos(cliente: dict[str, Any], kpis: dict[str, float], adere
 
 
 def _horizonte_compatibilidade(horizonte: str, prazo_produto: str) -> bool:
+    """ horizonte compatibilidade.
+
+    Args:
+        horizonte: Descrição do parâmetro `horizonte`.
+        prazo_produto: Descrição do parâmetro `prazo_produto`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not horizonte or not prazo_produto:
         return True
     mapa = {
@@ -243,6 +383,15 @@ def _horizonte_compatibilidade(horizonte: str, prazo_produto: str) -> bool:
 
 
 def _suitability_compatibilidade(perfil: str, suitability_ideal: str) -> bool:
+    """ suitability compatibilidade.
+
+    Args:
+        perfil: Descrição do parâmetro `perfil`.
+        suitability_ideal: Descrição do parâmetro `suitability_ideal`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not perfil or not suitability_ideal:
         return True
     perfis_aceitos = {s.strip() for s in suitability_ideal.split("/")}
@@ -250,6 +399,15 @@ def _suitability_compatibilidade(perfil: str, suitability_ideal: str) -> bool:
 
 
 def _liquidez_compatibilidade(necessidade: str, liquidez_produto: str) -> bool:
+    """ liquidez compatibilidade.
+
+    Args:
+        necessidade: Descrição do parâmetro `necessidade`.
+        liquidez_produto: Descrição do parâmetro `liquidez_produto`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not necessidade or not liquidez_produto:
         return True
     regras = {
@@ -261,6 +419,16 @@ def _liquidez_compatibilidade(necessidade: str, liquidez_produto: str) -> bool:
 
 
 def _montar_oportunidades(cliente: dict[str, Any], produtos_df: pd.DataFrame, kpis: dict[str, float]) -> pd.DataFrame:
+    """ montar oportunidades.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        produtos_df: Descrição do parâmetro `produtos_df`.
+        kpis: Descrição do parâmetro `kpis`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if produtos_df.empty:
         return pd.DataFrame()
 
@@ -322,6 +490,14 @@ def _montar_oportunidades(cliente: dict[str, Any], produtos_df: pd.DataFrame, kp
 
 
 def _render_alertas(alertas: list[dict[str, str]]) -> None:
+    """ render alertas.
+
+    Args:
+        alertas: Descrição do parâmetro `alertas`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not alertas:
         st.info("Sem alertas prioritários para este cliente no momento.")
         return
@@ -345,12 +521,30 @@ def _render_alertas(alertas: list[dict[str, str]]) -> None:
 
 
 def _filter_selected_client(clientes_df: pd.DataFrame, selected_cliente_id: Any) -> pd.DataFrame:
+    """ filter selected client.
+
+    Args:
+        clientes_df: Descrição do parâmetro `clientes_df`.
+        selected_cliente_id: Descrição do parâmetro `selected_cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if "Cliente_ID" not in clientes_df.columns:
         return pd.DataFrame()
     return clientes_df[clientes_df["Cliente_ID"] == selected_cliente_id]
 
 
 def _build_objetivo_financeiro(cliente: dict[str, Any], patrimonio_conosco: float) -> dict[str, Any]:
+    """ build objetivo financeiro.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        patrimonio_conosco: Descrição do parâmetro `patrimonio_conosco`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     valor_alvo = _to_float(cliente.get("Valor_Objetivo_Financeiro"))
     progresso = (patrimonio_conosco / valor_alvo) if valor_alvo > 0 else 0.0
     progresso = max(progresso, 0.0)
@@ -365,6 +559,14 @@ def _build_objetivo_financeiro(cliente: dict[str, Any], patrimonio_conosco: floa
 
 
 def _format_positions_table(inv_cliente: pd.DataFrame) -> pd.DataFrame:
+    """ format positions table.
+
+    Args:
+        inv_cliente: Descrição do parâmetro `inv_cliente`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if inv_cliente.empty:
         return pd.DataFrame(columns=["Produto", "Categoria", "Valor atual", "Peso na carteira", "Liquidez"])
 
@@ -386,6 +588,17 @@ def _format_positions_table(inv_cliente: pd.DataFrame) -> pd.DataFrame:
 
 
 def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpis: dict[str, float], carteira: dict[str, pd.DataFrame]) -> None:
+    """ render cliente view.
+
+    Args:
+        cliente: Descrição do parâmetro `cliente`.
+        inv_cliente: Descrição do parâmetro `inv_cliente`.
+        kpis: Descrição do parâmetro `kpis`.
+        carteira: Descrição do parâmetro `carteira`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.header("Acompanhamento do seu patrimônio")
     st.caption("Aqui você acompanha sua carteira, seus objetivos e a composição dos seus investimentos.")
 
@@ -504,6 +717,14 @@ def _render_cliente_view(cliente: dict[str, Any], inv_cliente: pd.DataFrame, kpi
 
 
 def render_visualizacao_clientes_tab(selected_cliente_id: Any) -> None:
+    """Render visualizacao clientes tab.
+
+    Args:
+        selected_cliente_id: Descrição do parâmetro `selected_cliente_id`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     clientes_df = load_clientes_full()
     cliente_df = _filter_selected_client(clientes_df, selected_cliente_id)
 

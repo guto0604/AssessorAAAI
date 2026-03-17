@@ -31,19 +31,39 @@ class ChunkMetadata:
 
 class LocalFaissStore:
     def __init__(self):
+        """  init  .
+        """
         self.index = None
         self.metadata: list[ChunkMetadata] = []
         self.manifest: dict[str, str] = {}
 
     @staticmethod
     def _ensure_faiss_available():
+        """ ensure faiss available.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if faiss is None:
             raise RuntimeError("Dependência 'faiss-cpu' não instalada. Instale para habilitar a base vetorial.")
 
     def _ensure_dir(self):
+        """ ensure dir.
+
+        Returns:
+            Valor de retorno da função.
+        """
         VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
 
     def _build_hnsw_index(self, dimension: int):
+        """ build hnsw index.
+
+        Args:
+            dimension: Descrição do parâmetro `dimension`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self._ensure_faiss_available()
         index = faiss.IndexHNSWFlat(dimension, FAISS_HNSW_M, faiss.METRIC_INNER_PRODUCT)
         index.hnsw.efConstruction = FAISS_HNSW_EF_CONSTRUCTION
@@ -51,9 +71,19 @@ class LocalFaissStore:
         return index
 
     def exists(self) -> bool:
+        """Exists.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return VECTORSTORE_INDEX_PATH.exists() and VECTORSTORE_METADATA_PATH.exists()
 
     def load(self):
+        """Load.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not self.exists():
             self.index = None
             self.metadata = []
@@ -70,6 +100,11 @@ class LocalFaissStore:
             self.manifest = {}
 
     def save(self):
+        """Save.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self._ensure_dir()
         if self.index is None:
             return
@@ -85,6 +120,11 @@ class LocalFaissStore:
         )
 
     def clear(self):
+        """Clear.
+
+        Returns:
+            Valor de retorno da função.
+        """
         self.index = None
         self.metadata = []
         self.manifest = {}
@@ -93,6 +133,15 @@ class LocalFaissStore:
                 path.unlink()
 
     def add_embeddings(self, embeddings: list[list[float]], metadata: list[ChunkMetadata]):
+        """Add embeddings.
+
+        Args:
+            embeddings: Descrição do parâmetro `embeddings`.
+            metadata: Descrição do parâmetro `metadata`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if not embeddings:
             return
 
@@ -109,6 +158,15 @@ class LocalFaissStore:
         self.metadata.extend(metadata)
 
     def search(self, query_embedding: list[float], k: int = 4) -> list[tuple[ChunkMetadata, float]]:
+        """Search.
+
+        Args:
+            query_embedding: Descrição do parâmetro `query_embedding`.
+            k: Descrição do parâmetro `k`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         if self.index is None or not self.metadata:
             return []
 

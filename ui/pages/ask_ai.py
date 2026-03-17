@@ -17,12 +17,22 @@ from ui.state import SESSION_RAG_SEMANTIC_WEIGHT, SESSION_RAG_TOP_K, get_tracer
 
 
 def _list_kb_folders() -> list[str]:
+    """ list kb folders.
+
+    Returns:
+        Valor de retorno da função.
+    """
     KNOWLEDGE_BASE_DIR.mkdir(parents=True, exist_ok=True)
     folders = [p.relative_to(KNOWLEDGE_BASE_DIR).as_posix() for p in KNOWLEDGE_BASE_DIR.iterdir() if p.is_dir()]
     return sorted(folders)
 
 
 def render_ask_ai_tab():
+    """Render ask ai tab.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.title("🤖 Pergunte à IA")
     st.caption("Faça perguntas sobre a knowledge base e adicione novos documentos para indexação vetorial.")
 

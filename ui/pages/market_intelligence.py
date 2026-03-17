@@ -13,6 +13,14 @@ TIME_RANGE_OPTIONS = {
 
 
 def _format_date(date_str: str) -> str:
+    """ format date.
+
+    Args:
+        date_str: Descrição do parâmetro `date_str`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not date_str:
         return "-"
     try:
@@ -23,6 +31,18 @@ def _format_date(date_str: str) -> str:
 
 
 def _filter_news(items: list[dict], selected_event_type: str, selected_sector: str, selected_company: str, selected_source: str) -> list[dict]:
+    """ filter news.
+
+    Args:
+        items: Descrição do parâmetro `items`.
+        selected_event_type: Descrição do parâmetro `selected_event_type`.
+        selected_sector: Descrição do parâmetro `selected_sector`.
+        selected_company: Descrição do parâmetro `selected_company`.
+        selected_source: Descrição do parâmetro `selected_source`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     filtered = []
     for item in items:
         if selected_event_type != "Todos" and item.get("event_type") != selected_event_type:
@@ -38,6 +58,14 @@ def _filter_news(items: list[dict], selected_event_type: str, selected_sector: s
 
 
 def _render_news_card(item: dict):
+    """ render news card.
+
+    Args:
+        item: Descrição do parâmetro `item`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     score = item.get("relevance_score", 0)
     header = f"**{item.get('title', 'Sem título')}**"
     if score >= 80:
@@ -59,12 +87,25 @@ def _render_news_card(item: dict):
 
 
 def _is_tavily_credits_error(exc: Exception) -> bool:
+    """ is tavily credits error.
+
+    Args:
+        exc: Descrição do parâmetro `exc`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     error_msg = str(exc).lower()
     tavily_credit_terms = ["credit", "credits", "insufficient", "quota", "429", "rate limit", "too many requests"]
     return "tavily" in error_msg and any(term in error_msg for term in tavily_credit_terms)
 
 
 def render_market_intelligence_tab():
+    """Render market intelligence tab.
+
+    Returns:
+        Valor de retorno da função.
+    """
     st.title("📈 Market Intelligence")
     st.caption("Notícias relevantes do mercado brasileiro ranqueadas por impacto e recência.")
     tracer = get_tracer()

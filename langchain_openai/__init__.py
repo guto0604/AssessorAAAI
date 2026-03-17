@@ -5,6 +5,15 @@ from core.openai_client import get_openai_client
 
 class _Resp:
     def __init__(self, content, *, model=None, usage=None, elapsed_ms=None, response_id=None):
+        """  init  .
+
+        Args:
+            content: Descrição do parâmetro `content`.
+            model: Descrição do parâmetro `model`.
+            usage: Descrição do parâmetro `usage`.
+            elapsed_ms: Descrição do parâmetro `elapsed_ms`.
+            response_id: Descrição do parâmetro `response_id`.
+        """
         self.content = content
         self.model = model
         self.usage = usage or {}
@@ -14,12 +23,29 @@ class _Resp:
 
 class ChatOpenAI:
     def __init__(self, model: str, temperature: float = 1, model_kwargs=None, api_key=None):
+        """  init  .
+
+        Args:
+            model: Descrição do parâmetro `model`.
+            temperature: Descrição do parâmetro `temperature`.
+            model_kwargs: Descrição do parâmetro `model_kwargs`.
+            api_key: Descrição do parâmetro `api_key`.
+        """
         self.model = model
         self.temperature = temperature
         self.model_kwargs = model_kwargs or {}
         self.api_key = api_key
 
     def invoke(self, input_value, config=None):
+        """Invoke.
+
+        Args:
+            input_value: Descrição do parâmetro `input_value`.
+            config: Descrição do parâmetro `config`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         params = {
             "model": self.model,
             "temperature": self.temperature,
@@ -45,6 +71,14 @@ class ChatOpenAI:
         )
 
     def __or__(self, other):
+        """  or  .
+
+        Args:
+            other: Descrição do parâmetro `other`.
+
+        Returns:
+            Valor de retorno da função.
+        """
         from langchain_core.runnables import RunnableSequence
 
         return RunnableSequence([self, other])

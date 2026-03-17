@@ -5,6 +5,11 @@ try:
     from dotenv import load_dotenv
 except Exception:
     def load_dotenv():
+        """Load dotenv.
+
+        Returns:
+            Valor de retorno da função.
+        """
         return None
 
 try:
@@ -29,6 +34,11 @@ SESSION_TAVILY_KEY = "user_tavily_api_key"
 
 
 def get_effective_tavily_api_key() -> str | None:
+    """Get effective tavily api key.
+
+    Returns:
+        Valor de retorno da função.
+    """
     env_key = (os.getenv("TAVILY_API_KEY") or "").strip()
     if env_key:
         return env_key
@@ -39,6 +49,14 @@ def get_effective_tavily_api_key() -> str | None:
 
 
 def _extract_domain(url: str) -> str:
+    """ extract domain.
+
+    Args:
+        url: Descrição do parâmetro `url`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     if not url:
         return ""
     return url.split("//")[-1].split("/")[0].lower()
@@ -52,6 +70,18 @@ def search_tavily(
     include_domains: list[str] | None = None,
     lightweight: bool = False,
 ) -> list[dict[str, Any]]:
+    """Search tavily.
+
+    Args:
+        query: Descrição do parâmetro `query`.
+        days: Descrição do parâmetro `days`.
+        num_results: Descrição do parâmetro `num_results`.
+        include_domains: Descrição do parâmetro `include_domains`.
+        lightweight: Descrição do parâmetro `lightweight`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     api_key = get_effective_tavily_api_key()
     if not api_key:
         raise ValueError("TAVILY_API_KEY não configurada.")

@@ -25,6 +25,16 @@ def configure_langsmith() -> None:
 
 
 def get_chat_model(model: str, temperature: float = 1, response_format: dict[str, Any] | None = None) -> ChatOpenAI:
+    """Get chat model.
+
+    Args:
+        model: Descrição do parâmetro `model`.
+        temperature: Descrição do parâmetro `temperature`.
+        response_format: Descrição do parâmetro `response_format`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     api_key = get_effective_openai_api_key()
     kwargs: dict[str, Any] = {"model": model, "temperature": temperature}
     if api_key:
@@ -40,6 +50,16 @@ def build_runnable_config(
     tags: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> RunnableConfig:
+    """Build runnable config.
+
+    Args:
+        run_name: Descrição do parâmetro `run_name`.
+        tags: Descrição do parâmetro `tags`.
+        metadata: Descrição do parâmetro `metadata`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     configure_langsmith()
     return RunnableConfig(
         run_name=run_name,
@@ -49,6 +69,14 @@ def build_runnable_config(
 
 
 def parse_json_output(text: str) -> Any:
+    """Parse json output.
+
+    Args:
+        text: Descrição do parâmetro `text`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     return json.loads(text)
 
 

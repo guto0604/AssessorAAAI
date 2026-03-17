@@ -7,6 +7,17 @@ from core.langchain_runtime import build_runnable_config, get_chat_model, parse_
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
+    """ build api metrics.
+
+    Args:
+        response: Descrição do parâmetro `response`.
+        provider: Descrição do parâmetro `provider`.
+        prompt: Descrição do parâmetro `prompt`.
+        output: Descrição do parâmetro `output`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -22,6 +33,18 @@ def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | Non
 
 
 def rank_journeys(cliente_info, prompt_assessor, jornadas_df, trace_context: dict | None = None, include_api_metrics: bool = False):
+    """Rank journeys.
+
+    Args:
+        cliente_info: Descrição do parâmetro `cliente_info`.
+        prompt_assessor: Descrição do parâmetro `prompt_assessor`.
+        jornadas_df: Descrição do parâmetro `jornadas_df`.
+        trace_context: Descrição do parâmetro `trace_context`.
+        include_api_metrics: Descrição do parâmetro `include_api_metrics`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     jornadas_texto = ""
     for _, row in jornadas_df.iterrows():
         jornadas_texto += f"""

@@ -8,6 +8,16 @@ class Chunk:
 
 
 def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> list[Chunk]:
+    """Chunk text.
+
+    Args:
+        text: Descrição do parâmetro `text`.
+        chunk_size: Descrição do parâmetro `chunk_size`.
+        chunk_overlap: Descrição do parâmetro `chunk_overlap`.
+
+    Returns:
+        Valor de retorno da função.
+    """
     clean = " ".join(text.split())
     if not clean:
         return []
