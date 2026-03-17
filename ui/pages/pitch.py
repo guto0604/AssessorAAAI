@@ -124,7 +124,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         })
 
         try:
-            guardrail_result = evaluate_input_guardrails(prompt_assessor.strip())
+            guardrail_result = evaluate_input_guardrails(prompt_assessor.strip(), context="pitch")
         except Exception as exc:
             guardrail_result = handle_guardrail_exception(prompt_assessor.strip(), exc)
 
@@ -159,7 +159,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                 "status": "blocked",
                 "ended_at": _iso_now(),
             }
-            st.warning(guardrail_warning_message(guardrail_result.violation_type))
+            st.warning(guardrail_warning_message(guardrail_result.violation_type, context="pitch"))
             return
 
         st.session_state[SESSION_PITCH_FLOW_STARTED] = True
@@ -608,7 +608,7 @@ def render_pitch_tab(cliente_id, cliente_info):
 
                     combined_input = "\n".join([st.session_state["pitch_draft"], target_excerpt.strip(), edit_instruction.strip()]).strip()
                     try:
-                        guardrail_result = evaluate_input_guardrails(combined_input)
+                        guardrail_result = evaluate_input_guardrails(combined_input, context="pitch")
                     except Exception as exc:
                         guardrail_result = handle_guardrail_exception(combined_input, exc)
 
@@ -645,7 +645,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                             "status": "blocked",
                             "ended_at": _iso_now(),
                         }
-                        st.warning(guardrail_warning_message(guardrail_result.violation_type))
+                        st.warning(guardrail_warning_message(guardrail_result.violation_type, context="pitch"))
                         return
 
                     try:
