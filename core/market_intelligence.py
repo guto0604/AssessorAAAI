@@ -90,9 +90,9 @@ def _dedupe(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return deduped
 
 
-def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _classify_and_summarize(items: list[dict[str, Any]], include_api_metrics: bool = False):
     if not items:
-        return []
+        return {"items": [], "api_metrics": None} if include_api_metrics else []
 
     client = get_openai_client()
     payload = [
@@ -106,19 +106,19 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
         for idx, item in enumerate(items)
     ]
 
+    system_prompt = (
+        "Você é um analista de mercado brasileiro. "
+        "Classifique cada notícia em uma categoria: earnings, regulatório, macro, M&A, corporate, crédito/risco. "
+        "Responda em JSON com a chave 'items', contendo lista com: idx, resumo_pt, tipo_evento, tema_relacionado, score_relevancia (0-100)."
+    )
+    user_prompt = json.dumps(payload, ensure_ascii=False)
+
     response = client.chat.completions.create(
         model="gpt-5-mini",
         response_format={"type": "json_object"},
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Você é um analista de mercado brasileiro. "
-                    "Classifique cada notícia em uma categoria: earnings, regulatório, macro, M&A, corporate, crédito/risco. "
-                    "Responda em JSON com a chave 'items', contendo lista com: idx, resumo_pt, tipo_evento, tema_relacionado, score_relevancia (0-100)."
-                ),
-            },
-            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ],
     )
     content = response.choices[0].message.content
@@ -138,7 +138,26 @@ def _classify_and_summarize(items: list[dict[str, Any]]) -> list[dict[str, Any]]
         item["related_theme"] = meta.get("tema_relacionado") or item.get("company") or item.get("sector") or "Brasil"
         item["relevance_score"] = max(0, min(100, score_value))
         output.append(item)
-    return output
+    if not include_api_metrics:
+        return output
+
+    usage = response.usage or {}
+    return {
+        "items": output,
+        "api_metrics": {
+            "provider": "openai",
+            "step": "classify_and_summarize",
+            "model": response.model,
+            "input_tokens": usage.prompt_tokens,
+            "output_tokens": usage.completion_tokens,
+            "total_tokens": usage.total_tokens,
+            "prompt": {
+                "system": system_prompt,
+                "user": user_prompt,
+            },
+            "output": content,
+        },
+    }
 
 
 def _build_macro_queries(sector_name: str, companies: list[str]) -> list[str]:
@@ -160,7 +179,7 @@ def _build_company_queries(company: str) -> list[str]:
     ]
 
 
-def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[str, Any]:
+def fetch_market_intelligence(days: int = 7, sector: str | None = None, include_api_metrics: bool = False) -> dict[str, Any]:
     if sector not in SECTOR_COMPANIES:
         sectors_to_fetch = SECTOR_COMPANIES
     else:
@@ -198,16 +217,25 @@ def fetch_market_intelligence(days: int = 7, sector: str | None = None) -> dict[
         sectors_payload.append({"sector": sector_name, "companies": companies, "news": sector_news})
 
     ranked_news = _dedupe(all_news)
-    ranked_news = _classify_and_summarize(ranked_news)
+    classify_result = _classify_and_summarize(ranked_news, include_api_metrics=include_api_metrics)
+    if include_api_metrics:
+        ranked_news = classify_result["items"]
+        api_calls = [classify_result["api_metrics"]] if classify_result.get("api_metrics") else []
+    else:
+        ranked_news = classify_result
+        api_calls = []
     ranked_news.sort(key=lambda x: (x.get("relevance_score", 0), _parse_date(x.get("published_at"))), reverse=True)
 
     for sector_block in sectors_payload:
         sector_ranked = [news for news in ranked_news if news.get("sector") == sector_block["sector"]]
         sector_block["news"] = sector_ranked[:35]
 
-    return {
+    result = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "time_range_days": days,
         "ranked_news": ranked_news[:60],
         "sectors": sectors_payload,
     }
+    if include_api_metrics:
+        result["api_calls"] = api_calls
+    return result

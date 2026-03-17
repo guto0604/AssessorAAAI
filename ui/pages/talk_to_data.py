@@ -214,10 +214,19 @@ def render_talk_to_your_data_page():
             api_metrics = llm_result.get("api_metrics", {})
             call_duration_ms = int((time.perf_counter() - llm_started_at) * 1000)
 
-            tracer.log_event(
+            tracer.log_child_run(
                 talk_to_data_run_id,
-                "talk_to_data_api_call",
-                {
+                name="talk_to_data_llm",
+                run_type="llm",
+                inputs={
+                    "prompt": api_metrics.get("prompt", {}),
+                    "question": question.strip(),
+                },
+                outputs={
+                    "output": api_metrics.get("output"),
+                    "status": "success",
+                },
+                metadata={
                     "provider": "openai",
                     "model": api_metrics.get("model"),
                     "input_tokens": api_metrics.get("input_tokens"),
@@ -225,6 +234,7 @@ def render_talk_to_your_data_page():
                     "total_tokens": api_metrics.get("total_tokens"),
                     "duration_ms": call_duration_ms,
                 },
+                tags=["talk_to_data", "llm"],
             )
             tracer.log_event(
                 talk_to_data_run_id,
@@ -430,6 +440,11 @@ def ask_talk_to_data_llm(prompt: str, include_api_metrics: bool = False) -> dict
             "input_tokens": usage.prompt_tokens,
             "output_tokens": usage.completion_tokens,
             "total_tokens": usage.total_tokens,
+            "prompt": {
+                "system": "Você responde apenas com JSON válido.",
+                "user": prompt,
+            },
+            "output": content,
         },
     }
 

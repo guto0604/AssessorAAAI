@@ -164,8 +164,12 @@ def render_ask_ai_tab():
                                 "top_k": top_k,
                                 "semantic_weight": semantic_weight,
                                 "bm25_weight": bm25_weight,
+                                "prompt": api_call.get("prompt", {}),
                             },
-                            outputs={"status": "success"},
+                            outputs={
+                                "status": "success",
+                                "output": api_call.get("output"),
+                            },
                             metadata=api_call,
                             tags=["ask_ai", step or "unknown"],
                         )

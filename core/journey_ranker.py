@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableLambda
 from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
 
 
-def _build_api_metrics(response, *, provider: str = "openai") -> dict:
+def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
     usage = getattr(response, "usage", {}) or {}
     return {
         "provider": provider,
@@ -16,6 +16,8 @@ def _build_api_metrics(response, *, provider: str = "openai") -> dict:
         "output_tokens": usage.get("completion_tokens"),
         "total_tokens": usage.get("total_tokens"),
         "response_id": getattr(response, "response_id", None),
+        "prompt": prompt or {},
+        "output": output,
     }
 
 
@@ -102,7 +104,11 @@ Rankeie as 5 jornadas mais adequadas.
     if include_api_metrics:
         return {
             "result": parsed,
-            "api_metrics": _build_api_metrics(response),
+            "api_metrics": _build_api_metrics(
+                response,
+                prompt={"messages": str(messages)},
+                output=str_output_parser.invoke(response, config=config),
+            ),
         }
 
     return parsed

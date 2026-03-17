@@ -3,6 +3,7 @@ from datetime import datetime
 import streamlit as st
 
 from core.market_intelligence import EVENT_TYPES, SECTOR_COMPANIES, fetch_market_intelligence
+from ui.state import get_tracer
 
 TIME_RANGE_OPTIONS = {
     "24h": 1,
@@ -66,6 +67,7 @@ def _is_tavily_credits_error(exc: Exception) -> bool:
 def render_market_intelligence_tab():
     st.title("📈 Market Intelligence")
     st.caption("Notícias relevantes do mercado brasileiro ranqueadas por impacto e recência.")
+    tracer = get_tracer()
 
     col_period, col_event, col_sector, col_company, col_source = st.columns([1.1, 1, 1, 1, 1])
     with col_period:
@@ -88,10 +90,51 @@ def render_market_intelligence_tab():
         return
 
     if st.button("▶️ Atualizar notícias"):
+        market_run_id = tracer.start_run(
+            name=f"market_intelligence_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            run_type="chain",
+            inputs={"days": days, "sector": selected_sector},
+            tags=["market_intelligence", "streamlit"],
+            metadata={"feature": "market_intelligence"},
+        )
         with st.spinner("Atualizando Market Intelligence... Isso pode demorar uns mintuos."):
             try:
-                st.session_state[cache_key] = fetch_market_intelligence(days=days, sector=selected_sector)
+                result = fetch_market_intelligence(days=days, sector=selected_sector, include_api_metrics=True)
+                st.session_state[cache_key] = result
+
+                for api_call in result.get("api_calls", []):
+                    tracer.log_child_run(
+                        market_run_id,
+                        name="market_intelligence_classify_and_summarize",
+                        run_type="llm",
+                        inputs={
+                            "prompt": api_call.get("prompt", {}),
+                            "days": days,
+                            "sector": selected_sector,
+                        },
+                        outputs={
+                            "output": api_call.get("output"),
+                            "status": "success",
+                        },
+                        metadata=api_call,
+                        tags=["market_intelligence", api_call.get("step", "classify_and_summarize")],
+                    )
+
+                tracer.end_run(
+                    market_run_id,
+                    status="success",
+                    outputs={
+                        "status": "success",
+                        "news_count": len(result.get("ranked_news", [])),
+                    },
+                )
             except Exception as exc:
+                tracer.end_run(
+                    market_run_id,
+                    status="error",
+                    error=str(exc),
+                    outputs={"status": "error"},
+                )
                 if _is_tavily_credits_error(exc):
                     st.error("Créditos da Tavily acabaram. Atualize sua chave ou aguarde a renovação para continuar.")
                 else:
