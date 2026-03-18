@@ -83,12 +83,18 @@ def _reset_pitch_flow_state():
         "pitch_draft",
         "pitch_final_text",
         "pitch_version",
+        "pitch_step5_release_index",
+        "pitch_step5_confirmed_sections",
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
 
     for key in list(st.session_state.keys()):
-        if key.startswith("pitch_chk_") or key.startswith("pitch_draft_box_"):
+        if (
+            key.startswith("pitch_chk_")
+            or key.startswith("pitch_draft_box_")
+            or key.startswith("pitch_step5_confirm_toggle_")
+        ):
             st.session_state.pop(key, None)
 
 
@@ -389,6 +395,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                 })
 
                 st.session_state["step5_result"] = step5_result
+                st.session_state["pitch_step5_release_index"] = 0
+                st.session_state["pitch_step5_confirmed_sections"] = []
                 st.session_state.etapa = 5
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "step5", "error": str(exc)})
@@ -403,6 +411,14 @@ def render_pitch_tab(cliente_id, cliente_info):
         if "step5_result" in st.session_state and st.session_state["step5_result"]:
             step5 = st.session_state["step5_result"]
             st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
+            st.caption(
+                "As opções continuam vindo de uma única chamada, mas cada bloco só é liberado após a confirmação do anterior."
+            )
+
+            if "pitch_step5_release_index" not in st.session_state:
+                st.session_state["pitch_step5_release_index"] = 0
+            if "pitch_step5_confirmed_sections" not in st.session_state:
+                st.session_state["pitch_step5_confirmed_sections"] = []
 
             def _checkbox_list(title, items, key_prefix):
                 """Responsável por processar list no contexto da aplicação de assessoria.
@@ -427,88 +443,181 @@ def render_pitch_tab(cliente_id, cliente_info):
                         selected.append(item)
                 return selected
 
-            selected_diagnostico = _checkbox_list(
-                "📌 Diagnóstico (carteira / perfil / rendimento)",
-                step5.get("diagnostico", []),
-                "pitch_chk_diag"
-            )
+            def _render_objecoes():
+                st.subheader("🛡 Possíveis objeções e respostas (pré-tratadas)")
+                selected = []
+                for item in step5.get("objecoes_e_respostas", []):
+                    oid = item.get("id")
+                    obj = item.get("objecao", "")
+                    resp_txt = item.get("resposta", "")
+                    label = f"Objeção: {obj}\nResposta sugerida: {resp_txt}"
+                    k = f"pitch_chk_obj_{oid}"
+                    checked = st.checkbox(label, value=True, key=k)
+                    if checked:
+                        selected.append(item)
+                return selected
 
-            selected_pontos = _checkbox_list(
-                "🎯 Pontos prioritários para abordar",
-                step5.get("pontos_prioritarios", []),
-                "pitch_chk_pontos"
-            )
+            def _render_produtos():
+                st.subheader("💼 Sugestões de produtos (candidatos)")
+                selected = []
+                for item in step5.get("produtos_sugeridos", []):
+                    pid = item.get("id")
+                    prod_id = item.get("produto_id")
+                    txt = item.get("texto", "")
+                    label = f"[{prod_id}] {txt}" if prod_id else txt
+                    k = f"pitch_chk_prod_{pid}"
+                    checked = st.checkbox(label, value=True, key=k)
+                    if checked:
+                        selected.append(item)
+                return selected
 
-            selected_gatilhos = _checkbox_list(
-                "⚡ Gatilhos comerciais (opcional)",
-                step5.get("gatilhos_comerciais", []),
-                "pitch_chk_gatilhos"
-            )
+            def _render_tom():
+                st.subheader("🗣 Tom do pitch")
+                tom_options = []
+                if step5.get("tom_sugerido", {}).get("principal"):
+                    tom_options.append(step5["tom_sugerido"]["principal"]["texto"])
+                for alt in step5.get("tom_sugerido", {}).get("alternativas", []):
+                    tom_options.append(alt["texto"])
 
-            st.subheader("🛡 Possíveis objeções e respostas (pré-tratadas)")
-            selected_obj = []
-            for item in step5.get("objecoes_e_respostas", []):
-                oid = item.get("id")
-                obj = item.get("objecao", "")
-                resp_txt = item.get("resposta", "")
-                label = f"Objeção: {obj}\nResposta sugerida: {resp_txt}"
-                k = f"pitch_chk_obj_{oid}"
-                checked = st.checkbox(label, value=True, key=k)
-                if checked:
-                    selected_obj.append(item)
+                if not tom_options:
+                    st.info("Nenhuma sugestão de tom foi retornada para este cliente.")
+                    return None
 
-            st.subheader("💼 Sugestões de produtos (candidatos)")
-            selected_prod = []
-            for item in step5.get("produtos_sugeridos", []):
-                pid = item.get("id")
-                prod_id = item.get("produto_id")
-                txt = item.get("texto", "")
-                label = f"[{prod_id}] {txt}" if prod_id else txt
-                k = f"pitch_chk_prod_{pid}"
-                checked = st.checkbox(label, value=True, key=k)
-                if checked:
-                    selected_prod.append(item)
-
-            st.subheader("🗣 Tom do pitch")
-            tom_options = []
-            if step5.get("tom_sugerido", {}).get("principal"):
-                tom_options.append(step5["tom_sugerido"]["principal"]["texto"])
-            for alt in step5.get("tom_sugerido", {}).get("alternativas", []):
-                tom_options.append(alt["texto"])
-
-            tom_escolhido = None
-            if tom_options:
-                tom_escolhido = st.radio(
+                return st.radio(
                     "Escolha o tom:",
                     options=tom_options,
                     index=0,
                     key="pitch_radio_tom"
                 )
 
-            st.subheader("📏 Tamanho do pitch")
-            size_options = []
-            if step5.get("tamanho_pitch", {}).get("principal"):
-                size_options.append(step5["tamanho_pitch"]["principal"]["texto"])
-            for alt in step5.get("tamanho_pitch", {}).get("alternativas", []):
-                size_options.append(alt["texto"])
+            def _render_tamanho():
+                st.subheader("📏 Tamanho do pitch")
+                size_options = []
+                if step5.get("tamanho_pitch", {}).get("principal"):
+                    size_options.append(step5["tamanho_pitch"]["principal"]["texto"])
+                for alt in step5.get("tamanho_pitch", {}).get("alternativas", []):
+                    size_options.append(alt["texto"])
 
-            tamanho_escolhido = None
-            if size_options:
-                tamanho_escolhido = st.radio(
+                if not size_options:
+                    st.info("Nenhuma sugestão de tamanho foi retornada para este cliente.")
+                    return None
+
+                return st.radio(
                     "Escolha o tamanho:",
                     options=size_options,
                     index=0,
                     key="pitch_radio_tamanho"
                 )
 
+            selected_diagnostico = []
+            selected_pontos = []
+            selected_gatilhos = []
+            selected_obj = []
+            selected_prod = []
+            tom_escolhido = None
+            tamanho_escolhido = None
+
+            sections = [
+                {
+                    "id": "diagnostico",
+                    "renderer": lambda: _checkbox_list(
+                        "📌 Diagnóstico (carteira / perfil / rendimento)",
+                        step5.get("diagnostico", []),
+                        "pitch_chk_diag"
+                    ),
+                },
+                {
+                    "id": "pontos_prioritarios",
+                    "renderer": lambda: _checkbox_list(
+                        "🎯 Pontos prioritários para abordar",
+                        step5.get("pontos_prioritarios", []),
+                        "pitch_chk_pontos"
+                    ),
+                },
+                {
+                    "id": "gatilhos_comerciais",
+                    "renderer": lambda: _checkbox_list(
+                        "⚡ Gatilhos comerciais (opcional)",
+                        step5.get("gatilhos_comerciais", []),
+                        "pitch_chk_gatilhos"
+                    ),
+                },
+                {"id": "objecoes_e_respostas", "renderer": _render_objecoes},
+                {"id": "produtos_sugeridos", "renderer": _render_produtos},
+                {"id": "tom_sugerido", "renderer": _render_tom},
+                {"id": "tamanho_pitch", "renderer": _render_tamanho},
+            ]
+
+            current_release_index = st.session_state["pitch_step5_release_index"]
+            confirmed_sections = st.session_state["pitch_step5_confirmed_sections"]
+
+            for index, section in enumerate(sections):
+                if index > current_release_index:
+                    break
+
+                with st.container(border=True):
+                    section_result = section["renderer"]()
+
+                    if section["id"] == "diagnostico":
+                        selected_diagnostico = section_result
+                    elif section["id"] == "pontos_prioritarios":
+                        selected_pontos = section_result
+                    elif section["id"] == "gatilhos_comerciais":
+                        selected_gatilhos = section_result
+                    elif section["id"] == "objecoes_e_respostas":
+                        selected_obj = section_result
+                    elif section["id"] == "produtos_sugeridos":
+                        selected_prod = section_result
+                    elif section["id"] == "tom_sugerido":
+                        tom_escolhido = section_result
+                    elif section["id"] == "tamanho_pitch":
+                        tamanho_escolhido = section_result
+
+                    already_confirmed = section["id"] in confirmed_sections
+                    is_last_released = index == current_release_index
+                    has_next_section = index < len(sections) - 1
+
+                    if already_confirmed:
+                        st.success("Bloco confirmado.")
+                    elif is_last_released:
+                        confirm_key = f"pitch_step5_confirm_toggle_{section['id']}"
+                        can_advance = st.checkbox(
+                            "Confirmo este bloco e desejo liberar o próximo.",
+                            key=confirm_key,
+                        )
+                        button_label = "Liberar próximo bloco" if has_next_section else "Concluir liberação dos blocos"
+                        if st.button(button_label, key=f"pitch_step5_release_btn_{section['id']}"):
+                            if not can_advance:
+                                st.warning("Confirme este bloco para liberar o próximo.")
+                            else:
+                                st.session_state["pitch_step5_confirmed_sections"] = [
+                                    *confirmed_sections,
+                                    section["id"],
+                                ]
+                                if has_next_section:
+                                    st.session_state["pitch_step5_release_index"] = current_release_index + 1
+                                st.rerun()
+
+                    if not already_confirmed and is_last_released:
+                        st.info("Finalize este bloco para continuar o fluxo de revisão das opções.")
+
+            all_sections_confirmed = len(st.session_state["pitch_step5_confirmed_sections"]) == len(sections)
+            if not all_sections_confirmed:
+                st.warning("Confirme cada bloco acima para habilitar o salvamento da seleção final.")
+
             st.divider()
 
-            if st.button("💾 Salvar seleção (Passo 6)", key="pitch_btn_save_step5"):
+            if st.button(
+                "💾 Salvar seleção (Passo 6)",
+                key="pitch_btn_save_step5",
+                disabled=not all_sections_confirmed,
+            ):
                 pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
                 tracer.log_event(pitch_run_id, "pitch_step_6_selection_saved", {
                     "diagnostico_selected": len(selected_diagnostico),
                     "pontos_selected": len(selected_pontos),
                     "produtos_selected": len(selected_prod),
+                    "confirmed_sections": st.session_state.get("pitch_step5_confirmed_sections", []),
                 })
                 st.session_state["step5_selection"] = {
                     "diagnostico": selected_diagnostico,
@@ -707,5 +816,3 @@ def render_pitch_tab(cliente_id, cliente_info):
 
                 if st.button("↩️ Voltar para ajustes", key="pitch_btn_back_to_edit"):
                     st.session_state["pitch_final_text"] = None
-
-
