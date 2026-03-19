@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from pathlib import Path
 import math
 import re
@@ -7,7 +8,7 @@ from typing import Any
 
 from core.openai_client import get_openai_client
 from rag.chunking import chunk_text
-from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR, QUERY_PARSER_MODEL
+from rag.config import CHAT_MODEL, EMBEDDING_MODEL, KNOWLEDGE_BASE_DIR, QUERY_PARSER_MODEL, RAG_SEGMENT_OPTIONS
 from rag.document_loader import (
     InvalidDocumentError,
     extract_text_from_bytes,
@@ -15,7 +16,7 @@ from rag.document_loader import (
     load_text_from_file,
     sha256_bytes,
 )
-from rag.vector_store import ChunkMetadata, LocalFaissStore
+from rag.vector_store import ChunkMetadata, DocumentMetadata, LocalFaissStore
 
 
 @dataclass
@@ -25,6 +26,13 @@ class IngestResult:
     skipped_files: list[str]
 
 
+@dataclass
+class MetadataBackfillResult:
+    updated_documents: int
+    updated_chunks: int
+    default_date_applied: str
+
+
 class RagService:
     def __init__(self):
         """Inicializa a classe com dependências e estado necessários para o fluxo.
@@ -32,6 +40,80 @@ class RagService:
         self.store = LocalFaissStore()
         self.store.load()
         self.client = get_openai_client()
+
+    @staticmethod
+    def _normalize_source_path(path_like: str | Path) -> str:
+        return str(path_like).replace("\\", "/")
+
+    @staticmethod
+    def _now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    @staticmethod
+    def _normalize_document_date(document_date: str | date | datetime | None) -> str:
+        if document_date is None:
+            return date.today().isoformat()
+        if isinstance(document_date, datetime):
+            return document_date.date().isoformat()
+        if isinstance(document_date, date):
+            return document_date.isoformat()
+        parsed = str(document_date).strip()
+        if not parsed:
+            return date.today().isoformat()
+        return parsed
+
+    @staticmethod
+    def _normalize_segments(allowed_segments: list[str] | None) -> list[str]:
+        if not allowed_segments:
+            return RAG_SEGMENT_OPTIONS.copy()
+        unique_segments: list[str] = []
+        for segment in allowed_segments:
+            segment_name = (segment or "").strip()
+            if segment_name in RAG_SEGMENT_OPTIONS and segment_name not in unique_segments:
+                unique_segments.append(segment_name)
+        return unique_segments or RAG_SEGMENT_OPTIONS.copy()
+
+    def _build_document_metadata(
+        self,
+        source_path: str,
+        source_hash: str,
+        kb_folder: str,
+        file_name: str,
+        allowed_segments: list[str] | None,
+        document_date: str | date | datetime | None,
+        indexed_at: str | None = None,
+    ) -> DocumentMetadata:
+        return DocumentMetadata(
+            source_path=self._normalize_source_path(source_path),
+            source_hash=source_hash,
+            kb_folder=kb_folder,
+            file_name=file_name,
+            allowed_segments=self._normalize_segments(allowed_segments),
+            document_date=self._normalize_document_date(document_date),
+            indexed_at=indexed_at or self._now_iso(),
+        )
+
+    def _metadata_matches_filters(
+        self,
+        metadata: ChunkMetadata,
+        allowed_segments: list[str] | None = None,
+        start_date: str | date | datetime | None = None,
+        end_date: str | date | datetime | None = None,
+    ) -> bool:
+        allowed_filter = set(self._normalize_segments(allowed_segments)) if allowed_segments is not None else None
+        document_segments = set(self._normalize_segments(metadata.allowed_segments))
+        if allowed_filter is not None and document_segments.isdisjoint(allowed_filter):
+            return False
+
+        normalized_start = self._normalize_document_date(start_date) if start_date else None
+        normalized_end = self._normalize_document_date(end_date) if end_date else None
+        document_date = self._normalize_document_date(metadata.document_date)
+
+        if normalized_start and document_date < normalized_start:
+            return False
+        if normalized_end and document_date > normalized_end:
+            return False
+        return True
 
     def _extract_usage(self, usage: Any) -> tuple[int | None, int | None, int | None]:
         """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
@@ -235,6 +317,9 @@ class RagService:
         top_k: int = 5,
         semantic_weight: float = 0.8,
         bm25_weight: float = 0.2,
+        allowed_segments: list[str] | None = None,
+        start_date: str | date | datetime | None = None,
+        end_date: str | date | datetime | None = None,
     ) -> list[tuple[ChunkMetadata, float]]:
         """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
 
@@ -250,8 +335,23 @@ class RagService:
         
         """
         retrieval_depth = max(top_k * 4, top_k)
-        semantic_results = self.store.search(query_embedding, k=retrieval_depth)
-        bm25_results = self._bm25_search(parsed_query, k=retrieval_depth)
+        metadata_filter = lambda metadata: self._metadata_matches_filters(
+            metadata,
+            allowed_segments=allowed_segments,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        semantic_results = self.store.search(
+            query_embedding,
+            k=retrieval_depth,
+            filter_fn=metadata_filter,
+            search_k=len(self.store.metadata),
+        )
+        bm25_results = [
+            (metadata, score)
+            for metadata, score in self._bm25_search(parsed_query, k=len(self.store.metadata))
+            if metadata_filter(metadata)
+        ][:retrieval_depth]
 
         # Weighted Reciprocal Rank Fusion (RRF)
         rrf_constant = 60
@@ -276,7 +376,14 @@ class RagService:
         )
         return ranked[:top_k]
 
-    def ingest_uploaded_file(self, folder: str, file_name: str, content: bytes) -> IngestResult:
+    def ingest_uploaded_file(
+        self,
+        folder: str,
+        file_name: str,
+        content: bytes,
+        allowed_segments: list[str] | None = None,
+        document_date: str | date | datetime | None = None,
+    ) -> IngestResult:
         """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
 
         Args:
@@ -294,7 +401,7 @@ class RagService:
         destination_dir = KNOWLEDGE_BASE_DIR / folder
         destination_dir.mkdir(parents=True, exist_ok=True)
         destination_path = destination_dir / file_name
-        source_key = str(destination_path)
+        source_key = self._normalize_source_path(destination_path)
 
         if self.store.manifest.get(source_key) == file_hash:
             raise InvalidDocumentError("Reupload detectado: este arquivo já foi indexado sem alterações.")
@@ -304,6 +411,14 @@ class RagService:
         if not chunks:
             raise InvalidDocumentError("Arquivo sem conteúdo útil após chunking.")
 
+        document_metadata = self._build_document_metadata(
+            source_path=source_key,
+            source_hash=file_hash,
+            kb_folder=folder,
+            file_name=file_name,
+            allowed_segments=allowed_segments,
+            document_date=document_date,
+        )
         embeddings = self._embed_texts([chunk.text for chunk in chunks])
         metadatas = [
             ChunkMetadata(
@@ -313,12 +428,16 @@ class RagService:
                 file_name=file_name,
                 chunk_id=chunk.chunk_id,
                 text=chunk.text,
+                allowed_segments=document_metadata.allowed_segments,
+                document_date=document_metadata.document_date,
+                indexed_at=document_metadata.indexed_at,
             )
             for chunk in chunks
         ]
 
         self.store.add_embeddings(embeddings, metadatas)
         self.store.manifest[source_key] = file_hash
+        self.store.document_registry[source_key] = document_metadata
         self.store.save()
 
         return IngestResult(added_files=1, added_chunks=len(chunks), skipped_files=[])
@@ -335,7 +454,9 @@ class RagService:
             for path in KNOWLEDGE_BASE_DIR.rglob("*")
             if path.is_file() and is_supported_file(path)
         ]
+        existing_registry = dict(self.store.document_registry)
         self.store.clear()
+        self.store.document_registry = {}
 
         all_embeddings: list[list[float]] = []
         all_metadata: list[ChunkMetadata] = []
@@ -352,22 +473,37 @@ class RagService:
                 embeddings = self._embed_texts(chunk_texts)
                 file_hash = sha256_bytes(path.read_bytes())
                 folder = path.parent.relative_to(KNOWLEDGE_BASE_DIR).as_posix()
+                source_key = self._normalize_source_path(path)
+                saved_document = existing_registry.get(source_key)
+                document_metadata = self._build_document_metadata(
+                    source_path=source_key,
+                    source_hash=file_hash,
+                    kb_folder=folder,
+                    file_name=path.name,
+                    allowed_segments=saved_document.allowed_segments if saved_document else None,
+                    document_date=saved_document.document_date if saved_document else None,
+                    indexed_at=saved_document.indexed_at if saved_document else None,
+                )
 
                 all_embeddings.extend(embeddings)
                 all_metadata.extend(
                     [
                         ChunkMetadata(
-                            source_path=str(path),
+                            source_path=source_key,
                             source_hash=file_hash,
                             kb_folder=folder,
                             file_name=path.name,
                             chunk_id=chunk.chunk_id,
                             text=chunk.text,
+                            allowed_segments=document_metadata.allowed_segments,
+                            document_date=document_metadata.document_date,
+                            indexed_at=document_metadata.indexed_at,
                         )
                         for chunk in chunks
                     ]
                 )
-                self.store.manifest[str(path)] = file_hash
+                self.store.manifest[source_key] = file_hash
+                self.store.document_registry[source_key] = document_metadata
             except Exception:
                 skipped.append(str(path))
 
@@ -396,6 +532,9 @@ class RagService:
         top_k: int = 5,
         semantic_weight: float = 0.8,
         bm25_weight: float = 0.2,
+        allowed_segments: list[str] | None = None,
+        start_date: str | date | datetime | None = None,
+        end_date: str | date | datetime | None = None,
         include_api_metrics: bool = False,
     ):
         """Executa uma etapa do pipeline RAG para indexação, busca e resposta com contexto.
@@ -445,6 +584,9 @@ class RagService:
             top_k=top_k,
             semantic_weight=semantic_weight,
             bm25_weight=bm25_weight,
+            allowed_segments=allowed_segments,
+            start_date=start_date,
+            end_date=end_date,
         )
 
         if not retrieved:
@@ -469,6 +611,8 @@ class RagService:
                     "file_name": meta.file_name,
                     "chunk_id": meta.chunk_id,
                     "score": score,
+                    "allowed_segments": getattr(meta, "allowed_segments", RAG_SEGMENT_OPTIONS.copy()),
+                    "document_date": getattr(meta, "document_date", None),
                 }
             )
 
@@ -518,3 +662,85 @@ class RagService:
             "sources": sources,
             "api_calls": [call for call in api_calls if call],
         }
+
+    def apply_default_metadata_to_all_missing(
+        self,
+        default_segments: list[str] | None = None,
+        default_date: str | date | datetime | None = None,
+    ) -> MetadataBackfillResult:
+        self.ensure_index_exists()
+
+        normalized_segments = self._normalize_segments(default_segments)
+        normalized_date = self._normalize_document_date(default_date)
+        updated_documents = 0
+        updated_chunks = 0
+
+        for metadata in self.store.metadata:
+            metadata.source_path = self._normalize_source_path(metadata.source_path)
+            if not metadata.allowed_segments:
+                metadata.allowed_segments = normalized_segments
+                updated_chunks += 1
+            else:
+                metadata.allowed_segments = self._normalize_segments(metadata.allowed_segments)
+            if not metadata.document_date:
+                metadata.document_date = normalized_date
+                updated_chunks += 1
+            if not metadata.indexed_at:
+                metadata.indexed_at = self._now_iso()
+                updated_chunks += 1
+
+        grouped_chunks: dict[str, list[ChunkMetadata]] = {}
+        for metadata in self.store.metadata:
+            grouped_chunks.setdefault(metadata.source_path, []).append(metadata)
+
+        for source_path, chunks in grouped_chunks.items():
+            current_document = self.store.document_registry.get(source_path)
+            source_hash = chunks[0].source_hash
+            kb_folder = chunks[0].kb_folder
+            file_name = chunks[0].file_name
+            indexed_at = current_document.indexed_at if current_document and current_document.indexed_at else chunks[0].indexed_at
+            document_segments = (
+                current_document.allowed_segments
+                if current_document and current_document.allowed_segments
+                else chunks[0].allowed_segments
+            )
+            document_date = (
+                current_document.document_date
+                if current_document and current_document.document_date
+                else chunks[0].document_date
+            )
+
+            segments_were_missing = not document_segments
+            date_was_missing = not document_date
+
+            normalized_document = self._build_document_metadata(
+                source_path=source_path,
+                source_hash=source_hash,
+                kb_folder=kb_folder,
+                file_name=file_name,
+                allowed_segments=document_segments if document_segments else normalized_segments,
+                document_date=document_date if document_date else normalized_date,
+                indexed_at=indexed_at,
+            )
+            self.store.document_registry[source_path] = normalized_document
+
+            if segments_were_missing or date_was_missing or current_document is None:
+                updated_documents += 1
+
+            for chunk in chunks:
+                if not chunk.allowed_segments:
+                    chunk.allowed_segments = normalized_document.allowed_segments
+                    updated_chunks += 1
+                if not chunk.document_date:
+                    chunk.document_date = normalized_document.document_date
+                    updated_chunks += 1
+                if not chunk.indexed_at:
+                    chunk.indexed_at = normalized_document.indexed_at
+                    updated_chunks += 1
+
+        self.store.save()
+        return MetadataBackfillResult(
+            updated_documents=updated_documents,
+            updated_chunks=updated_chunks,
+            default_date_applied=normalized_date,
+        )

@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 from datetime import date, datetime
 
-from rag.config import KNOWLEDGE_BASE_DIR, SUPPORTED_EXTENSIONS
+from rag.config import KNOWLEDGE_BASE_DIR, RAG_SEGMENT_OPTIONS, SUPPORTED_EXTENSIONS
 from rag.document_loader import InvalidDocumentError
 from ui.guardrails import (
     evaluate_input_guardrails,
@@ -11,7 +11,12 @@ from ui.guardrails import (
     handle_guardrail_exception,
 )
 from ui.rag_service_provider import get_rag_service
-from ui.state import SESSION_RAG_SEMANTIC_WEIGHT, SESSION_RAG_TOP_K, get_tracer
+from ui.state import (
+    SESSION_RAG_SEMANTIC_WEIGHT,
+    SESSION_RAG_TOP_K,
+    SESSION_RLS_ALLOWED_SEGMENTS,
+    get_tracer,
+)
 
 
 
@@ -64,12 +69,27 @@ def render_ask_ai_tab():
         accept_multiple_files=True,
         key="ask_ai_upload_files",
     )
+    selected_segments = st.multiselect(
+        "Perfis/RLS com acesso ao documento",
+        options=RAG_SEGMENT_OPTIONS,
+        default=RAG_SEGMENT_OPTIONS,
+        help="Por padrão, novos documentos ficam visíveis para os 3 perfis. Você pode restringir no cadastro.",
+        key="ask_ai_upload_segments",
+    )
+    selected_document_date = st.date_input(
+        "Data de referência do documento",
+        value=date.today(),
+        help="Usada para filtrar documentos durante a consulta.",
+        key="ask_ai_upload_document_date",
+    )
 
     if st.button("⬆️ Processar e indexar uploads", key="ask_ai_upload_button"):
         if not uploaded_files:
             st.warning("Selecione ao menos um arquivo para upload.")
         elif not selected_folder:
             st.error("Informe uma pasta de destino válida.")
+        elif not selected_segments:
+            st.error("Selecione ao menos um perfil para o documento.")
         else:
             added_files = 0
             added_chunks = 0
@@ -80,7 +100,13 @@ def render_ask_ai_tab():
                     continue
 
                 try:
-                    result = rag.ingest_uploaded_file(selected_folder, file.name, file.getvalue())
+                    result = rag.ingest_uploaded_file(
+                        selected_folder,
+                        file.name,
+                        file.getvalue(),
+                        allowed_segments=selected_segments,
+                        document_date=selected_document_date,
+                    )
                     added_files += result.added_files
                     added_chunks += result.added_chunks
                     st.success(f"{file.name}: indexado com sucesso.")
@@ -92,15 +118,60 @@ def render_ask_ai_tab():
             if added_files:
                 st.info(f"Indexação concluída: {added_files} arquivo(s), {added_chunks} chunk(s).")
 
+    if st.button("🪄 Aplicar metadados padrão onde faltarem", key="ask_ai_backfill_metadata_button"):
+        with st.spinner("Aplicando metadados padrão nos chunks/documentos sem segmento/data..."):
+            try:
+                result = rag.apply_default_metadata_to_all_missing(
+                    default_segments=RAG_SEGMENT_OPTIONS,
+                    default_date=date.today(),
+                )
+                st.success(
+                    "Metadados padronizados com sucesso. "
+                    f"Documentos atualizados: {result.updated_documents}. "
+                    f"Chunks atualizados: {result.updated_chunks}. "
+                    f"Data padrão aplicada: {result.default_date_applied}."
+                )
+            except Exception as exc:
+                st.error(f"Falha ao aplicar metadados padrão: {exc}")
+
     st.divider()
 
     st.subheader("❓ Pergunta")
+    allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RAG_SEGMENT_OPTIONS)
+    st.caption(
+        "A consulta respeita os perfis liberados na simulação de RLS: "
+        + ", ".join(allowed_segments if allowed_segments else RAG_SEGMENT_OPTIONS)
+    )
+    enable_date_filter = st.checkbox(
+        "Filtrar documentos por data de referência",
+        value=False,
+        key="ask_ai_enable_date_filter",
+    )
+    date_filter_start = None
+    date_filter_end = None
+    date_cols = st.columns(2)
+    with date_cols[0]:
+        date_filter_start = st.date_input(
+            "Data inicial",
+            value=date.today(),
+            disabled=not enable_date_filter,
+            key="ask_ai_date_filter_start",
+        )
+    with date_cols[1]:
+        date_filter_end = st.date_input(
+            "Data final",
+            value=date.today(),
+            disabled=not enable_date_filter,
+            key="ask_ai_date_filter_end",
+        )
     question = st.text_area("Digite sua pergunta", placeholder="Ex.: Qual foi o resultado das empresas do setor de proteína animal?\nQuais as regras de rebalanceamento?\nComo me preparar para uma reunião com o cliente?")
 
     if st.button("🚀 Enviar pergunta", key="ask_ai_send_question"):
         question = (question or "").strip()
         if not question:
             st.warning("Digite uma pergunta antes de enviar.")
+        elif enable_date_filter and date_filter_start > date_filter_end:
+            st.warning("A data inicial não pode ser maior que a data final.")
         else:
             ask_ai_run_id = tracer.start_run(
                 name=f"ask_ai_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -110,6 +181,9 @@ def render_ask_ai_tab():
                     "top_k": top_k,
                     "semantic_weight": semantic_weight,
                     "bm25_weight": bm25_weight,
+                    "allowed_segments": allowed_segments,
+                    "document_date_start": date_filter_start.isoformat() if enable_date_filter else None,
+                    "document_date_end": date_filter_end.isoformat() if enable_date_filter else None,
                 },
                 tags=["ask_ai", "streamlit", "rag"],
                 metadata={
@@ -158,6 +232,9 @@ def render_ask_ai_tab():
                         top_k=top_k,
                         semantic_weight=semantic_weight,
                         bm25_weight=bm25_weight,
+                        allowed_segments=allowed_segments,
+                        start_date=date_filter_start if enable_date_filter else None,
+                        end_date=date_filter_end if enable_date_filter else None,
                         include_api_metrics=True,
                     )
                     answer = rag_result["answer"]
@@ -218,7 +295,10 @@ def render_ask_ai_tab():
                     if sources:
                         for source in sources:
                             st.markdown(
-                                f"- `{source['source_path']}` (chunk {source['chunk_id']}, score={source['score']:.3f})"
+                                f"- `{source['source_path']}` "
+                                f"(chunk {source['chunk_id']}, score={source['score']:.3f}, "
+                                f"data={source.get('document_date')}, "
+                                f"perfis={', '.join(source.get('allowed_segments') or [])})"
                             )
                     else:
                         st.info("Nenhuma fonte encontrada.")
