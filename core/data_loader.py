@@ -1,5 +1,7 @@
-import pandas as pd
+import re
 from pathlib import Path
+
+import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -36,6 +38,24 @@ PRODUTOS_COLUMNS = [
     "Suitability_Ideal",
 ]
 
+
+def parse_topicos_llm(raw_value) -> list[str]:
+    """Normaliza a célula `Topicos_LLM` do Excel em uma lista ordenada de tópicos."""
+    if raw_value is None:
+        return []
+
+    text = str(raw_value).strip()
+    if not text or text.lower() == "nan":
+        return []
+
+    chunks = re.split(r"[;\n\r]+", text)
+    topics = []
+    for chunk in chunks:
+        normalized = re.sub(r"^[\-\u2022\s]+", "", chunk).strip()
+        if normalized:
+            topics.append(normalized)
+    return topics
+
 def load_clientes():
     """Carrega dados da fonte esperada e devolve a estrutura pronta para uso no fluxo.
 
@@ -59,7 +79,26 @@ def load_jornadas():
     Returns:
         Dados carregados e prontos para consumo no fluxo da aplicação.
     """
-    return pd.read_excel(JORNADAS_PATH)
+    jornadas_df = pd.read_excel(JORNADAS_PATH)
+    if "Topicos_LLM" not in jornadas_df.columns:
+        jornadas_df["Topicos_LLM"] = ""
+
+    jornadas_df["Topicos_LLM_Lista"] = jornadas_df["Topicos_LLM"].apply(parse_topicos_llm)
+    return jornadas_df
+
+
+def get_jornada_config(jornadas_df, jornada_id: str) -> dict:
+    """Obtém a configuração consolidada de uma jornada a partir do Excel."""
+    jornada_row = jornadas_df[jornadas_df["Jornada_ID"] == jornada_id].iloc[0]
+    return {
+        "jornada_id": jornada_id,
+        "nome": jornada_row.get("Nome_Jornada"),
+        "categoria": jornada_row.get("Categoria"),
+        "objetivo_principal": jornada_row.get("Objetivo_Principal"),
+        "descricao_original": jornada_row.get("Descricao_Resumida"),
+        "topicos_llm": jornada_row.get("Topicos_LLM_Lista", []),
+        "topicos_llm_raw": jornada_row.get("Topicos_LLM", ""),
+    }
 
 def load_investimentos():
     """Carrega dados da fonte esperada e devolve a estrutura pronta para uso no fluxo.
