@@ -373,7 +373,7 @@ def render_pitch_tab(cliente_id, cliente_info):
     if "step4_result" in st.session_state and st.session_state["step4_result"]:
 
         st.divider()
-        st.header("5️⃣ Estruturar opções do pitch (RAG + LLM)")
+        st.header("5️⃣ Estruturar opções do pitch")
 
         step4 = st.session_state["step4_result"]
 
@@ -428,9 +428,6 @@ def render_pitch_tab(cliente_id, cliente_info):
         if "step5_result" in st.session_state and st.session_state["step5_result"]:
             step5 = st.session_state["step5_result"]
             st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
-            st.caption(
-                "Os blocos agora são montados dinamicamente a partir dos tópicos configurados no Excel para a jornada escolhida."
-            )
 
             if "pitch_step5_release_index" not in st.session_state:
                 st.session_state["pitch_step5_release_index"] = 0
