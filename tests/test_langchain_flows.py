@@ -4,7 +4,7 @@ from unittest.mock import patch
 from core.journey_ranker import rank_journeys
 from core.source_selector import select_sources_step4
 from core.pitch_structurer import build_pitch_options_step5
-from core.pitch_writer import generate_final_pitch_step7, revise_pitch_step8
+from core.pitch_writer import generate_final_pitch_step7, generate_prompt_to_pitch, revise_pitch_step8
 from core.meetings import summarize_transcript
 
 
@@ -101,6 +101,8 @@ class _Completions:
             return _Resp('{"data_sources":["investimentos_do_cliente"],"products_selected_ids":["P1","P2","P3"],"kb_files_selected":["knowledge_base/documentos/explicacao_cdb.txt"],"reasoning_short":"ok"}')
         if "estrategista de conteúdo" in system:
             return _Resp('{"blocos_conteudo":[{"id":"diagnostico_alocacao","titulo":"Diagnóstico de alocação","itens":[{"id":"diagnostico_alocacao_i1","texto":"x"},{"id":"diagnostico_alocacao_i2","texto":"y"}]},{"id":"proximos_passos","titulo":"Próximos passos recomendados","itens":[{"id":"proximos_passos_i1","texto":"z"}]}],"tom_sugerido":{"principal":{"id":"t1","texto":"consultivo"},"alternativas":[{"id":"t2","texto":"direto"},{"id":"t3","texto":"leve"}]},"tamanho_pitch":{"principal":{"id":"l1","texto":"Médio"},"alternativas":[{"id":"l2","texto":"Pequeno"},{"id":"l3","texto":"Longo"}]}}')
+        if "mensagem comercial final" in system:
+            return _Resp("pitch direto")
         if "escrevendo uma mensagem" in system:
             return _Resp("pitch final")
         if "revisor de texto comercial" in system:
@@ -174,6 +176,9 @@ class FlowTests(unittest.TestCase):
 
         r7 = generate_final_pitch_step7(cliente, "meta", jornada, {"blocos_conteudo": []})
         self.assertEqual(r7, "pitch final")
+
+        r7_direct = generate_prompt_to_pitch(cliente, "meta")
+        self.assertEqual(r7_direct, "pitch direto")
 
         r8 = revise_pitch_step8("abc", "editar")
         self.assertEqual(r8, "pitch revisado")
