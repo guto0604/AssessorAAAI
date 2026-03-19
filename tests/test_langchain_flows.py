@@ -100,7 +100,7 @@ class _Completions:
         if "seleção de fontes" in system:
             return _Resp('{"data_sources":["investimentos_do_cliente"],"products_selected_ids":["P1","P2","P3"],"kb_files_selected":["knowledge_base/documentos/explicacao_cdb.txt"],"reasoning_short":"ok"}')
         if "estrategista de conteúdo" in system:
-            return _Resp('{"diagnostico":[{"id":"d1","texto":"x"},{"id":"d2","texto":"y"},{"id":"d3","texto":"z"}],"pontos_prioritarios":[{"id":"p1","texto":"a"},{"id":"p2","texto":"b"},{"id":"p3","texto":"c"}],"gatilhos_comerciais":[{"id":"g1","texto":"g"}],"objecoes_e_respostas":[{"id":"o1","objecao":"o","resposta":"r"}],"produtos_sugeridos":[{"id":"s1","produto_id":"P1","texto":"t"}],"tom_sugerido":{"principal":{"id":"t1","texto":"consultivo"},"alternativas":[{"id":"t2","texto":"direto"},{"id":"t3","texto":"leve"}]},"tamanho_pitch":{"principal":{"id":"l1","texto":"Médio"},"alternativas":[{"id":"l2","texto":"Pequeno"},{"id":"l3","texto":"Longo"}]}}')
+            return _Resp('{"blocos_conteudo":[{"id":"diagnostico_alocacao","titulo":"Diagnóstico de alocação","itens":[{"id":"diagnostico_alocacao_i1","texto":"x"},{"id":"diagnostico_alocacao_i2","texto":"y"}]},{"id":"proximos_passos","titulo":"Próximos passos recomendados","itens":[{"id":"proximos_passos_i1","texto":"z"}]}],"tom_sugerido":{"principal":{"id":"t1","texto":"consultivo"},"alternativas":[{"id":"t2","texto":"direto"},{"id":"t3","texto":"leve"}]},"tamanho_pitch":{"principal":{"id":"l1","texto":"Médio"},"alternativas":[{"id":"l2","texto":"Pequeno"},{"id":"l3","texto":"Longo"}]}}')
         if "escrevendo uma mensagem" in system:
             return _Resp("pitch final")
         if "revisor de texto comercial" in system:
@@ -129,9 +129,20 @@ class FlowTests(unittest.TestCase):
         
         """
         jornadas_df = MiniDF([
-            {"Jornada_ID": "J1", "Nome_Jornada": "A", "Categoria": "C", "Objetivo_Principal": "O", "Descricao_Resumida": "D"}
+            {
+                "Jornada_ID": "J1",
+                "Nome_Jornada": "A",
+                "Categoria": "C",
+                "Objetivo_Principal": "O",
+                "Descricao_Resumida": "D",
+                "Topicos_LLM": "Diagnóstico de alocação; Próximos passos recomendados",
+            }
         ])
         cliente = {"Nome": "Cli"}
+        jornada = {
+            "jornada_id": "J1",
+            "topicos_llm": ["Diagnóstico de alocação", "Próximos passos recomendados"],
+        }
 
         r1 = rank_journeys(cliente, "meta", jornadas_df)
         self.assertEqual(r1["ranking"][0]["jornada_id"], "J1")
@@ -146,21 +157,22 @@ class FlowTests(unittest.TestCase):
             {"Produto_ID": "P3", "Nome_Produto": "Prod3", "Categoria": "R", "Subcategoria": "S", "Risco_Nivel (1-5)": 2, "Suitability_Ideal": "Conservador"},
         ])
         inv_df = MiniDF([{"Produto": "X", "Categoria": "Y", "Valor_Investido": 100}])
-        r4 = select_sources_step4(cliente, "meta", {"jornada_id": "J1"}, {}, produtos_df, inv_df)
+        r4 = select_sources_step4(cliente, "meta", jornada, {}, produtos_df, inv_df)
         self.assertEqual(len(r4["products_selected_ids"]), 3)
 
-        r4m = select_sources_step4(cliente, "meta", {"jornada_id": "J1"}, {}, produtos_df, inv_df, include_api_metrics=True)
+        r4m = select_sources_step4(cliente, "meta", jornada, {}, produtos_df, inv_df, include_api_metrics=True)
         self.assertEqual(len(r4m["result"]["products_selected_ids"]), 3)
         self.assertIn("total_tokens", r4m["api_metrics"])
 
-        r5 = build_pitch_options_step5(cliente, "meta", {"jornada_id": "J1"}, {}, inv_df, produtos_df, [])
-        self.assertIn("diagnostico", r5)
+        r5 = build_pitch_options_step5(cliente, "meta", jornada, {}, inv_df, produtos_df, [])
+        self.assertIn("blocos_conteudo", r5)
+        self.assertEqual(r5["blocos_conteudo"][0]["titulo"], "Diagnóstico de alocação")
 
-        r5m = build_pitch_options_step5(cliente, "meta", {"jornada_id": "J1"}, {}, inv_df, produtos_df, [], include_api_metrics=True)
-        self.assertIn("diagnostico", r5m["result"])
+        r5m = build_pitch_options_step5(cliente, "meta", jornada, {}, inv_df, produtos_df, [], include_api_metrics=True)
+        self.assertIn("blocos_conteudo", r5m["result"])
         self.assertIn("latency_ms", r5m["api_metrics"])
 
-        r7 = generate_final_pitch_step7(cliente, "meta", {"jornada_id": "J1"}, {"diagnostico": []})
+        r7 = generate_final_pitch_step7(cliente, "meta", jornada, {"blocos_conteudo": []})
         self.assertEqual(r7, "pitch final")
 
         r8 = revise_pitch_step8("abc", "editar")

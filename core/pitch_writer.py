@@ -67,9 +67,9 @@ Objetivo:
 
 Regras:
 - Não invente dados numéricos de rentabilidade de produtos que não estejam explicitamente nos insumos.
-- Se houver produtos sugeridos com Produto_ID, cite o nome do produto de forma natural (não precisa mencionar o ID).
+- Use como base apenas os blocos de conteúdo aprovados em `selecoes_aprovadas.blocos_conteudo`.
+- Não introduza novas seções ou argumentos fora do que foi aprovado para a jornada selecionada.
 - Evite jargões excessivos e excesso de promessas.
-- Se existirem objeções/respostas selecionadas, incorpore de forma sutil (uma ou duas frases) para reduzir fricção.
 - Responda APENAS com o texto final do pitch (sem JSON, sem markdown, sem explicações).
 """
 

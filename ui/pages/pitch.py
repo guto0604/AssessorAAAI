@@ -4,6 +4,7 @@ import streamlit as st
 
 from core.data_loader import (
     carteira_summary_for_llm,
+    get_jornada_config,
     get_investimentos_by_cliente,
     load_jornadas,
     load_produtos,
@@ -220,12 +221,15 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         for item in ranking:
             jornada_id = item["jornada_id"]
-            jornada_base = jornadas_df[jornadas_df["Jornada_ID"] == jornada_id].iloc[0]
+            jornada_base = get_jornada_config(jornadas_df, jornada_id)
 
             jornadas_dict[jornada_id] = {
                 "nome": item["nome_jornada"],
                 "score": round(item["score"], 2),
-                "descricao_original": jornada_base["Descricao_Resumida"]
+                "descricao_original": jornada_base["descricao_original"],
+                "topicos_llm": jornada_base["topicos_llm"],
+                "categoria": jornada_base["categoria"],
+                "objetivo_principal": jornada_base["objetivo_principal"],
             }
 
         jornada_escolhida_id = st.radio(
@@ -252,10 +256,24 @@ def render_pitch_tab(cliente_id, cliente_info):
                 key="pitch_descricao_editada_unica"
             )
 
-            st.session_state["jornada_selecionada"] = {
-                "jornada_id": jornada_escolhida_id,
-                "descricao_editada": descricao_editada
-            }
+        else:
+            descricao_editada = jornadas_dict[jornada_escolhida_id]["descricao_original"]
+
+        st.session_state["jornada_selecionada"] = {
+            "jornada_id": jornada_escolhida_id,
+            "nome": jornadas_dict[jornada_escolhida_id]["nome"],
+            "categoria": jornadas_dict[jornada_escolhida_id]["categoria"],
+            "objetivo_principal": jornadas_dict[jornada_escolhida_id]["objetivo_principal"],
+            "descricao_original": jornadas_dict[jornada_escolhida_id]["descricao_original"],
+            "descricao_editada": descricao_editada,
+            "topicos_llm": jornadas_dict[jornada_escolhida_id]["topicos_llm"],
+        }
+
+        with st.expander("🧩 Tópicos configurados para esta jornada", expanded=False):
+            if st.session_state["jornada_selecionada"]["topicos_llm"]:
+                st.write(st.session_state["jornada_selecionada"]["topicos_llm"])
+            else:
+                st.warning("Nenhum tópico foi configurado no Excel para esta jornada.")
 
     # ---------------------------
     # PASSO 4 - Seleção de fontes
@@ -373,7 +391,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
             tracer.log_event(pitch_run_id, "pitch_step_5_started")
             try:
-                with st.spinner("Gerando diagnóstico, pontos e opções do pitch..."):
+                with st.spinner("Gerando blocos dinâmicos do pitch..."):
                     step5_response = build_pitch_options_step5(
                         cliente_info=cliente_info,
                         prompt_assessor=prompt_assessor,
@@ -389,8 +407,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                 step5_result = step5_response["result"]
                 tracer.log_event(pitch_run_id, "pitch_api_call", {"step": "step_5", **step5_response["api_metrics"]})
                 tracer.log_event(pitch_run_id, "pitch_step_5_completed", {
-                    "diagnostico_count": len(step5_result.get("diagnostico", [])),
-                    "products_count": len(step5_result.get("produtos_sugeridos", [])),
+                    "content_blocks_count": len(step5_result.get("blocos_conteudo", [])),
+                    "topics_requested_count": len(st.session_state["jornada_selecionada"].get("topicos_llm", [])),
                 })
 
                 st.session_state["step5_result"] = step5_result
@@ -411,7 +429,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             step5 = st.session_state["step5_result"]
             st.success("✅ Passo 5 concluído: selecione o que deve entrar no pitch final")
             st.caption(
-                "As opções continuam vindo de uma única chamada, mas cada bloco só é liberado após a confirmação do anterior."
+                "Os blocos agora são montados dinamicamente a partir dos tópicos configurados no Excel para a jornada escolhida."
             )
 
             if "pitch_step5_release_index" not in st.session_state:
@@ -420,17 +438,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                 st.session_state["pitch_step5_confirmed_sections"] = []
 
             def _checkbox_list(title, items, key_prefix):
-                """Responsável por processar list no contexto da aplicação de assessoria.
-
-                Args:
-                    title: Valor de entrada necessário para processar 'title'.
-                    items: Valor de entrada necessário para processar 'items'.
-                    key_prefix: Valor de entrada necessário para processar 'key_prefix'.
-
-                Returns:
-                    Resultado da rotina, no tipo esperado pelo fluxo chamador.
-                
-                """
+                """Renderiza uma lista de checkboxes e devolve os itens selecionados."""
                 st.subheader(title)
                 selected = []
                 for item in items:
@@ -442,33 +450,24 @@ def render_pitch_tab(cliente_id, cliente_info):
                         selected.append(item)
                 return selected
 
-            def _render_objecoes():
-                st.subheader("🛡 Possíveis objeções e respostas (pré-tratadas)")
-                selected = []
-                for item in step5.get("objecoes_e_respostas", []):
-                    oid = item.get("id")
-                    obj = item.get("objecao", "")
-                    resp_txt = item.get("resposta", "")
-                    label = f"Objeção: {obj}\nResposta sugerida: {resp_txt}"
-                    k = f"pitch_chk_obj_{oid}"
-                    checked = st.checkbox(label, value=True, key=k)
-                    if checked:
-                        selected.append(item)
-                return selected
+            def _render_content_block(bloco):
+                titulo = bloco.get("titulo", "Bloco")
+                items = bloco.get("itens", [])
+                if not items:
+                    st.subheader(f"🧩 {titulo}")
+                    st.info("Nenhum item foi retornado para este tópico.")
+                    return {"id": bloco.get("id"), "titulo": titulo, "itens": []}
 
-            def _render_produtos():
-                st.subheader("💼 Sugestões de produtos (candidatos)")
-                selected = []
-                for item in step5.get("produtos_sugeridos", []):
-                    pid = item.get("id")
-                    prod_id = item.get("produto_id")
-                    txt = item.get("texto", "")
-                    label = f"[{prod_id}] {txt}" if prod_id else txt
-                    k = f"pitch_chk_prod_{pid}"
-                    checked = st.checkbox(label, value=True, key=k)
-                    if checked:
-                        selected.append(item)
-                return selected
+                selected_items = _checkbox_list(
+                    f"🧩 {titulo}",
+                    items,
+                    f"pitch_chk_block_{bloco.get('id', 'topico')}",
+                )
+                return {
+                    "id": bloco.get("id"),
+                    "titulo": titulo,
+                    "itens": selected_items,
+                }
 
             def _render_tom():
                 st.subheader("🗣 Tom do pitch")
@@ -508,43 +507,22 @@ def render_pitch_tab(cliente_id, cliente_info):
                     key="pitch_radio_tamanho"
                 )
 
-            selected_diagnostico = []
-            selected_pontos = []
-            selected_gatilhos = []
-            selected_obj = []
-            selected_prod = []
+            selected_content_blocks = []
             tom_escolhido = None
             tamanho_escolhido = None
 
+            content_blocks = step5.get("blocos_conteudo", [])
             sections = [
-                {
-                    "id": "diagnostico",
-                    "renderer": lambda: _checkbox_list(
-                        "📌 Diagnóstico (carteira / perfil / rendimento)",
-                        step5.get("diagnostico", []),
-                        "pitch_chk_diag"
-                    ),
-                },
-                {
-                    "id": "pontos_prioritarios",
-                    "renderer": lambda: _checkbox_list(
-                        "🎯 Pontos prioritários para abordar",
-                        step5.get("pontos_prioritarios", []),
-                        "pitch_chk_pontos"
-                    ),
-                },
-                {
-                    "id": "gatilhos_comerciais",
-                    "renderer": lambda: _checkbox_list(
-                        "⚡ Gatilhos comerciais (opcional)",
-                        step5.get("gatilhos_comerciais", []),
-                        "pitch_chk_gatilhos"
-                    ),
-                },
-                {"id": "objecoes_e_respostas", "renderer": _render_objecoes},
-                {"id": "produtos_sugeridos", "renderer": _render_produtos},
-                {"id": "tom_sugerido", "renderer": _render_tom},
-                {"id": "tamanho_pitch", "renderer": _render_tamanho},
+                *[
+                    {
+                        "id": f"bloco_{bloco.get('id', idx)}",
+                        "type": "content_block",
+                        "renderer": (lambda current_block=bloco: _render_content_block(current_block)),
+                    }
+                    for idx, bloco in enumerate(content_blocks)
+                ],
+                {"id": "tom_sugerido", "type": "tone", "renderer": _render_tom},
+                {"id": "tamanho_pitch", "type": "size", "renderer": _render_tamanho},
             ]
 
             current_release_index = st.session_state["pitch_step5_release_index"]
@@ -556,22 +534,13 @@ def render_pitch_tab(cliente_id, cliente_info):
 
                 section_result = section["renderer"]()
 
-                if section["id"] == "diagnostico":
-                    selected_diagnostico = section_result
-                elif section["id"] == "pontos_prioritarios":
-                    selected_pontos = section_result
-                elif section["id"] == "gatilhos_comerciais":
-                    selected_gatilhos = section_result
-                elif section["id"] == "objecoes_e_respostas":
-                    selected_obj = section_result
-                elif section["id"] == "produtos_sugeridos":
-                    selected_prod = section_result
+                if section["type"] == "content_block":
+                    selected_content_blocks.append(section_result)
                 elif section["id"] == "tom_sugerido":
                     tom_escolhido = section_result
                 elif section["id"] == "tamanho_pitch":
                     tamanho_escolhido = section_result
 
-                already_confirmed = section["id"] in confirmed_sections
                 is_last_released = index == current_release_index
                 has_next_section = index < len(sections) - 1
 
@@ -600,19 +569,14 @@ def render_pitch_tab(cliente_id, cliente_info):
             ):
                 pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
                 tracer.log_event(pitch_run_id, "pitch_step_6_selection_saved", {
-                    "diagnostico_selected": len(selected_diagnostico),
-                    "pontos_selected": len(selected_pontos),
-                    "produtos_selected": len(selected_prod),
+                    "content_blocks_selected": len(selected_content_blocks),
+                    "content_items_selected": sum(len(bloco.get("itens", [])) for bloco in selected_content_blocks),
                     "confirmed_sections": st.session_state.get("pitch_step5_confirmed_sections", []),
                 })
                 st.session_state["step5_selection"] = {
-                    "diagnostico": selected_diagnostico,
-                    "pontos_prioritarios": selected_pontos,
-                    "gatilhos_comerciais": selected_gatilhos,
-                    "objecoes_e_respostas": selected_obj,
-                    "produtos_sugeridos": selected_prod,
+                    "blocos_conteudo": selected_content_blocks,
                     "tom_escolhido": tom_escolhido,
-                    "tamanho_escolhido": tamanho_escolhido
+                    "tamanho_escolhido": tamanho_escolhido,
                 }
                 st.session_state.etapa = 6
                 st.success("✅ Seleção salva. Pronto para o Passo 6/7 (pitch final).")
