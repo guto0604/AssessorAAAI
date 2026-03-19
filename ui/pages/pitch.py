@@ -93,7 +93,6 @@ def _reset_pitch_flow_state():
         if (
             key.startswith("pitch_chk_")
             or key.startswith("pitch_draft_box_")
-            or key.startswith("pitch_step5_confirm_toggle_")
         ):
             st.session_state.pop(key, None)
 
@@ -555,55 +554,47 @@ def render_pitch_tab(cliente_id, cliente_info):
                 if index > current_release_index:
                     break
 
-                with st.container(border=True):
-                    section_result = section["renderer"]()
+                section_result = section["renderer"]()
 
-                    if section["id"] == "diagnostico":
-                        selected_diagnostico = section_result
-                    elif section["id"] == "pontos_prioritarios":
-                        selected_pontos = section_result
-                    elif section["id"] == "gatilhos_comerciais":
-                        selected_gatilhos = section_result
-                    elif section["id"] == "objecoes_e_respostas":
-                        selected_obj = section_result
-                    elif section["id"] == "produtos_sugeridos":
-                        selected_prod = section_result
-                    elif section["id"] == "tom_sugerido":
-                        tom_escolhido = section_result
-                    elif section["id"] == "tamanho_pitch":
-                        tamanho_escolhido = section_result
+                if section["id"] == "diagnostico":
+                    selected_diagnostico = section_result
+                elif section["id"] == "pontos_prioritarios":
+                    selected_pontos = section_result
+                elif section["id"] == "gatilhos_comerciais":
+                    selected_gatilhos = section_result
+                elif section["id"] == "objecoes_e_respostas":
+                    selected_obj = section_result
+                elif section["id"] == "produtos_sugeridos":
+                    selected_prod = section_result
+                elif section["id"] == "tom_sugerido":
+                    tom_escolhido = section_result
+                elif section["id"] == "tamanho_pitch":
+                    tamanho_escolhido = section_result
 
-                    already_confirmed = section["id"] in confirmed_sections
-                    is_last_released = index == current_release_index
-                    has_next_section = index < len(sections) - 1
+                already_confirmed = section["id"] in confirmed_sections
+                is_last_released = index == current_release_index
+                has_next_section = index < len(sections) - 1
 
-                    if already_confirmed:
-                        st.success("Bloco confirmado.")
-                    elif is_last_released:
-                        confirm_key = f"pitch_step5_confirm_toggle_{section['id']}"
-                        can_advance = st.checkbox(
-                            "Confirmo este bloco e desejo liberar o próximo.",
-                            key=confirm_key,
-                        )
-                        button_label = "Liberar próximo bloco" if has_next_section else "Concluir liberação dos blocos"
-                        if st.button(button_label, key=f"pitch_step5_release_btn_{section['id']}"):
-                            if not can_advance:
-                                st.warning("Confirme este bloco para liberar o próximo.")
-                            else:
-                                st.session_state["pitch_step5_confirmed_sections"] = [
-                                    *confirmed_sections,
-                                    section["id"],
-                                ]
-                                if has_next_section:
-                                    st.session_state["pitch_step5_release_index"] = current_release_index + 1
-                                st.rerun()
+                if already_confirmed:
+                    st.success("Bloco concluído e próximo liberado.")
+                elif is_last_released:
+                    button_label = "Liberar próximo bloco" if has_next_section else "Concluir liberação dos blocos"
+                    if st.button(button_label, key=f"pitch_step5_release_btn_{section['id']}"):
+                        st.session_state["pitch_step5_confirmed_sections"] = [
+                            *confirmed_sections,
+                            section["id"],
+                        ]
+                        if has_next_section:
+                            st.session_state["pitch_step5_release_index"] = current_release_index + 1
+                        st.rerun()
+                    st.info("Quando terminar de revisar este bloco, use o botão acima para continuar.")
 
-                    if not already_confirmed and is_last_released:
-                        st.info("Finalize este bloco para continuar o fluxo de revisão das opções.")
+                if index < current_release_index:
+                    st.divider()
 
             all_sections_confirmed = len(st.session_state["pitch_step5_confirmed_sections"]) == len(sections)
             if not all_sections_confirmed:
-                st.warning("Confirme cada bloco acima para habilitar o salvamento da seleção final.")
+                st.warning("Libere cada bloco acima para habilitar o salvamento da seleção final.")
 
             st.divider()
 
