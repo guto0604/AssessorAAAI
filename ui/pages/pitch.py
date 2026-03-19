@@ -125,7 +125,6 @@ def _render_prompt_to_pitch_result():
 
     st.divider()
     st.header("⚡ Prompt-to-pitch")
-    st.success("✅ Pitch gerado sem etapas intermediárias.")
     st.text_area(
         "Texto final:",
         value=st.session_state["pitch_final_text"],
@@ -253,7 +252,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                     "status": "completed",
                     "ended_at": _iso_now(),
                 }
-                st.success("Pitch gerado no modo prompt-to-pitch.")
+
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "prompt_to_pitch", "error": str(exc)})
                 tracer.end_run(
@@ -268,8 +267,6 @@ def render_pitch_tab(cliente_id, cliente_info):
                     "ended_at": _iso_now(),
                 }
                 st.error(f"Erro ao gerar pitch no modo prompt-to-pitch: {exc}")
-        else:
-            st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
 
     if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
         return
@@ -348,7 +345,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         if "editar_descricao" not in st.session_state:
             st.session_state["editar_descricao"] = False
 
-        if st.button("✏️ Editar descrição da jornada selecionada", key="pitch_btn_editar_descricao"):
+        if st.button("✏️ Editar descrição da jornada selecionada (opcional)", key="pitch_btn_editar_descricao"):
             st.session_state["editar_descricao"] = True
 
         if st.session_state["editar_descricao"]:
@@ -646,7 +643,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                 has_next_section = index < len(sections) - 1
 
                 if is_last_released:
-                    button_label = "Seguir" if has_next_section else "Concluir liberação dos blocos"
+                    button_label = "Seguir" if has_next_section else "Finalizar argumentos"
                     if st.button(button_label, key=f"pitch_step5_release_btn_{section['id']}"):
                         st.session_state["pitch_step5_confirmed_sections"] = [
                             *confirmed_sections,
@@ -680,7 +677,6 @@ def render_pitch_tab(cliente_id, cliente_info):
                     "tamanho_escolhido": tamanho_escolhido,
                 }
                 st.session_state.etapa = 6
-                st.success("✅ Seleção salva. Pronto para o Passo 6/7 (pitch final).")
 
     # ---------------------------
     # PASSO 7/8 - Pitch (rascunho + ajustes + finalizar)
@@ -721,7 +717,6 @@ def render_pitch_tab(cliente_id, cliente_info):
                 st.session_state["pitch_draft"] = pitch
                 st.session_state["pitch_final_text"] = None
                 st.session_state["pitch_version"] += 1
-                st.success("✅ Rascunho gerado")
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "step7", "error": str(exc)})
                 tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step7"})

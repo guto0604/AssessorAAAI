@@ -147,14 +147,14 @@ Regras:
 - NÃO invente números de rentabilidade de produtos que não estejam nos dados. Se não existir, fale de forma qualitativa.
 - Gere APENAS os blocos listados em `topicos_llm`, na MESMA ORDEM e com o MESMO título informado.
 - Não crie blocos extras além dos tópicos configurados para a jornada.
-- Cada bloco deve conter de 2 a 4 itens curtos e acionáveis. Se um tópico estiver pouco suportado pelos dados, retorne 1 item curto explicando a cautela.
+- Cada bloco deve conter de 3 itens curtos e acionáveis. Se um tópico estiver pouco suportado pelos dados.
 - Tom e tamanho: selecione 1 sugestão principal e até 2 alternativas.
 
 ESTRUTURA DOS BLOCOS DINÂMICOS (obrigatório):
 {topics_instructions}
 
 QUANTIDADE (obrigatório):
-- "blocos_conteudo": exatamente 1 bloco por tópico configurado
+- "blocos_conteudo": Pelo menos 3 opções por bloco
 - "tom_sugerido": 1 principal + 3 alternativas
 - "tamanho_pitch": 1 principal + 2 alternativas (Pequeno, Médio, Longo)
 
