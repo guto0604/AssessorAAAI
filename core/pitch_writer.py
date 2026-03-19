@@ -118,6 +118,73 @@ Regras:
     return pitch_text
 
 
+def generate_prompt_to_pitch(
+    cliente_info: dict,
+    prompt_assessor: str,
+    model: str = "gpt-5.1",
+    trace_context: dict | None = None,
+    include_api_metrics: bool = False,
+):
+    """Gera um pitch direto a partir do prompt do assessor, sem etapas intermediárias."""
+    system_prompt = """
+Você é um assessor de investimentos escrevendo uma mensagem comercial final para um cliente.
+
+Objetivo:
+- Gerar um pitch final pronto para envio em português do Brasil.
+- Partir apenas do contexto do cliente e do pedido livre do assessor.
+- Não depender de etapas intermediárias, estruturações ou aprovações humanas.
+
+Regras:
+- Responda APENAS com o texto final do pitch.
+- Seja claro, humano, objetivo e comercialmente útil.
+- Não invente números, retornos, garantias ou características não presentes nos insumos.
+- Se o prompt pedir tom, canal, tamanho ou foco, siga essas instruções.
+- Quando o prompt não especificar tamanho, prefira uma mensagem curta a média.
+"""
+
+    user_payload = {
+        "cliente": {
+            "nome": cliente_info.get("Nome"),
+            "perfil": cliente_info.get("Perfil_Suitability"),
+            "patrimonio_conosco": cliente_info.get("Patrimonio_Investido_Conosco"),
+            "dinheiro_para_investir": cliente_info.get("Dinheiro_Disponivel_Para_Investir"),
+            "rentabilidade_12_meses": cliente_info.get("Rentabilidade_12_meses"),
+            "cdi_12_meses": cliente_info.get("CDI_12_Meses"),
+        },
+        "prompt_inicial_assessor": prompt_assessor,
+    }
+
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{user_payload}")]
+    )
+    llm = get_chat_model(model=model, temperature=1)
+    config = build_runnable_config(
+        run_name="pitch_prompt_to_pitch_writer",
+        tags=["pitch", "prompt-to-pitch", "langchain"],
+        metadata={
+            "feature": "pitch",
+            "step": "prompt_to_pitch",
+            "parent_run_id": (trace_context or {}).get("parent_run_id"),
+        },
+    )
+
+    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    response = llm.invoke(messages, config=config)
+    pitch_text = str_output_parser.invoke(response, config=config).strip()
+
+    if include_api_metrics:
+        return {
+            "text": pitch_text,
+            "api_metrics": _build_api_metrics(
+                response,
+                prompt={"messages": str(messages)},
+                output=str_output_parser.invoke(response, config=config),
+            ),
+        }
+
+    return pitch_text
+
+
 def revise_pitch_step8(
     current_pitch: str,
     edit_instruction: str,

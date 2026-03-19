@@ -12,7 +12,7 @@ from core.data_loader import (
 from core.journey_ranker import rank_journeys
 from core.langsmith_tracing import LangSmithTracer
 from core.pitch_structurer import build_pitch_options_step5
-from core.pitch_writer import generate_final_pitch_step7, revise_pitch_step8
+from core.pitch_writer import generate_final_pitch_step7, generate_prompt_to_pitch, revise_pitch_step8
 from core.source_selector import select_sources_step4
 from ui.guardrails import (
     evaluate_input_guardrails,
@@ -21,12 +21,21 @@ from ui.guardrails import (
 )
 from ui.state import (
     SESSION_PITCH_FLOW_STARTED,
+    SESSION_PITCH_MODE,
     SESSION_PITCH_TRACE,
     _iso_now,
     get_tracer,
 )
 
-def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str) -> str | None:
+PITCH_MODE_GUIDED = "guided"
+PITCH_MODE_PROMPT_TO_PITCH = "prompt_to_pitch"
+
+def _start_pitch_trace(
+    tracer: LangSmithTracer,
+    cliente_id,
+    prompt_assessor: str,
+    mode: str = PITCH_MODE_GUIDED,
+) -> str | None:
     """Executa uma etapa de construção do pitch comercial personalizado para o cliente.
 
     Args:
@@ -46,15 +55,26 @@ def _start_pitch_trace(tracer: LangSmithTracer, cliente_id, prompt_assessor: str
         })
         tracer.end_run(active_trace["run_id"], status="interrupted", outputs={"status": "interrupted"})
 
+    run_prefix = "prompt_to_pitch_cliente" if mode == PITCH_MODE_PROMPT_TO_PITCH else "pitch_cliente"
+    run_tags = ["pitch", "streamlit"]
+    if mode == PITCH_MODE_PROMPT_TO_PITCH:
+        run_tags.append("prompt-to-pitch")
+
     run_id = tracer.start_run(
-        name=f"pitch_cliente_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        name=f"{run_prefix}_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         run_type="chain",
         inputs={
             "cliente_id": cliente_id,
             "prompt_assessor": prompt_assessor,
+            "mode": mode,
         },
-        tags=["pitch", "streamlit"],
-        metadata={"started_at": _iso_now(), "cliente_id": cliente_id, "prompt_preview": prompt_assessor[:180]},
+        tags=run_tags,
+        metadata={
+            "started_at": _iso_now(),
+            "cliente_id": cliente_id,
+            "prompt_preview": prompt_assessor[:180],
+            "mode": mode,
+        },
     )
     st.session_state[SESSION_PITCH_TRACE] = {
         "run_id": run_id,
@@ -98,6 +118,21 @@ def _reset_pitch_flow_state():
             st.session_state.pop(key, None)
 
 
+def _render_prompt_to_pitch_result():
+    """Renderiza o resultado final do modo prompt-to-pitch."""
+    if not st.session_state.get("pitch_final_text"):
+        return
+
+    st.divider()
+    st.header("⚡ Prompt-to-pitch")
+    st.success("✅ Pitch gerado sem etapas intermediárias.")
+    st.text_area(
+        "Texto final:",
+        value=st.session_state["pitch_final_text"],
+        height=240,
+        key="pitch_prompt_to_pitch_final_box",
+    )
+
 
 def render_pitch_tab(cliente_id, cliente_info):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
@@ -117,16 +152,25 @@ def render_pitch_tab(cliente_id, cliente_info):
         key="pitch_prompt_assessor"
     )
 
+    pitch_mode = st.radio(
+        "Modo de geração:",
+        options=[PITCH_MODE_GUIDED, PITCH_MODE_PROMPT_TO_PITCH],
+        format_func=lambda mode: "Fluxo guiado" if mode == PITCH_MODE_GUIDED else "Prompt-to-pitch",
+        horizontal=True,
+        key=SESSION_PITCH_MODE,
+    )
+
     tracer = get_tracer()
 
     start_label = "▶️ Iniciar pitch" if not st.session_state.get(SESSION_PITCH_FLOW_STARTED) else "🔄 Iniciar novo pitch"
     if st.button(start_label, key="pitch_btn_start_new_flow"):
         _reset_pitch_flow_state()
-        pitch_run_id = _start_pitch_trace(tracer, cliente_id, prompt_assessor)
+        pitch_run_id = _start_pitch_trace(tracer, cliente_id, prompt_assessor, mode=pitch_mode)
         tracer.log_event(pitch_run_id, "pitch_flow_initialized", {
             "action": "start_new_flow",
             "at": _iso_now(),
             "prompt_chars": len(prompt_assessor.strip()),
+            "mode": pitch_mode,
         })
 
         try:
@@ -169,9 +213,69 @@ def render_pitch_tab(cliente_id, cliente_info):
             return
 
         st.session_state[SESSION_PITCH_FLOW_STARTED] = True
-        st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
+
+        if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
+            tracer.log_event(pitch_run_id, "pitch_prompt_to_pitch_started", {"mode": pitch_mode})
+            try:
+                with st.spinner("Gerando pitch diretamente do prompt..."):
+                    pitch_result = generate_prompt_to_pitch(
+                        cliente_info=cliente_info,
+                        prompt_assessor=prompt_assessor,
+                        model="gpt-5.1",
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
+                    )
+                pitch = pitch_result["text"]
+                tracer.log_event(
+                    pitch_run_id,
+                    "pitch_api_call",
+                    {"step": "prompt_to_pitch", **pitch_result["api_metrics"]},
+                )
+                tracer.log_event(
+                    pitch_run_id,
+                    "pitch_prompt_to_pitch_completed",
+                    {"final_chars": len(pitch)},
+                )
+                st.session_state["pitch_draft"] = pitch
+                st.session_state["pitch_final_text"] = pitch
+                st.session_state["pitch_version"] = 1
+                tracer.end_run(
+                    pitch_run_id,
+                    status="completed",
+                    outputs={
+                        "status": "completed",
+                        "mode": pitch_mode,
+                        "final_chars": len(pitch),
+                    },
+                )
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "completed",
+                    "ended_at": _iso_now(),
+                }
+                st.success("Pitch gerado no modo prompt-to-pitch.")
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "prompt_to_pitch", "error": str(exc)})
+                tracer.end_run(
+                    pitch_run_id,
+                    status="error",
+                    error=str(exc),
+                    outputs={"status": "error", "step": "prompt_to_pitch", "mode": pitch_mode},
+                )
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro ao gerar pitch no modo prompt-to-pitch: {exc}")
+        else:
+            st.success("Fluxo iniciado. Agora siga com as etapas abaixo.")
 
     if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
+        return
+
+    if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
+        _render_prompt_to_pitch_result()
         return
 
     st.header("1️⃣ Definir intenção do contato")
