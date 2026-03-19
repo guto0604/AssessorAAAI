@@ -575,10 +575,8 @@ def render_pitch_tab(cliente_id, cliente_info):
                 is_last_released = index == current_release_index
                 has_next_section = index < len(sections) - 1
 
-                if already_confirmed:
-                    st.success("Bloco concluído e próximo liberado.")
-                elif is_last_released:
-                    button_label = "Liberar próximo bloco" if has_next_section else "Concluir liberação dos blocos"
+                if is_last_released:
+                    button_label = "Seguir" if has_next_section else "Concluir liberação dos blocos"
                     if st.button(button_label, key=f"pitch_step5_release_btn_{section['id']}"):
                         st.session_state["pitch_step5_confirmed_sections"] = [
                             *confirmed_sections,
@@ -587,14 +585,11 @@ def render_pitch_tab(cliente_id, cliente_info):
                         if has_next_section:
                             st.session_state["pitch_step5_release_index"] = current_release_index + 1
                         st.rerun()
-                    st.info("Quando terminar de revisar este bloco, use o botão acima para continuar.")
 
                 if index < current_release_index:
                     st.divider()
 
             all_sections_confirmed = len(st.session_state["pitch_step5_confirmed_sections"]) == len(sections)
-            if not all_sections_confirmed:
-                st.warning("Libere cada bloco acima para habilitar o salvamento da seleção final.")
 
             st.divider()
 
