@@ -2,6 +2,7 @@ import sys
 import types
 import unittest
 from unittest.mock import patch
+from datetime import date
 
 if "numpy" not in sys.modules:
     fake_numpy = types.ModuleType("numpy")
@@ -9,6 +10,7 @@ if "numpy" not in sys.modules:
     sys.modules["numpy"] = fake_numpy
 
 from rag.pipeline import RagService
+from rag.vector_store import ChunkMetadata
 
 
 class _EmbeddingRow:
@@ -120,7 +122,7 @@ class RagQueryParsingTests(unittest.TestCase):
 
         service = RagService()
         service.ensure_index_exists = lambda: None
-        service.store.search = lambda embedding, k: [
+        service.store.search = lambda embedding, k, filter_fn=None, search_k=None: [
             (
                 type(
                     "Meta",
@@ -134,7 +136,7 @@ class RagQueryParsingTests(unittest.TestCase):
                 )(),
                 0.9,
             )
-        ]
+        ][:k]
 
         result = service.answer_question("qual liquidez para cliente conservador?", include_api_metrics=True)
 
@@ -152,6 +154,72 @@ class RagQueryParsingTests(unittest.TestCase):
         self.assertEqual(parser_metrics["output_tokens"], 5)
         self.assertEqual(parser_metrics["total_tokens"], 15)
         self.assertTrue(parser_metrics["latency_ms"] >= 0)
+
+    @patch("rag.pipeline.LocalFaissStore.load", return_value=None)
+    @patch("rag.pipeline.get_openai_client")
+    def test_metadata_filters_block_documents_outside_segment_or_date(
+        self, mock_client_factory, _mock_store_load
+    ):
+        fake_client = _FakeClient()
+        mock_client_factory.return_value = fake_client
+
+        service = RagService()
+        service.ensure_index_exists = lambda: None
+
+        matching = ChunkMetadata(
+            source_path="knowledge_base/research/doc1.txt",
+            source_hash="hash1",
+            kb_folder="research",
+            file_name="doc1.txt",
+            chunk_id=1,
+            text="texto permitido",
+            allowed_segments=["Até 300k"],
+            document_date="2026-03-10",
+            indexed_at="2026-03-10T00:00:00+00:00",
+        )
+        blocked_by_segment = ChunkMetadata(
+            source_path="knowledge_base/research/doc2.txt",
+            source_hash="hash2",
+            kb_folder="research",
+            file_name="doc2.txt",
+            chunk_id=2,
+            text="texto assessor 2M",
+            allowed_segments=["2M+"],
+            document_date="2026-03-10",
+            indexed_at="2026-03-10T00:00:00+00:00",
+        )
+        blocked_by_date = ChunkMetadata(
+            source_path="knowledge_base/research/doc3.txt",
+            source_hash="hash3",
+            kb_folder="research",
+            file_name="doc3.txt",
+            chunk_id=3,
+            text="texto fora da janela",
+            allowed_segments=["Até 300k"],
+            document_date="2026-01-10",
+            indexed_at="2026-01-10T00:00:00+00:00",
+        )
+
+        service.store.metadata = [matching, blocked_by_segment, blocked_by_date]
+        service.store.search = lambda embedding, k, filter_fn=None, search_k=None: [
+            (meta, 0.9)
+            for meta in service.store.metadata
+            if filter_fn is None or filter_fn(meta)
+        ][:k]
+        service._bm25_search = lambda query, k=5: [
+            (meta, 0.7) for meta in service.store.metadata[:k]
+        ]
+
+        result = service.answer_question(
+            "quais documentos posso ver?",
+            allowed_segments=["Até 300k"],
+            start_date=date(2026, 3, 1),
+            end_date=date(2026, 3, 31),
+            include_api_metrics=True,
+        )
+
+        self.assertEqual(len(result["sources"]), 1)
+        self.assertEqual(result["sources"][0]["source_path"], "knowledge_base/research/doc1.txt")
 
 
 if __name__ == "__main__":

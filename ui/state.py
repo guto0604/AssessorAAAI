@@ -7,6 +7,7 @@ import streamlit as st
 from core.data_loader import load_clientes
 from core.langsmith_tracing import LangSmithTracer
 from core.openai_client import SESSION_OPENAI_KEY
+from rag.config import RAG_SEGMENT_OPTIONS
 from core.tavily_client import SESSION_TAVILY_KEY
 
 SESSION_LANGSMITH_KEY = "user_langsmith_api_key"
@@ -22,11 +23,7 @@ SESSION_RLS_ALLOWED_SEGMENTS = "rls_allowed_segments"
 SESSION_RBAC_ENABLED_TABS = "rbac_enabled_tabs"
 TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
-RLS_SEGMENT_OPTIONS = [
-    "Até 300k",
-    "300k-2M",
-    "2M+",
-]
+RLS_SEGMENT_OPTIONS = RAG_SEGMENT_OPTIONS.copy()
 
 RBAC_AVAILABLE_TABS = [
     "🏠 Início",
