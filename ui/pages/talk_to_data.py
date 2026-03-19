@@ -194,7 +194,7 @@ def render_talk_to_your_data_page():
         st.warning("Nenhum segmento RLS selecionado. Não há clientes visíveis para consulta.")
         return
 
-    st.caption(f"RLS ativo para segmentos: {', '.join(allowed_segments)}")
+    #st.caption(f"RLS ativo para segmentos: {', '.join(allowed_segments)}")
     allowed_cliente_ids = _rls_filtered_clientes_df()["Cliente_ID"].astype(str).tolist()
 
     feedback = st.session_state.pop("talk_to_data_next_question_feedback", None)

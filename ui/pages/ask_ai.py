@@ -118,30 +118,30 @@ def render_ask_ai_tab():
             if added_files:
                 st.info(f"Indexação concluída: {added_files} arquivo(s), {added_chunks} chunk(s).")
 
-    if st.button("🪄 Aplicar metadados padrão onde faltarem", key="ask_ai_backfill_metadata_button"):
-        with st.spinner("Aplicando metadados padrão nos chunks/documentos sem segmento/data..."):
-            try:
-                result = rag.apply_default_metadata_to_all_missing(
-                    default_segments=RAG_SEGMENT_OPTIONS,
-                    default_date=date.today(),
-                )
-                st.success(
-                    "Metadados padronizados com sucesso. "
-                    f"Documentos atualizados: {result.updated_documents}. "
-                    f"Chunks atualizados: {result.updated_chunks}. "
-                    f"Data padrão aplicada: {result.default_date_applied}."
-                )
-            except Exception as exc:
-                st.error(f"Falha ao aplicar metadados padrão: {exc}")
+    #if st.button("🪄 Aplicar metadados padrão onde faltarem", key="ask_ai_backfill_metadata_button"):
+    #    with st.spinner("Aplicando metadados padrão nos chunks/documentos sem segmento/data..."):
+    #        try:
+    #            result = rag.apply_default_metadata_to_all_missing(
+    #                default_segments=RAG_SEGMENT_OPTIONS,
+    #                default_date=date.today(),
+    #            )
+    #            st.success(
+    #                "Metadados padronizados com sucesso. "
+    #                f"Documentos atualizados: {result.updated_documents}. "
+    #                f"Chunks atualizados: {result.updated_chunks}. "
+    #                f"Data padrão aplicada: {result.default_date_applied}."
+    #            )
+    #        except Exception as exc:
+    #            st.error(f"Falha ao aplicar metadados padrão: {exc}")
 
     st.divider()
 
     st.subheader("❓ Pergunta")
     allowed_segments = st.session_state.get(SESSION_RLS_ALLOWED_SEGMENTS, RAG_SEGMENT_OPTIONS)
-    st.caption(
-        "A consulta respeita os perfis liberados na simulação de RLS: "
-        + ", ".join(allowed_segments if allowed_segments else RAG_SEGMENT_OPTIONS)
-    )
+    #st.caption(
+    #    "A consulta respeita os perfis liberados na simulação de RLS: "
+    #    + ", ".join(allowed_segments if allowed_segments else RAG_SEGMENT_OPTIONS)
+    #)
     enable_date_filter = st.checkbox(
         "Filtrar documentos por data de referência",
         value=False,

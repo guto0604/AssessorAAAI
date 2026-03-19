@@ -1,0 +1,692 @@
+{
+  "knowledge_base/operacional/operacional_consultando_taxas_administracao_fundos.txt": {
+    "source_path": "knowledge_base/operacional/operacional_consultando_taxas_administracao_fundos.txt",
+    "source_hash": "21310740a0a9b2bd96bd58dae00db58c8491b15f1ec7c92c60a7cc7a1ecc7556",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultando_taxas_administracao_fundos.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218703+00:00"
+  },
+  "knowledge_base/operacional/operacional_consultar_liquidez_produto.txt": {
+    "source_path": "knowledge_base/operacional/operacional_consultar_liquidez_produto.txt",
+    "source_hash": "aa4b961689129b08e076b371e182999da1cffc391fe39cb9bff54c32c3046fec",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_liquidez_produto.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218724+00:00"
+  },
+  "knowledge_base/operacional/operacional_consultar_ordens_cliente.txt": {
+    "source_path": "knowledge_base/operacional/operacional_consultar_ordens_cliente.txt",
+    "source_hash": "eace4c29d9974a8aab727621e071090e1afeeb1b5cb702990a578c09432c351d",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_ordens_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218733+00:00"
+  },
+  "knowledge_base/operacional/operacional_consultar_posicao_cliente.txt": {
+    "source_path": "knowledge_base/operacional/operacional_consultar_posicao_cliente.txt",
+    "source_hash": "ed8f0221520a6e20a1cd0286acd7fd1da887cf74d579d3592ff34b6b1efedcb7",
+    "kb_folder": "operacional",
+    "file_name": "operacional_consultar_posicao_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218757+00:00"
+  },
+  "knowledge_base/operacional/operacional_identificando_concentracao_elevada.txt": {
+    "source_path": "knowledge_base/operacional/operacional_identificando_concentracao_elevada.txt",
+    "source_hash": "a2a32251524d75b46fe02498ab8d7167d33a57b20e952f076d46f5081cc99138",
+    "kb_folder": "operacional",
+    "file_name": "operacional_identificando_concentracao_elevada.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218762+00:00"
+  },
+  "knowledge_base/operacional/operacional_identificando_oportunidade_rebalanceamento.txt": {
+    "source_path": "knowledge_base/operacional/operacional_identificando_oportunidade_rebalanceamento.txt",
+    "source_hash": "0405ed94a8f840be934eafce7f5502689ee7041ef5aa12da1d93b7836a53d44d",
+    "kb_folder": "operacional",
+    "file_name": "operacional_identificando_oportunidade_rebalanceamento.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218766+00:00"
+  },
+  "knowledge_base/operacional/operacional_preparacao_reuniao_cliente.txt": {
+    "source_path": "knowledge_base/operacional/operacional_preparacao_reuniao_cliente.txt",
+    "source_hash": "836d1774af89627c03e84b2952feafc6a87c7ec3ad7355130699a5edd31304bc",
+    "kb_folder": "operacional",
+    "file_name": "operacional_preparacao_reuniao_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218769+00:00"
+  },
+  "knowledge_base/operacional/operacional_registrar_interacao_cliente.txt": {
+    "source_path": "knowledge_base/operacional/operacional_registrar_interacao_cliente.txt",
+    "source_hash": "5e0fb931124fffb5d5ba0e3e0517641bdd4231c18771f56fa47692f09328f60c",
+    "kb_folder": "operacional",
+    "file_name": "operacional_registrar_interacao_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218773+00:00"
+  },
+  "knowledge_base/operacional/operacional_verificar_perfil_investimento_cliente.txt": {
+    "source_path": "knowledge_base/operacional/operacional_verificar_perfil_investimento_cliente.txt",
+    "source_hash": "4a66ae1dd0a5e34880bd62373f5c5ed3e33ebc798c6193cd599620dd0de933f9",
+    "kb_folder": "operacional",
+    "file_name": "operacional_verificar_perfil_investimento_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218777+00:00"
+  },
+  "knowledge_base/outros/blackrock_outlook.pdf": {
+    "source_path": "knowledge_base/outros/blackrock_outlook.pdf",
+    "source_hash": "31acb473eacf9c26860a5b4b314b354b8cd019b7fd36e5b77b3c276886391318",
+    "kb_folder": "outros",
+    "file_name": "blackrock_outlook.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.218780+00:00"
+  },
+  "knowledge_base/outros/carteira_smallcaps_btg.pdf": {
+    "source_path": "knowledge_base/outros/carteira_smallcaps_btg.pdf",
+    "source_hash": "b18087d8bbae84ea8d94596658a29dac7f1ed40d28f6e93357a96a8d6165e530",
+    "kb_folder": "outros",
+    "file_name": "carteira_smallcaps_btg.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.219350+00:00"
+  },
+  "knowledge_base/outros/consolidado_setor_proteina.txt": {
+    "source_path": "knowledge_base/outros/consolidado_setor_proteina.txt",
+    "source_hash": "1965cb8b12e91d25e4072e8a7fc464dbdb346c5441899fd7045e091e9baab251",
+    "kb_folder": "outros",
+    "file_name": "consolidado_setor_proteina.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.219572+00:00"
+  },
+  "knowledge_base/outros/itau_macro_visao.pdf": {
+    "source_path": "knowledge_base/outros/itau_macro_visao.pdf",
+    "source_hash": "fd5a1a357a95546c2a93676ac0134ffc0d8e1982d9b0b5d1b8bf54ddc0221386",
+    "kb_folder": "outros",
+    "file_name": "itau_macro_visao.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.219603+00:00"
+  },
+  "knowledge_base/outros/jp_morgan_outlook-2026.pdf": {
+    "source_path": "knowledge_base/outros/jp_morgan_outlook-2026.pdf",
+    "source_hash": "f697926fc25f2c9e50f0f4a7c133d3972de53b64e0558342af134fc7ddcbfb75",
+    "kb_folder": "outros",
+    "file_name": "jp_morgan_outlook-2026.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.219853+00:00"
+  },
+  "knowledge_base/outros/relatorio_boi_btg.pdf": {
+    "source_path": "knowledge_base/outros/relatorio_boi_btg.pdf",
+    "source_hash": "88e91c297e0292f4300c24f0aee6a929c68802113832bb9685b85162d2ece48d",
+    "kb_folder": "outros",
+    "file_name": "relatorio_boi_btg.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.220534+00:00"
+  },
+  "knowledge_base/outros/relatorio_empresa_xyz.txt": {
+    "source_path": "knowledge_base/outros/relatorio_empresa_xyz.txt",
+    "source_hash": "4d2fbc863381340f8c07f8139bd5ac181ae1c6d586f609aae83c76d759c8700e",
+    "kb_folder": "outros",
+    "file_name": "relatorio_empresa_xyz.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.220753+00:00"
+  },
+  "knowledge_base/outros/santander_outlook_2026.pdf": {
+    "source_path": "knowledge_base/outros/santander_outlook_2026.pdf",
+    "source_hash": "14dfb66c91569de569e873a63184fd6841f32e58a6bbd1e8615dcbd8557f1305",
+    "kb_folder": "outros",
+    "file_name": "santander_outlook_2026.pdf",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.220767+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_abordagem_primeiro_contato.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_abordagem_primeiro_contato.txt",
+    "source_hash": "f70e45733676aed1f767ea7a207f647676784cd8727734eb5160da622c0653a1",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_abordagem_primeiro_contato.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221602+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_atualizacao_cadastral.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_atualizacao_cadastral.txt",
+    "source_hash": "b36db4a97d03feb6b6ebeabbc7ce5e1b766fb6f3a2502d7644949147de710f62",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_atualizacao_cadastral.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221606+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_compliance_conduta.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_compliance_conduta.txt",
+    "source_hash": "68ab282123eefdf3516e948a663f13e4d16bb7697f7cd0a281da43464539da47",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_compliance_conduta.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221610+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_comunicacao_clientes.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_comunicacao_clientes.txt",
+    "source_hash": "7c86664091ae1f498841ac372fbbb57f6316657f03fe5f085ce92e35694b60a9",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_comunicacao_clientes.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221615+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_conflito_interesse.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_conflito_interesse.txt",
+    "source_hash": "2f7bc45f9cadc312376b9ab2769ac5d51447fe4c3f8ca2f02a7bb7cebc8df311",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_conflito_interesse.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221621+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_dados_sensiveis_cliente.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_dados_sensiveis_cliente.txt",
+    "source_hash": "4e733554cc6a7a9c95fc9bcca5e872a184a8ba0d8eb9ae98321a7ac915de44d4",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_dados_sensiveis_cliente.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221627+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_diversificacao.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_diversificacao.txt",
+    "source_hash": "d6950bd9a7a6822c8802f95b597c2946fcd6aa650ef6356c750467f673eb09b2",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_diversificacao.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221632+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_guia_rebalanceamento.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_guia_rebalanceamento.txt",
+    "source_hash": "3ad2a101c8bc1950256da1482101a000023f84f086421f6f7577d277aca1e0dc",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_guia_rebalanceamento.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221638+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_limite_exposicao_perfil.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_limite_exposicao_perfil.txt",
+    "source_hash": "828f13dbf07430518f872888f0212bf73a94a4c3f355dedddc2a790ec7265adf",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_limite_exposicao_perfil.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221643+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_suitability.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_suitability.txt",
+    "source_hash": "4c725e2ab3beceff35aa41560575096c672ff329844a4d22b751b34f793c0968",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_suitability.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221649+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_uso_informacao_mercado.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_uso_informacao_mercado.txt",
+    "source_hash": "2d4e8da11158859a143c920c1ac2cc55845258b4a6b7b4fa414713372dda79c8",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_uso_informacao_mercado.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221656+00:00"
+  },
+  "knowledge_base/produtos/explicacao_cdb.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_cdb.txt",
+    "source_hash": "8e9ec13503a0a6f5bfc8dcea7930187ea4e78e8f09f08ac936b655a3ee18700f",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_cdb.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221662+00:00"
+  },
+  "knowledge_base/produtos/explicacao_coe.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_coe.txt",
+    "source_hash": "1253b3867d5d5003da18617ad3c914c608781de711bed54f1889c633e680cf2f",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_coe.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221668+00:00"
+  },
+  "knowledge_base/produtos/explicacao_debentures_credito_privado.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_debentures_credito_privado.txt",
+    "source_hash": "27edc51051a2fb31278690e7cbd1ce0db0475aa2644c1d7a047cfc5a920e3969",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_debentures_credito_privado.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221673+00:00"
+  },
+  "knowledge_base/produtos/explicacao_debentures_incentivadas.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_debentures_incentivadas.txt",
+    "source_hash": "8011d3bcac622bd5926a2fcee87ac88d8eefcd4102a06e02ac224ff94a566ff6",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_debentures_incentivadas.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221679+00:00"
+  },
+  "knowledge_base/produtos/explicacao_etf.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_etf.txt",
+    "source_hash": "534ae3e342365572da59bf329dc405d1e80f965dc53dc337eaccd794e4366a0a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_etf.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221685+00:00"
+  },
+  "knowledge_base/produtos/explicacao_fundos_acoes.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_fundos_acoes.txt",
+    "source_hash": "33fbe89108faa4c27c4ac695e7bd1a688f70e4707e74aed92c4f1aa4202e66ca",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_acoes.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221691+00:00"
+  },
+  "knowledge_base/produtos/explicacao_fundos_credito_privado.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_fundos_credito_privado.txt",
+    "source_hash": "60c024e73cef1fe3ed5de601ea4884d686491e41d5301b8ae31c22e2d3a6591a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_credito_privado.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221698+00:00"
+  },
+  "knowledge_base/produtos/explicacao_fundos_imobiliarios.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_fundos_imobiliarios.txt",
+    "source_hash": "115f487751d0f3dba69ad8530c58a3c759d8fa5ae7e73dd035bf3425ab4521d1",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_imobiliarios.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221704+00:00"
+  },
+  "knowledge_base/produtos/explicacao_fundos_multimercado.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_fundos_multimercado.txt",
+    "source_hash": "ab80a5192cac4781b5e63dede6b8c321114200bd175f24c08a972b7b80c6687a",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_fundos_multimercado.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221710+00:00"
+  },
+  "knowledge_base/produtos/explicacao_lci_lca.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_lci_lca.txt",
+    "source_hash": "5caa5cacaca83f643f42c90b27b04a2d387aadd4c3433716e7c4dbbf479ed2a6",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_lci_lca.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221716+00:00"
+  },
+  "knowledge_base/produtos/explicacao_previdencia_privada.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_previdencia_privada.txt",
+    "source_hash": "1a0a060aae11e4a702e77ea53f767cd08cb36bbe8eb66a0ff802df1437173253",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_previdencia_privada.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221722+00:00"
+  },
+  "knowledge_base/produtos/explicacao_tesouro_direto.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_tesouro_direto.txt",
+    "source_hash": "f5acf9e3a7a1e4899d6fd9cd920dec04276123ca8ec6e5bb8f5d939e620c0f7d",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_tesouro_direto.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221729+00:00"
+  },
+  "knowledge_base/produtos/explicacao_tributacao_fundos.txt": {
+    "source_path": "knowledge_base/produtos/explicacao_tributacao_fundos.txt",
+    "source_hash": "66dff774531d3aa310014cda2a03485d5188eda04ad30c3b7be8ef268578c42e",
+    "kb_folder": "produtos",
+    "file_name": "explicacao_tributacao_fundos.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221734+00:00"
+  },
+  "knowledge_base/research/cenario_bolsa_brasil.txt": {
+    "source_path": "knowledge_base/research/cenario_bolsa_brasil.txt",
+    "source_hash": "3c1f4be6d4d973b995cb960fecfab76553b8512c262e086c7232d37f739de8b3",
+    "kb_folder": "research",
+    "file_name": "cenario_bolsa_brasil.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221740+00:00"
+  },
+  "knowledge_base/research/cenario_commodities.txt": {
+    "source_path": "knowledge_base/research/cenario_commodities.txt",
+    "source_hash": "224b7a9cf3794086ce515498d63d3336dc7cddcdd7497756a23dc0ff7c5c3348",
+    "kb_folder": "research",
+    "file_name": "cenario_commodities.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221746+00:00"
+  },
+  "knowledge_base/research/cenario_dolar.txt": {
+    "source_path": "knowledge_base/research/cenario_dolar.txt",
+    "source_hash": "2829320e8c753c338887f9ff4c1d06ec00ee998cf7414b80c3fe27b40eb28f55",
+    "kb_folder": "research",
+    "file_name": "cenario_dolar.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221753+00:00"
+  },
+  "knowledge_base/research/cenario_inflacao.txt": {
+    "source_path": "knowledge_base/research/cenario_inflacao.txt",
+    "source_hash": "3ed42d715153315e70fac11c35f0b73ecc01a83b157ec61ea0ee303d0599f58f",
+    "kb_folder": "research",
+    "file_name": "cenario_inflacao.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221758+00:00"
+  },
+  "knowledge_base/research/cenario_internacional.txt": {
+    "source_path": "knowledge_base/research/cenario_internacional.txt",
+    "source_hash": "ffba9bc9d0cede7da257f4b2f995a71ec1576289c0398ede9c8ebb811e79679f",
+    "kb_folder": "research",
+    "file_name": "cenario_internacional.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221764+00:00"
+  },
+  "knowledge_base/research/cenario_juros.txt": {
+    "source_path": "knowledge_base/research/cenario_juros.txt",
+    "source_hash": "7644d82f60716ab776f128dcfd37d3fe92d3c26a750c7d4084e7931613a90b3c",
+    "kb_folder": "research",
+    "file_name": "cenario_juros.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221769+00:00"
+  },
+  "knowledge_base/research/morning_call_macro.txt": {
+    "source_path": "knowledge_base/research/morning_call_macro.txt",
+    "source_hash": "f4d0746b5fbb705c2c0e8ce4293a751ec3171dbf864d25c47e293ca11cd1604e",
+    "kb_folder": "research",
+    "file_name": "morning_call_macro.txt",
+    "allowed_segments": [
+      "Até 300k",
+      "300k-2M",
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:01:07.221775+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_estrutura_carteira_clientes_premium_2M.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_estrutura_carteira_clientes_premium_2M.txt",
+    "source_hash": "d238cd1539bbf8af792bb25defa843a2e17f80771c656e1d22871fea4fbfddba",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_estrutura_carteira_clientes_premium_2M.txt",
+    "allowed_segments": [
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:17:37.492184+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_atendimento_clientes_premium_2M.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_atendimento_clientes_premium_2M.txt",
+    "source_hash": "d70d2f22620abcd75b7d68e238a34ca329938948803a420777c084070e9a252b",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_atendimento_clientes_premium_2M.txt",
+    "allowed_segments": [
+      "2M+"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:17:38.595090+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_diretrizes_carteira_cliente_300k_menos.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_diretrizes_carteira_cliente_300k_menos.txt",
+    "source_hash": "26061fc407961849617a21b991a2ecf3933d03e745f0a0e2b23610e43d4548ab",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_diretrizes_carteira_cliente_300k_menos.txt",
+    "allowed_segments": [
+      "Até 300k"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:17:58.401669+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_abordagem_comercial_cliente_300k_menos.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_abordagem_comercial_cliente_300k_menos.txt",
+    "source_hash": "7e4dd804b411dc7a0b112019eacbcef8a94e4b1fb87cdddf4fef4601b1b51ee6",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_abordagem_comercial_cliente_300k_menos.txt",
+    "allowed_segments": [
+      "Até 300k"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:17:58.845055+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_diversificacao_cliente_300k_2M.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_diversificacao_cliente_300k_2M.txt",
+    "source_hash": "4bacc059ff9feff5e8980358abd412e3170600d382549f87643d598a25e29a3f",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_diversificacao_cliente_300k_2M.txt",
+    "allowed_segments": [
+      "300k-2M"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:18:15.876838+00:00"
+  },
+  "knowledge_base/politicas/politica_interna_abordagem_comercial_cliente_300k_2M.txt": {
+    "source_path": "knowledge_base/politicas/politica_interna_abordagem_comercial_cliente_300k_2M.txt",
+    "source_hash": "27b6e28aecbffffe570a20d142009426bd413aaf60e3dc836ff6b36776f9b922",
+    "kb_folder": "politicas",
+    "file_name": "politica_interna_abordagem_comercial_cliente_300k_2M.txt",
+    "allowed_segments": [
+      "300k-2M"
+    ],
+    "document_date": "2026-03-18",
+    "indexed_at": "2026-03-19T02:18:16.297680+00:00"
+  }
+}
