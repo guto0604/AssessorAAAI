@@ -135,6 +135,7 @@ def _reset_pitch_flow_state():
         "auto_pitch_selected_priority",
         "auto_pitch_signal_summary",
         "auto_pitch_communication_result",
+        "auto_pitch_communication_revealed",
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
@@ -166,6 +167,7 @@ def _render_prompt_to_pitch_result():
 def _render_auto_pitch_result():
     prioridades = st.session_state.get("auto_pitch_priorities") or []
     communication_result = st.session_state.get("auto_pitch_communication_result") or {}
+    communication_revealed = st.session_state.get("auto_pitch_communication_revealed", False)
 
     st.divider()
     st.header("🤖 Auto-pitch")
@@ -238,22 +240,25 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
                 for item in communication_result["observacoes_assessor"]:
                     st.write(f"- {item}")
 
-        st.subheader("💬 Comunicação sugerida")
-        st.text_area(
-            "Mensagem principal:",
-            value=communication_result.get("mensagem_principal", ""),
-            height=220,
-            key="auto_pitch_message_box",
-        )
-        if communication_result.get("mensagem_follow_up"):
+        if communication_revealed:
+            st.subheader("💬 Comunicação sugerida")
             st.text_area(
-                "Follow-up sugerido:",
-                value=communication_result.get("mensagem_follow_up", ""),
-                height=140,
-                key="auto_pitch_followup_box",
+                "Mensagem principal:",
+                value=communication_result.get("mensagem_principal", ""),
+                height=220,
+                key="auto_pitch_message_box",
             )
-        if communication_result.get("cta"):
-            st.caption(f"CTA sugerido: {communication_result['cta']}")
+            if communication_result.get("mensagem_follow_up"):
+                st.text_area(
+                    "Follow-up sugerido:",
+                    value=communication_result.get("mensagem_follow_up", ""),
+                    height=140,
+                    key="auto_pitch_followup_box",
+                )
+            if communication_result.get("cta"):
+                st.caption(f"CTA sugerido: {communication_result['cta']}")
+        else:
+            st.info("O racional já está disponível. Finalize a run para liberar pitch, follow-up e CTA.")
 
 def render_pitch_tab(cliente_id, cliente_info):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
@@ -468,6 +473,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                     )
                 communication_result = communication_response["result"]
                 st.session_state["auto_pitch_communication_result"] = communication_result
+                st.session_state["auto_pitch_communication_revealed"] = False
                 tracer.log_event(
                     pitch_run_id,
                     "pitch_api_call",
@@ -478,17 +484,6 @@ def render_pitch_tab(cliente_id, cliente_info):
                     "auto_pitch_communication_completed",
                     {"message_chars": len(communication_result.get("mensagem_principal", ""))},
                 )
-                tracer.end_run(
-                    pitch_run_id,
-                    status="completed",
-                    outputs={
-                        "status": "completed",
-                        "mode": pitch_mode,
-                        "selected_priority": selected_priority,
-                        "communication": communication_result,
-                    },
-                )
-                _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
                 st.rerun()
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "auto_pitch_communication", "error": str(exc)})
@@ -502,7 +497,39 @@ def render_pitch_tab(cliente_id, cliente_info):
                 st.error(f"Erro ao gerar racional e comunicação do auto-pitch: {exc}")
 
         if st.session_state.get("auto_pitch_communication_result"):
-            st.caption("✅ Comunicação gerada. Inicie um novo pitch para testar outra prioridade.")
+            if not st.session_state.get("auto_pitch_communication_revealed") and st.button(
+                "✅ Finalizar run e exibir comunicação",
+                key="auto_pitch_btn_finalize_run",
+            ):
+                pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+                selected_priority = st.session_state.get("auto_pitch_selected_priority")
+                communication_result = st.session_state.get("auto_pitch_communication_result")
+                tracer.log_event(
+                    pitch_run_id,
+                    "auto_pitch_run_finalized_by_user",
+                    {
+                        "priority_id": (selected_priority or {}).get("priority_id"),
+                        "message_chars": len((communication_result or {}).get("mensagem_principal", "")),
+                    },
+                )
+                st.session_state["auto_pitch_communication_revealed"] = True
+                tracer.end_run(
+                    pitch_run_id,
+                    status="completed",
+                    outputs={
+                        "status": "completed",
+                        "mode": pitch_mode,
+                        "selected_priority": selected_priority,
+                        "communication": communication_result,
+                    },
+                )
+                _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
+                st.rerun()
+
+            if st.session_state.get("auto_pitch_communication_revealed"):
+                st.caption("✅ Comunicação liberada e run finalizada. Inicie um novo pitch para testar outra prioridade.")
+            else:
+                st.caption("🕒 Racional pronto. Clique no botão para finalizar a run e liberar a comunicação.")
 
         return
 
