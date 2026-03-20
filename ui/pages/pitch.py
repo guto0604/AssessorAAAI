@@ -257,8 +257,6 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
                 )
             if communication_result.get("cta"):
                 st.caption(f"CTA sugerido: {communication_result['cta']}")
-        else:
-            st.info("O racional já está disponível. Finalize a run para liberar pitch, follow-up e CTA.")
 
 def render_pitch_tab(cliente_id, cliente_info):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
@@ -498,7 +496,7 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         if st.session_state.get("auto_pitch_communication_result"):
             if not st.session_state.get("auto_pitch_communication_revealed") and st.button(
-                "✅ Finalizar run e exibir comunicação",
+                "✅ Ver Pitch",
                 key="auto_pitch_btn_finalize_run",
             ):
                 pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
@@ -527,9 +525,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                 st.rerun()
 
             if st.session_state.get("auto_pitch_communication_revealed"):
-                st.caption("✅ Comunicação liberada e run finalizada. Inicie um novo pitch para testar outra prioridade.")
-            else:
-                st.caption("🕒 Racional pronto. Clique no botão para finalizar a run e liberar a comunicação.")
+                st.caption("✅ Pitch Gerado")
 
         return
 
