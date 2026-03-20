@@ -16,6 +16,7 @@ from ui.guardrails import (
     guardrail_warning_message,
     handle_guardrail_exception,
 )
+from ui.markdown_utils import escape_streamlit_markdown
 from ui.state import (
     RLS_SEGMENT_OPTIONS,
     SESSION_RLS_ALLOWED_SEGMENTS,
@@ -451,7 +452,7 @@ def render_talk_to_your_data_page():
             st.dataframe(result_df, width="stretch")
 
         st.subheader("Resposta final")
-        st.write(answer)
+        st.write(escape_streamlit_markdown(answer))
         render_visual(result_df, visualization)
 
 

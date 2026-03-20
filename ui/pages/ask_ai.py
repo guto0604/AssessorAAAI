@@ -11,6 +11,7 @@ from ui.guardrails import (
     handle_guardrail_exception,
 )
 from ui.rag_service_provider import get_rag_service
+from ui.markdown_utils import escape_streamlit_markdown
 from ui.state import (
     SESSION_RAG_SEMANTIC_WEIGHT,
     SESSION_RAG_TOP_K,
@@ -294,7 +295,7 @@ def render_ask_ai_tab():
                     register_screen_run("ask_ai", ask_ai_run_id, status="success")
 
                     st.markdown("### Resposta")
-                    st.write(answer)
+                    st.write(escape_streamlit_markdown(answer))
 
                     st.markdown("### Fontes utilizadas")
                     if sources:
