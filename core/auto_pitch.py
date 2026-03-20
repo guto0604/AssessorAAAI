@@ -184,8 +184,6 @@ def _sanitize_priorities(parsed: dict) -> dict:
                 "abordagem_recomendada": item.get("abordagem_recomendada", ""),
                 "canal_recomendado": item.get("canal_recomendado", "WhatsApp"),
                 "tom": item.get("tom", "consultivo"),
-                "score_prioridade": item.get("score_prioridade", max(0, 100 - (index * 10))),
-                "confianca": item.get("confianca", 70),
                 "products_selected_ids": item.get("products_selected_ids", [])[:3],
                 "kb_files_selected": item.get("kb_files_selected", [])[:5],
             }
@@ -267,7 +265,6 @@ Regras:
 - Só recomende produto específico quando houver aderência mínima ao suitability ou ao momento do cliente.
 - `products_selected_ids` deve conter até 3 IDs válidos da base de produtos.
 - `kb_files_selected` deve conter até 5 arquivos .txt existentes na knowledge base.
-- `score_prioridade` e `confianca` devem ser inteiros entre 0 e 100.
 
 Formato obrigatório:
 {
@@ -284,8 +281,6 @@ Formato obrigatório:
       "abordagem_recomendada": "string",
       "canal_recomendado": "string",
       "tom": "string",
-      "score_prioridade": 0,
-      "confianca": 0,
       "products_selected_ids": ["P1"],
       "kb_files_selected": ["knowledge_base/...txt"]
     }
