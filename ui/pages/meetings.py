@@ -4,7 +4,7 @@ import streamlit as st
 
 from core.langsmith_tracing import LangSmithTracer
 from core.meetings import list_client_meetings, process_meeting_with_langchain, save_meeting
-from ui.state import SESSION_MEETING_TRACE, _iso_now, get_tracer
+from ui.state import SESSION_MEETING_TRACE, _iso_now, get_tracer, register_screen_run
 
 def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | None) -> str | None:
     """Executa uma etapa do fluxo de reuniões, incluindo registro, transcrição ou sumarização.
@@ -30,6 +30,7 @@ def _start_meeting_trace(tracer: LangSmithTracer, cliente_id, audio_name: str | 
         "status": "in_progress",
         "started_at": _iso_now(),
     }
+    register_screen_run("meetings", run_id, status="in_progress")
     return run_id
 
 
@@ -127,6 +128,7 @@ def render_meetings_tab(cliente_id, cliente_info):
                     "status": "completed",
                     "ended_at": _iso_now(),
                 }
+                register_screen_run("meetings", meeting_run_id, status="completed")
                 st.success(f"Resumo salvo em: {meeting_path}")
             except Exception as exc:
                 tracer.log_event(meeting_run_id, "meeting_error", {"error": str(exc)})
@@ -136,6 +138,7 @@ def render_meetings_tab(cliente_id, cliente_info):
                     "status": "error",
                     "ended_at": _iso_now(),
                 }
+                register_screen_run("meetings", meeting_run_id, status="error")
                 st.error(f"Erro ao processar reunião: {exc}")
 
     if st.session_state.meetings_last_saved_path:
@@ -164,5 +167,4 @@ def render_meetings_tab(cliente_id, cliente_info):
                 key="meetings_history_content",
                 disabled=True,
             )
-
 
