@@ -216,7 +216,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
             tracer.log_event(pitch_run_id, "pitch_prompt_to_pitch_started", {"mode": pitch_mode})
             try:
-                with st.spinner("Gerando pitch diretamente do prompt..."):
+                with st.spinner("Gerando pitch..."):
                     pitch_result = generate_prompt_to_pitch(
                         cliente_info=cliente_info,
                         prompt_assessor=prompt_assessor,

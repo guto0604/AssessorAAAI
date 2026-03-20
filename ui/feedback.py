@@ -29,14 +29,14 @@ def render_screen_feedback(screen_key: str, screen_label: str) -> None:
     current_score = feedback.get("score") if feedback else None
 
     st.divider()
-    st.caption("Feedback da tela")
+    st.caption("Feedback")
 
     if not tracer.enabled:
         st.info("Configure a LANGSMITH_API_KEY para registrar feedback no LangSmith.")
         return
 
     if not run_id:
-        st.info("Execute uma ação nesta tela para habilitar o like/dislike associado ao run.")
+        st.info("Execute o fluxo para habilitar o feedback associado ao resultado.")
         return
 
     if run_status == "in_progress":
@@ -76,12 +76,7 @@ def render_screen_feedback(screen_key: str, screen_label: str) -> None:
                 score=selected_score,
             )
             current_score = selected_score
-            st.success("Feedback registrado no LangSmith com sucesso.")
+            st.success("Feedback registrado!")
         else:
             st.error(tracer.last_error or "Não foi possível registrar o feedback no LangSmith.")
             return
-
-    if current_score is True:
-        st.caption("Último feedback enviado para este run: 👍 Like")
-    elif current_score is False:
-        st.caption("Último feedback enviado para este run: 👎 Dislike")
