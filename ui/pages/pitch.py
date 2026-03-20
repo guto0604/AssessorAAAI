@@ -25,6 +25,7 @@ from ui.guardrails import (
     guardrail_warning_message,
     handle_guardrail_exception,
 )
+from ui.markdown_utils import escape_streamlit_markdown
 from ui.state import (
     SESSION_PITCH_FLOW_STARTED,
     SESSION_PITCH_MODE,
@@ -226,19 +227,19 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
     if communication_result:
         with st.expander("🎯 Racional argumentativo", expanded=False):
             if communication_result.get("resumo_estrategico"):
-                st.write(communication_result["resumo_estrategico"])
+                st.write(escape_streamlit_markdown(communication_result["resumo_estrategico"]))
             if communication_result.get("racional_argumentativo"):
                 st.markdown("**Racional:**")
                 for item in communication_result["racional_argumentativo"]:
-                    st.write(f"- {item}")
+                    st.write(escape_streamlit_markdown(f"- {item}"))
             if communication_result.get("provas_evidencias"):
                 st.markdown("**Provas e evidências:**")
                 for item in communication_result["provas_evidencias"]:
-                    st.write(f"- {item}")
+                    st.write(escape_streamlit_markdown(f"- {item}"))
             if communication_result.get("observacoes_assessor"):
                 st.markdown("**Observações para o assessor:**")
                 for item in communication_result["observacoes_assessor"]:
-                    st.write(f"- {item}")
+                    st.write(escape_streamlit_markdown(f"- {item}"))
 
         if communication_revealed:
             st.subheader("💬 Comunicação sugerida")
