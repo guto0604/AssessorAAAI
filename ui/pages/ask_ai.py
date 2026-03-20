@@ -296,9 +296,8 @@ def render_ask_ai_tab():
                         for source in sources:
                             st.markdown(
                                 f"- `{source['source_path']}` "
-                                f"(chunk {source['chunk_id']}, score={source['score']:.3f}, "
+                                f"(chunk {source['chunk_id']}, score={source['score']:.5f}, "
                                 f"data={source.get('document_date')}, "
-                                f"perfis={', '.join(source.get('allowed_segments') or [])})"
                             )
                     else:
                         st.info("Nenhuma fonte encontrada.")
