@@ -210,7 +210,6 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
         st.session_state["auto_pitch_selected_priority_id"] = priority_ids[0]
 
     if not priority_ids:
-        st.info("Gere as prioridades do auto-pitch para selecionar a melhor abordagem.")
         st.session_state["auto_pitch_selected_priority"] = None
         return
 
