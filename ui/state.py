@@ -18,6 +18,8 @@ SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_PITCH_MODE = "pitch_mode"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
+SESSION_SCREEN_RUN_REGISTRY = "screen_run_registry"
+SESSION_SCREEN_FEEDBACK_REGISTRY = "screen_feedback_registry"
 SESSION_RAG_TOP_K = "rag_top_k"
 SESSION_RAG_SEMANTIC_WEIGHT = "rag_semantic_weight"
 SESSION_RLS_ALLOWED_SEGMENTS = "rls_allowed_segments"
@@ -66,6 +68,56 @@ def get_tracer() -> LangSmithTracer:
     )
     st.session_state[SESSION_LANGSMITH_TRACER] = tracer
     return tracer
+
+
+def register_screen_run(screen_key: str, run_id: str | None, *, status: str) -> None:
+    """Armazena o último run conhecido de uma tela para uso do feedback."""
+    if not run_id:
+        return
+
+    registry = st.session_state.get(SESSION_SCREEN_RUN_REGISTRY, {}).copy()
+    current = registry.get(screen_key, {})
+    registry[screen_key] = {
+        **current,
+        "run_id": run_id,
+        "status": status,
+        "updated_at": _iso_now(),
+    }
+    st.session_state[SESSION_SCREEN_RUN_REGISTRY] = registry
+
+
+def get_screen_run(screen_key: str) -> dict | None:
+    """Obtém o último run registrado para a tela informada."""
+    return (st.session_state.get(SESSION_SCREEN_RUN_REGISTRY, {}) or {}).get(screen_key)
+
+
+def register_screen_feedback(
+    screen_key: str,
+    run_id: str,
+    *,
+    feedback_id: str,
+    score: bool,
+) -> None:
+    """Salva o feedback enviado para o último run da tela."""
+    registry = st.session_state.get(SESSION_SCREEN_FEEDBACK_REGISTRY, {}).copy()
+    registry[screen_key] = {
+        "run_id": run_id,
+        "feedback_id": feedback_id,
+        "score": score,
+        "updated_at": _iso_now(),
+    }
+    st.session_state[SESSION_SCREEN_FEEDBACK_REGISTRY] = registry
+
+
+def get_screen_feedback(screen_key: str, run_id: str | None) -> dict | None:
+    """Retorna o feedback salvo em sessão se ele pertencer ao run atual da tela."""
+    if not run_id:
+        return None
+
+    feedback = (st.session_state.get(SESSION_SCREEN_FEEDBACK_REGISTRY, {}) or {}).get(screen_key)
+    if feedback and feedback.get("run_id") == run_id:
+        return feedback
+    return None
 
 
 def _format_cliente_value(campo: str, valor):
@@ -175,6 +227,12 @@ def init_session_state():
 
     if SESSION_LANGSMITH_TRACER not in st.session_state:
         st.session_state[SESSION_LANGSMITH_TRACER] = None
+
+    if SESSION_SCREEN_RUN_REGISTRY not in st.session_state:
+        st.session_state[SESSION_SCREEN_RUN_REGISTRY] = {}
+
+    if SESSION_SCREEN_FEEDBACK_REGISTRY not in st.session_state:
+        st.session_state[SESSION_SCREEN_FEEDBACK_REGISTRY] = {}
 
     if SESSION_RAG_TOP_K not in st.session_state:
         st.session_state[SESSION_RAG_TOP_K] = 5

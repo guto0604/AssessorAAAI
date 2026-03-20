@@ -22,6 +22,7 @@ from ui.state import (
     TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION,
     _iso_now,
     get_tracer,
+    register_screen_run,
 )
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -257,6 +258,7 @@ def render_talk_to_your_data_page():
             tags=["talk_to_data", "streamlit"],
             metadata={"started_at": _iso_now()},
         )
+        register_screen_run("talk_to_data", talk_to_data_run_id, status="in_progress")
 
         try:
             try:
@@ -290,6 +292,7 @@ def render_talk_to_your_data_page():
                         },
                     },
                 )
+                register_screen_run("talk_to_data", talk_to_data_run_id, status="blocked")
                 st.warning(guardrail_warning_message(guardrail_result.violation_type, context="talk_to_data"))
                 return
 
@@ -348,6 +351,7 @@ def render_talk_to_your_data_page():
                     },
                 },
             )
+            register_screen_run("talk_to_data", talk_to_data_run_id, status="success")
         except Exception as exc:
             tracer.log_event(talk_to_data_run_id, "talk_to_data_error", {"error": str(exc)})
             tracer.end_run(
@@ -356,6 +360,7 @@ def render_talk_to_your_data_page():
                 error=str(exc),
                 outputs={"status": "error"},
             )
+            register_screen_run("talk_to_data", talk_to_data_run_id, status="error")
             st.error(f"Falha ao interpretar a pergunta com a LLM: {exc}")
             return
 

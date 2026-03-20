@@ -217,3 +217,57 @@ class LangSmithTracer:
         except Exception as e:
             self.last_error = f"Falha ao enviar tracing para o LangSmith. \n\n{e}"
             return False
+
+    def submit_feedback(
+        self,
+        *,
+        run_id: str | None,
+        score: bool,
+        screen_key: str,
+        screen_label: str,
+        feedback_id: str | None = None,
+    ) -> str | None:
+        """Cria ou atualiza feedback associado a um run no LangSmith."""
+        if not self.enabled or not run_id or not self._client:
+            self.last_error = "Tracing LangSmith não está ativo para registrar feedback."
+            return None
+
+        score_value = 1 if score else 0
+        feedback_value = {
+            "sentiment": "like" if score else "dislike",
+            "screen_key": screen_key,
+            "screen_label": screen_label,
+            "recorded_at": _iso_now(),
+        }
+        comment = f"Feedback da tela: {'like' if score else 'dislike'}"
+
+        try:
+            if feedback_id:
+                self._client.update_feedback(
+                    feedback_id,
+                    score=score_value,
+                    value=feedback_value,
+                    comment=comment,
+                )
+                self.last_error = None
+                return str(feedback_id)
+
+            feedback = self._client.create_feedback(
+                run_id=run_id,
+                trace_id=run_id,
+                key="screen_feedback",
+                score=score_value,
+                value=feedback_value,
+                comment=comment,
+                source_info={
+                    "source": "streamlit_ui",
+                    "component": "screen_feedback",
+                    "screen_key": screen_key,
+                    "screen_label": screen_label,
+                },
+            )
+            self.last_error = None
+            return str(getattr(feedback, "id", "") or "")
+        except Exception as e:
+            self.last_error = f"Falha ao registrar feedback no LangSmith. \n\n{e}"
+            return None

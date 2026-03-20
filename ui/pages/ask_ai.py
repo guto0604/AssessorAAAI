@@ -16,6 +16,7 @@ from ui.state import (
     SESSION_RAG_TOP_K,
     SESSION_RLS_ALLOWED_SEGMENTS,
     get_tracer,
+    register_screen_run,
 )
 
 
@@ -190,6 +191,7 @@ def render_ask_ai_tab():
                     "feature": "ask_ai",
                 },
             )
+            register_screen_run("ask_ai", ask_ai_run_id, status="in_progress")
 
             try:
                 guardrail_result = evaluate_input_guardrails(question, context="ask_ai")
@@ -222,6 +224,7 @@ def render_ask_ai_tab():
                         },
                     },
                 )
+                register_screen_run("ask_ai", ask_ai_run_id, status="blocked")
                 st.warning(guardrail_warning_message(guardrail_result.violation_type, context="ask_ai"))
                 return
 
@@ -287,6 +290,7 @@ def render_ask_ai_tab():
                             "api_calls": rag_result.get("api_calls", []),
                         },
                     )
+                    register_screen_run("ask_ai", ask_ai_run_id, status="success")
 
                     st.markdown("### Resposta")
                     st.write(answer)
@@ -308,4 +312,5 @@ def render_ask_ai_tab():
                         error=str(exc),
                         outputs={"status": "error"},
                     )
+                    register_screen_run("ask_ai", ask_ai_run_id, status="error")
                     st.error(f"Falha ao responder pergunta: {exc}")

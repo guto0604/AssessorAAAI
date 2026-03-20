@@ -1,6 +1,7 @@
 import streamlit as st
 
 from core.data_loader import get_cliente_by_id, load_clientes
+from ui.feedback import render_screen_feedback
 from ui.pages.ask_ai import render_ask_ai_tab
 from ui.pages.home import render_home_tab
 from ui.pages.client_visualization import render_visualizacao_clientes_tab
@@ -102,41 +103,48 @@ def main():
     with tab_home:
         if _is_tab_enabled("🏠 Início"):
             render_home_tab()
+            render_screen_feedback("home", "🏠 Início")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_clientes:
         if _is_tab_enabled("👤 Visualização clientes"):
             render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
+            render_screen_feedback("client_visualization", "👤 Visualização clientes")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_pitch:
         if _is_tab_enabled("🚀 Voz do Assessor (Pitch)"):
             render_pitch_tab(st.session_state.selected_cliente_id, cliente_info)
+            render_screen_feedback("pitch", "🚀 Voz do Assessor (Pitch)")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_meetings:
         if _is_tab_enabled("📝 Reuniões"):
             render_meetings_tab(st.session_state.selected_cliente_id, cliente_info)
+            render_screen_feedback("meetings", "📝 Reuniões")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_portfolio:
         if _is_tab_enabled("📊 Talk to your Data"):
             render_talk_to_your_data_page()
+            render_screen_feedback("talk_to_data", "📊 Talk to your Data")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_ask_ai:
         if _is_tab_enabled("🤖 Pergunte à IA"):
             render_ask_ai_tab()
+            render_screen_feedback("ask_ai", "🤖 Pergunte à IA")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_settings:
         render_settings_tab()
+        render_screen_feedback("settings", "⚙️ Configurações")
 
 
 if __name__ == "__main__":

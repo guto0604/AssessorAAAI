@@ -16,6 +16,7 @@ from ui.state import (
     SESSION_TRACING_HEALTH_STATUS,
     _iso_now,
     get_tracer,
+    register_screen_run,
 )
 from ui.rag_service_provider import get_rag_service
 def render_settings_tab():
@@ -196,9 +197,11 @@ def render_settings_tab():
                     outputs={"status": "ok", "message": "healthcheck_passed"},
                 )
                 if sent_ok:
+                    register_screen_run("settings", healthcheck_run_id, status="success")
                     st.session_state[SESSION_TRACING_HEALTH_STATUS] = "ok"
                     st.success("Tracing validado com sucesso no LangSmith.")
                 else:
+                    register_screen_run("settings", healthcheck_run_id, status="error")
                     st.session_state[SESSION_TRACING_HEALTH_STATUS] = "error"
                     st.error(
                         "Run de teste criada, mas não foi enviada ao LangSmith. "
