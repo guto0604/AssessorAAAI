@@ -162,21 +162,6 @@ def _render_auto_pitch_result():
     st.header("🤖 Auto-pitch")
     st.caption("A IA prioriza as melhores abordagens do momento, o assessor só escolhe a tese vencedora.")
 
-    with st.expander("🧠 Fluxo e lógicas do auto-pitch", expanded=False):
-        st.markdown(
-            """
-1. **Sinais determinísticos**: caixa disponível, patrimônio fora, spread vs CDI, concentração e cadência de contato.
-2. **Priorização com IA**: o modelo `gpt-5.4` ordena as 3 melhores abordagens com base em CRM + investimentos + contexto opcional.
-3. **Escolha humana leve**: o assessor seleciona apenas 1 prioridade.
-4. **Geração assistida**: a IA produz racional argumentativo, provas, CTA e mensagem pronta.
-5. **Telemetria LangSmith**: cada chamada registra modelo, tokens, latência, eventos e feedback da tela.
-            """
-        )
-
-    if not prioridades:
-        st.info("Clique em **Gerar 3 prioridades de auto-pitch** para a IA priorizar o próximo contato.")
-        return
-
     signal_summary = st.session_state.get("auto_pitch_signal_summary")
     if signal_summary:
         with st.expander("📊 Sinais usados na priorização", expanded=False):
@@ -403,7 +388,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         produtos_df = load_produtos()
         carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
 
-        if st.button("🎯 Gerar 3 prioridades de auto-pitch", key="auto_pitch_btn_priorities"):
+        if st.button("Iniciar Auto-Pitch", key="auto_pitch_btn_priorities"):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
             tracer.log_event(
                 pitch_run_id,
@@ -454,7 +439,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         _render_auto_pitch_result()
 
         if st.session_state.get("auto_pitch_selected_priority") and st.button(
-            "🧠 Gerar racional e comunicação",
+            "Gerar Comunicação!",
             key="auto_pitch_btn_communication",
         ):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
