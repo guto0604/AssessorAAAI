@@ -49,8 +49,7 @@ def render_ask_ai_tab():
     semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
     bm25_weight = 1.0 - semantic_weight
 
-    with st.expander("📥 Gestão da base vetorial", expanded=False):
-        st.caption("Abra esta seção para enviar novos documentos e atualizar a indexação da knowledge base.")
+    with st.expander("📥 Ingestão na base vetorial", expanded=False):
         st.subheader("Upload para knowledge base")
         folders = _list_kb_folders()
         default_folder = folders[0] if folders else "geral"
