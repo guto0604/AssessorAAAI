@@ -193,7 +193,7 @@ def _render_auto_pitch_result():
         st.markdown(
             f"""
 **{item.get('priority_rank', '-')}. {item.get('titulo', 'Prioridade')}**  
-Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade', '-')}` · Confiança: `{item.get('confianca', '-')}`  
+Categoria: `{item.get('categoria', '-')}`  
 **Objetivo:** {item.get('objetivo', '-')}  
 **Por que agora:** {item.get('porque_agora', '-')}  
 **Abordagem:** {item.get('abordagem_recomendada', '-')}  
@@ -258,6 +258,46 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
                 )
             if communication_result.get("cta"):
                 st.caption(f"CTA sugerido: {communication_result['cta']}")
+
+
+def _finalize_auto_pitch_run(
+    tracer: LangSmithTracer,
+    pitch_run_id: str | None,
+    *,
+    pitch_mode: str,
+    selected_priority: dict | None,
+    communication_result: dict | None,
+) -> None:
+    """Finaliza o run do auto-pitch com um resumo serializável e enxuto."""
+    tracer.log_event(
+        pitch_run_id,
+        "auto_pitch_run_finalized_by_user",
+        {
+            "priority_id": (selected_priority or {}).get("priority_id"),
+            "message_chars": len((communication_result or {}).get("mensagem_principal", "")),
+        },
+    )
+    tracer.end_run(
+        pitch_run_id,
+        status="completed",
+        outputs={
+            "status": "completed",
+            "mode": pitch_mode,
+            "selected_priority": {
+                "priority_id": (selected_priority or {}).get("priority_id"),
+                "priority_rank": (selected_priority or {}).get("priority_rank"),
+                "categoria": (selected_priority or {}).get("categoria"),
+                "titulo": (selected_priority or {}).get("titulo"),
+            },
+            "communication_summary": {
+                "resumo_estrategico": (communication_result or {}).get("resumo_estrategico"),
+                "message_chars": len((communication_result or {}).get("mensagem_principal", "")),
+                "has_follow_up": bool((communication_result or {}).get("mensagem_follow_up")),
+                "cta": (communication_result or {}).get("cta"),
+            },
+        },
+    )
+    _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
 
 def render_pitch_tab(cliente_id, cliente_info):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
@@ -499,32 +539,20 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         if st.session_state.get("auto_pitch_communication_result"):
             if not st.session_state.get("auto_pitch_communication_revealed") and st.button(
-                "✅ Ver Pitch",
+                "✅ Mostrar pitch",
                 key="auto_pitch_btn_finalize_run",
             ):
                 pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
                 selected_priority = st.session_state.get("auto_pitch_selected_priority")
                 communication_result = st.session_state.get("auto_pitch_communication_result")
-                tracer.log_event(
-                    pitch_run_id,
-                    "auto_pitch_run_finalized_by_user",
-                    {
-                        "priority_id": (selected_priority or {}).get("priority_id"),
-                        "message_chars": len((communication_result or {}).get("mensagem_principal", "")),
-                    },
-                )
                 st.session_state["auto_pitch_communication_revealed"] = True
-                tracer.end_run(
+                _finalize_auto_pitch_run(
+                    tracer,
                     pitch_run_id,
-                    status="completed",
-                    outputs={
-                        "status": "completed",
-                        "mode": pitch_mode,
-                        "selected_priority": selected_priority,
-                        "communication": communication_result,
-                    },
+                    pitch_mode=pitch_mode,
+                    selected_priority=selected_priority,
+                    communication_result=communication_result,
                 )
-                _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
                 st.rerun()
 
             if st.session_state.get("auto_pitch_communication_revealed"):
