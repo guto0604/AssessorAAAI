@@ -2,6 +2,12 @@ from datetime import datetime
 
 import streamlit as st
 
+from core.auto_pitch import (
+    AUTO_PITCH_COMMUNICATION_MODEL,
+    AUTO_PITCH_PRIORITY_MODEL,
+    generate_auto_pitch_communication,
+    generate_auto_pitch_priorities,
+)
 from core.data_loader import (
     carteira_summary_for_llm,
     get_jornada_config,
@@ -28,6 +34,7 @@ from ui.state import (
 )
 
 PITCH_MODE_GUIDED = "guided"
+PITCH_MODE_AUTO_PITCH = "auto_pitch"
 PITCH_MODE_PROMPT_TO_PITCH = "prompt_to_pitch"
 
 def _start_pitch_trace(
@@ -55,10 +62,18 @@ def _start_pitch_trace(
         })
         tracer.end_run(active_trace["run_id"], status="interrupted", outputs={"status": "interrupted"})
 
-    run_prefix = "prompt_to_pitch_cliente" if mode == PITCH_MODE_PROMPT_TO_PITCH else "pitch_cliente"
+    if mode == PITCH_MODE_PROMPT_TO_PITCH:
+        run_prefix = "prompt_to_pitch_cliente"
+    elif mode == PITCH_MODE_AUTO_PITCH:
+        run_prefix = "auto_pitch_cliente"
+    else:
+        run_prefix = "pitch_cliente"
+
     run_tags = ["pitch", "streamlit"]
     if mode == PITCH_MODE_PROMPT_TO_PITCH:
         run_tags.append("prompt-to-pitch")
+    if mode == PITCH_MODE_AUTO_PITCH:
+        run_tags.append("auto-pitch")
 
     run_id = tracer.start_run(
         name=f"{run_prefix}_{cliente_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -106,6 +121,11 @@ def _reset_pitch_flow_state():
         "pitch_version",
         "pitch_step5_release_index",
         "pitch_step5_confirmed_sections",
+        "auto_pitch_priorities",
+        "auto_pitch_selected_priority_id",
+        "auto_pitch_selected_priority",
+        "auto_pitch_signal_summary",
+        "auto_pitch_communication_result",
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
@@ -133,6 +153,107 @@ def _render_prompt_to_pitch_result():
     )
 
 
+
+def _render_auto_pitch_result():
+    prioridades = st.session_state.get("auto_pitch_priorities") or []
+    communication_result = st.session_state.get("auto_pitch_communication_result") or {}
+
+    st.divider()
+    st.header("🤖 Auto-pitch")
+    st.caption("A IA prioriza as melhores abordagens do momento, o assessor só escolhe a tese vencedora.")
+
+    with st.expander("🧠 Fluxo e lógicas do auto-pitch", expanded=False):
+        st.markdown(
+            """
+1. **Sinais determinísticos**: caixa disponível, patrimônio fora, spread vs CDI, concentração e cadência de contato.
+2. **Priorização com IA**: o modelo `gpt-5.4` ordena as 3 melhores abordagens com base em CRM + investimentos + contexto opcional.
+3. **Escolha humana leve**: o assessor seleciona apenas 1 prioridade.
+4. **Geração assistida**: a IA produz racional argumentativo, provas, CTA e mensagem pronta.
+5. **Telemetria LangSmith**: cada chamada registra modelo, tokens, latência, eventos e feedback da tela.
+            """
+        )
+
+    if not prioridades:
+        st.info("Clique em **Gerar 3 prioridades de auto-pitch** para a IA priorizar o próximo contato.")
+        return
+
+    signal_summary = st.session_state.get("auto_pitch_signal_summary")
+    if signal_summary:
+        with st.expander("📊 Sinais usados na priorização", expanded=False):
+            st.json(signal_summary)
+
+    st.subheader("Top 3 prioridades sugeridas")
+    priority_ids = []
+    priority_index = {}
+    for item in prioridades:
+        priority_id = item.get("priority_id")
+        if not priority_id:
+            continue
+        priority_ids.append(priority_id)
+        priority_index[priority_id] = item
+
+    for item in prioridades:
+        st.markdown(
+            f"""
+**{item.get('priority_rank', '-')}. {item.get('titulo', 'Prioridade')}**  
+Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade', '-')}` · Confiança: `{item.get('confianca', '-')}`  
+**Objetivo:** {item.get('objetivo', '-')}  
+**Por que agora:** {item.get('porque_agora', '-')}  
+**Abordagem:** {item.get('abordagem_recomendada', '-')}  
+**Canal/Tom:** {item.get('canal_recomendado', '-')} / {item.get('tom', '-')}
+            """
+        )
+        sinais = item.get("sinais_dados") or []
+        if sinais:
+            st.caption("Sinais: " + " | ".join(sinais))
+        if item.get("products_selected_ids"):
+            st.caption("Produtos candidatos: " + ", ".join(item["products_selected_ids"]))
+        if item.get("kb_files_selected"):
+            st.caption("Base consultiva: " + ", ".join(item["kb_files_selected"]))
+        st.divider()
+
+    selected_priority_id = st.radio(
+        "Qual prioridade o assessor quer seguir?",
+        options=priority_ids,
+        format_func=lambda pid: f"{priority_index[pid].get('priority_rank', '-')}. {priority_index[pid].get('titulo', pid)}",
+        key="auto_pitch_selected_priority_id",
+    )
+    st.session_state["auto_pitch_selected_priority"] = priority_index.get(selected_priority_id)
+
+    if communication_result:
+        st.subheader("🎯 Racional argumentativo")
+        if communication_result.get("resumo_estrategico"):
+            st.write(communication_result["resumo_estrategico"])
+        if communication_result.get("racional_argumentativo"):
+            st.markdown("**Racional:**")
+            for item in communication_result["racional_argumentativo"]:
+                st.write(f"- {item}")
+        if communication_result.get("provas_evidencias"):
+            st.markdown("**Provas e evidências:**")
+            for item in communication_result["provas_evidencias"]:
+                st.write(f"- {item}")
+        if communication_result.get("observacoes_assessor"):
+            st.markdown("**Observações para o assessor:**")
+            for item in communication_result["observacoes_assessor"]:
+                st.write(f"- {item}")
+
+        st.subheader("💬 Comunicação sugerida")
+        st.text_area(
+            "Mensagem principal:",
+            value=communication_result.get("mensagem_principal", ""),
+            height=220,
+            key="auto_pitch_message_box",
+        )
+        if communication_result.get("mensagem_follow_up"):
+            st.text_area(
+                "Follow-up sugerido:",
+                value=communication_result.get("mensagem_follow_up", ""),
+                height=140,
+                key="auto_pitch_followup_box",
+            )
+        if communication_result.get("cta"):
+            st.caption(f"CTA sugerido: {communication_result['cta']}")
+
 def render_pitch_tab(cliente_id, cliente_info):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
 
@@ -146,15 +267,17 @@ def render_pitch_tab(cliente_id, cliente_info):
     st.header("🚀 Iniciar fluxo de pitch")
 
     prompt_assessor = st.text_area(
-        "Escreva o objetivo do contato:",
+        "Escreva o objetivo do contato ou um contexto adicional (opcional no auto-pitch):",
         height=150,
         key="pitch_prompt_assessor"
     )
 
     pitch_mode = st.radio(
         "Modo de geração:",
-        options=[PITCH_MODE_GUIDED, PITCH_MODE_PROMPT_TO_PITCH],
-        format_func=lambda mode: "Fluxo guiado" if mode == PITCH_MODE_GUIDED else "Prompt-to-pitch",
+        options=[PITCH_MODE_GUIDED, PITCH_MODE_AUTO_PITCH, PITCH_MODE_PROMPT_TO_PITCH],
+        format_func=lambda mode: (
+            "Fluxo guiado" if mode == PITCH_MODE_GUIDED else "Auto-pitch" if mode == PITCH_MODE_AUTO_PITCH else "Prompt-to-pitch"
+        ),
         horizontal=True,
         key=SESSION_PITCH_MODE,
     )
@@ -273,6 +396,134 @@ def render_pitch_tab(cliente_id, cliente_info):
 
     if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
         _render_prompt_to_pitch_result()
+        return
+
+    if pitch_mode == PITCH_MODE_AUTO_PITCH:
+        investimentos_cliente_df = get_investimentos_by_cliente(cliente_id)
+        produtos_df = load_produtos()
+        carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
+
+        if st.button("🎯 Gerar 3 prioridades de auto-pitch", key="auto_pitch_btn_priorities"):
+            pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+            tracer.log_event(
+                pitch_run_id,
+                "auto_pitch_priority_generation_started",
+                {"model_requested": AUTO_PITCH_PRIORITY_MODEL},
+            )
+            try:
+                with st.spinner("Priorizando abordagens do cliente..."):
+                    priority_response = generate_auto_pitch_priorities(
+                        cliente_info=cliente_info,
+                        carteira_summary=carteira_summary,
+                        investimentos_cliente_df=investimentos_cliente_df,
+                        produtos_df=produtos_df,
+                        prompt_assessor=prompt_assessor,
+                        model=AUTO_PITCH_PRIORITY_MODEL,
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
+                    )
+                priority_result = priority_response["result"]
+                st.session_state["auto_pitch_priorities"] = priority_result.get("prioridades", [])
+                st.session_state["auto_pitch_signal_summary"] = priority_result.get("signal_summary")
+                st.session_state["auto_pitch_communication_result"] = None
+                tracer.log_event(
+                    pitch_run_id,
+                    "pitch_api_call",
+                    {"step": "auto_pitch_priorities", **priority_response["api_metrics"]},
+                )
+                tracer.log_event(
+                    pitch_run_id,
+                    "auto_pitch_priority_generation_completed",
+                    {"priorities_count": len(priority_result.get("prioridades", []))},
+                )
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "auto_pitch_priorities", "error": str(exc)})
+                tracer.end_run(
+                    pitch_run_id,
+                    status="error",
+                    error=str(exc),
+                    outputs={"status": "error", "step": "auto_pitch_priorities"},
+                )
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro ao gerar prioridades do auto-pitch: {exc}")
+
+        _render_auto_pitch_result()
+
+        if st.session_state.get("auto_pitch_selected_priority") and st.button(
+            "🧠 Gerar racional e comunicação",
+            key="auto_pitch_btn_communication",
+        ):
+            pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
+            selected_priority = st.session_state["auto_pitch_selected_priority"]
+            tracer.log_event(
+                pitch_run_id,
+                "auto_pitch_priority_selected",
+                {
+                    "priority_id": selected_priority.get("priority_id"),
+                    "titulo": selected_priority.get("titulo"),
+                    "categoria": selected_priority.get("categoria"),
+                    "model_requested": AUTO_PITCH_COMMUNICATION_MODEL,
+                },
+            )
+            try:
+                with st.spinner("Montando racional argumentativo e mensagem..."):
+                    communication_response = generate_auto_pitch_communication(
+                        cliente_info=cliente_info,
+                        carteira_summary=carteira_summary,
+                        investimentos_cliente_df=investimentos_cliente_df,
+                        produtos_df=produtos_df,
+                        selected_priority=selected_priority,
+                        model=AUTO_PITCH_COMMUNICATION_MODEL,
+                        trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
+                        include_api_metrics=True,
+                    )
+                communication_result = communication_response["result"]
+                st.session_state["auto_pitch_communication_result"] = communication_result
+                tracer.log_event(
+                    pitch_run_id,
+                    "pitch_api_call",
+                    {"step": "auto_pitch_communication", **communication_response["api_metrics"]},
+                )
+                tracer.log_event(
+                    pitch_run_id,
+                    "auto_pitch_communication_completed",
+                    {"message_chars": len(communication_result.get("mensagem_principal", ""))},
+                )
+                tracer.end_run(
+                    pitch_run_id,
+                    status="completed",
+                    outputs={
+                        "status": "completed",
+                        "mode": pitch_mode,
+                        "selected_priority": selected_priority,
+                        "communication": communication_result,
+                    },
+                )
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "completed",
+                    "ended_at": _iso_now(),
+                }
+                st.rerun()
+            except Exception as exc:
+                tracer.log_event(pitch_run_id, "pitch_error", {"step": "auto_pitch_communication", "error": str(exc)})
+                tracer.end_run(
+                    pitch_run_id,
+                    status="error",
+                    error=str(exc),
+                    outputs={"status": "error", "step": "auto_pitch_communication"},
+                )
+                st.session_state[SESSION_PITCH_TRACE] = {
+                    "run_id": pitch_run_id,
+                    "status": "error",
+                    "ended_at": _iso_now(),
+                }
+                st.error(f"Erro ao gerar racional e comunicação do auto-pitch: {exc}")
+
         return
 
     st.header("1️⃣ Definir intenção do contato")

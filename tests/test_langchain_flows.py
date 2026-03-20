@@ -1,6 +1,12 @@
 import unittest
 from unittest.mock import patch
 
+from core.auto_pitch import (
+    build_auto_pitch_signal_summary,
+    build_priority_candidates,
+    generate_auto_pitch_communication,
+    generate_auto_pitch_priorities,
+)
 from core.journey_ranker import rank_journeys
 from core.source_selector import select_sources_step4
 from core.pitch_structurer import build_pitch_options_step5
@@ -101,6 +107,10 @@ class _Completions:
             return _Resp('{"data_sources":["investimentos_do_cliente"],"products_selected_ids":["P1","P2","P3"],"kb_files_selected":["knowledge_base/documentos/explicacao_cdb.txt"],"reasoning_short":"ok"}')
         if "estrategista de conteúdo" in system:
             return _Resp('{"blocos_conteudo":[{"id":"diagnostico_alocacao","titulo":"Diagnóstico de alocação","itens":[{"id":"diagnostico_alocacao_i1","texto":"x"},{"id":"diagnostico_alocacao_i2","texto":"y"}]},{"id":"proximos_passos","titulo":"Próximos passos recomendados","itens":[{"id":"proximos_passos_i1","texto":"z"}]}],"tom_sugerido":{"principal":{"id":"t1","texto":"consultivo"},"alternativas":[{"id":"t2","texto":"direto"},{"id":"t3","texto":"leve"}]},"tamanho_pitch":{"principal":{"id":"l1","texto":"Médio"},"alternativas":[{"id":"l2","texto":"Pequeno"},{"id":"l3","texto":"Longo"}]}}')
+        if "estrategista de auto-pitch" in system:
+            return _Resp('{"resumo_executivo":"ok","prioridades":[{"priority_rank":1,"priority_id":"p1","categoria":"oferta_produto","titulo":"Oferta de caixa","objetivo":"Alocar caixa","porque_agora":"Há liquidez disponível","sinais_dados":["Caixa alto"],"abordagem_recomendada":"Contato consultivo","canal_recomendado":"WhatsApp","tom":"consultivo","score_prioridade":91,"confianca":82,"products_selected_ids":["P1"],"kb_files_selected":["knowledge_base/produtos/explicacao_cdb.txt"]},{"priority_rank":2,"priority_id":"p2","categoria":"contato_padrão","titulo":"Check-in consultivo","objetivo":"Retomar contato","porque_agora":"Manter relacionamento","sinais_dados":["Sem follow-up"],"abordagem_recomendada":"Atualização","canal_recomendado":"Ligação","tom":"leve","score_prioridade":75,"confianca":70,"products_selected_ids":[],"kb_files_selected":[]},{"priority_rank":3,"priority_id":"p3","categoria":"rebalanceamento","titulo":"Rever carteira","objetivo":"Reduzir concentração","porque_agora":"Carteira concentrada","sinais_dados":["Concentração alta"],"abordagem_recomendada":"Rebalancear","canal_recomendado":"WhatsApp","tom":"consultivo","score_prioridade":69,"confianca":65,"products_selected_ids":["P2"],"kb_files_selected":[]}]}')
+        if "estrategista comercial para assessoria de investimentos" in system:
+            return _Resp('{"resumo_estrategico":"Prioridade escolhida","racional_argumentativo":["Bullet 1","Bullet 2"],"provas_evidencias":["Prova 1"],"mensagem_principal":"Mensagem pronta","mensagem_follow_up":"Follow-up pronto","cta":"Agendar conversa","observacoes_assessor":["Obs 1"]}')
         if "mensagem comercial final" in system:
             return _Resp("pitch direto")
         if "escrevendo uma mensagem" in system:
@@ -182,6 +192,51 @@ class FlowTests(unittest.TestCase):
 
         r8 = revise_pitch_step8("abc", "editar")
         self.assertEqual(r8, "pitch revisado")
+
+        signal_summary = build_auto_pitch_signal_summary(
+            {
+                "Nome": "Cli",
+                "Perfil_Suitability": "Conservador",
+                "Patrimonio_Investido_Conosco": 1000,
+                "Patrimonio_Investido_Outros": 800,
+                "Dinheiro_Disponivel_Para_Investir": 200,
+                "Ultima_Interacao_Dias": 60,
+                "Aniversario_Proximo_Dias": 5,
+            },
+            {"spread_vs_cdi_12m": -0.02},
+            inv_df,
+        )
+        self.assertEqual(signal_summary["cliente"]["nome"], "Cli")
+
+        candidates = build_priority_candidates(signal_summary)
+        self.assertTrue(len(candidates) >= 3)
+
+        auto_priorities = generate_auto_pitch_priorities(
+            cliente_info={
+                "Nome": "Cli",
+                "Perfil_Suitability": "Conservador",
+                "Patrimonio_Investido_Conosco": 1000,
+                "Patrimonio_Investido_Outros": 800,
+                "Dinheiro_Disponivel_Para_Investir": 200,
+                "Ultima_Interacao_Dias": 60,
+                "Aniversario_Proximo_Dias": 5,
+            },
+            carteira_summary={"spread_vs_cdi_12m": -0.02},
+            investimentos_cliente_df=inv_df,
+            produtos_df=produtos_df,
+            prompt_assessor="",
+        )
+        self.assertEqual(len(auto_priorities["prioridades"]), 3)
+        self.assertEqual(auto_priorities["prioridades"][0]["priority_id"], "p1")
+
+        auto_comm = generate_auto_pitch_communication(
+            cliente_info={"Nome": "Cli", "Perfil_Suitability": "Conservador"},
+            carteira_summary={"spread_vs_cdi_12m": -0.02},
+            investimentos_cliente_df=inv_df,
+            produtos_df=produtos_df,
+            selected_priority=auto_priorities["prioridades"][0],
+        )
+        self.assertEqual(auto_comm["mensagem_principal"], "Mensagem pronta")
 
     @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
     def test_meeting_summary(self, _mock_client):
