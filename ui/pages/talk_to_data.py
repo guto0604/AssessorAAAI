@@ -493,6 +493,7 @@ Regras:
 - Prefira queries leves (agregações e LIMIT quando fizer sentido).
 - Nunca gere código Python para visualização.
 - Se o usuário pedir para colorir o visual por uma coluna, inclua essa coluna no SELECT final do SQL e preencha visualization.color com o nome exato da coluna.
+- Quando o visual representar clientes, prefira usar Cliente_ID como eixo/categoria identificadora e inclua Nome apenas para tooltip/hover quando necessário.
 - Retorne APENAS JSON válido.
 - O RLS por patrimônio já é aplicado de forma oculta antes da consulta; nunca tente remover ou contornar esse filtro.
 
@@ -704,6 +705,23 @@ def run_duckdb_query(sql: str, conn: duckdb.DuckDBPyConnection | None = None) ->
         return con.execute(normalized_sql).fetchdf()
 
 
+def _resolve_customer_axis_config(result_df: pd.DataFrame, axis_field: str | None) -> tuple[str | None, list[str]]:
+    """Define o eixo/tooltip adequado para evitar colisão de clientes com mesmo nome."""
+    if not axis_field:
+        return axis_field, []
+
+    customer_id_field = "Cliente_ID" if "Cliente_ID" in result_df.columns else None
+    customer_name_field = "Nome" if "Nome" in result_df.columns else None
+
+    if not customer_id_field or not customer_name_field:
+        return axis_field, []
+
+    if axis_field not in {customer_id_field, customer_name_field}:
+        return axis_field, []
+
+    return customer_id_field, [customer_name_field]
+
+
 def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
     """Renderiza a seção da interface correspondente a este fluxo da aplicação.
 
@@ -748,23 +766,25 @@ def render_visual(result_df: pd.DataFrame, visualization_spec: dict):
         st.info(f"Coluna de cor '{color}' não encontrada; o gráfico será exibido sem cor.")
         color = None
 
+    resolved_x, hover_data = _resolve_customer_axis_config(result_df, x)
+
     if vis_type == "bar":
-        fig = px.bar(result_df, x=x, y=y, color=color, title=title)
+        fig = px.bar(result_df, x=resolved_x, y=y, color=color, title=title, hover_data=hover_data)
         st.plotly_chart(fig, width="stretch")
     elif vis_type == "line":
-        fig = px.line(result_df, x=x, y=y, color=color, title=title)
+        fig = px.line(result_df, x=resolved_x, y=y, color=color, title=title, hover_data=hover_data)
         st.plotly_chart(fig, width="stretch")
     elif vis_type == "pie":
         if not x or not y:
             st.info("Visual de pizza requer campos x e y válidos.")
             return
-        fig = px.pie(result_df, names=x, values=y, color=color, title=title)
+        fig = px.pie(result_df, names=resolved_x, values=y, color=color, title=title, hover_data=hover_data)
         st.plotly_chart(fig, width="stretch")
     elif vis_type == "scatter":
         if not x or not y:
             st.info("Visual de dispersão requer campos x e y válidos.")
             return
-        fig = px.scatter(result_df, x=x, y=y, color=color, title=title)
+        fig = px.scatter(result_df, x=resolved_x, y=y, color=color, title=title, hover_data=hover_data)
         st.plotly_chart(fig, width="stretch")
     else:
         st.info("Tipo de visual não suportado; exibindo tabela.")

@@ -25,6 +25,8 @@ class TalkToDataVisualizationTests(unittest.TestCase):
     def test_prompt_includes_rls_instruction(self):
         prompt = build_llm_prompt("teste", "schema")
         self.assertIn("RLS por patrimônio já é aplicado de forma oculta", prompt)
+        self.assertIn("prefira usar Cliente_ID como eixo/categoria identificadora", prompt)
+        self.assertIn("inclua Nome apenas para tooltip/hover", prompt)
         self.assertNotIn("Cliente_ID na lista permitida", prompt)
 
     def test_build_patrimonio_rls_condition_sql_by_selected_segments(self):
@@ -83,6 +85,7 @@ class TalkToDataVisualizationTests(unittest.TestCase):
             y="investido",
             color="perfil",
             title="Teste",
+            hover_data=[],
         )
         mock_plotly_chart.assert_called_once()
 
@@ -131,8 +134,42 @@ class TalkToDataVisualizationTests(unittest.TestCase):
 
         render_visual(df, spec)
 
-        mock_line.assert_called_once_with(df, x="mes", y="valor", color=None, title="Sem cor")
+        mock_line.assert_called_once_with(df, x="mes", y="valor", color=None, title="Sem cor", hover_data=[])
         mock_plotly_chart.assert_called_once()
+
+    @patch("ui.pages.talk_to_data.st.plotly_chart")
+    @patch("ui.pages.talk_to_data.st.subheader")
+    @patch("ui.pages.talk_to_data.px.bar")
+    def test_bar_uses_cliente_id_on_axis_and_nome_only_in_tooltip(self, mock_bar, _mock_subheader, mock_plotly_chart):
+        mock_bar.return_value = object()
+        df = pd.DataFrame(
+            {
+                "Cliente_ID": ["A_001", "A_002"],
+                "Nome": ["Alex Silva", "Alex Silva"],
+                "total": [10, 20],
+            }
+        )
+        spec = {
+            "needed": True,
+            "type": "bar",
+            "x": "Nome",
+            "y": "total",
+            "color": None,
+            "title": "Clientes",
+        }
+
+        render_visual(df, spec)
+
+        mock_bar.assert_called_once_with(
+            df,
+            x="Cliente_ID",
+            y="total",
+            color=None,
+            title="Clientes",
+            hover_data=["Nome"],
+        )
+        mock_plotly_chart.assert_called_once()
+
 
 
 if __name__ == "__main__":
