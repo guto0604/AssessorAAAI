@@ -272,12 +272,6 @@ def render_pitch_tab(cliente_id, cliente_info):
     """
     st.header("🚀 Iniciar fluxo de pitch")
 
-    prompt_assessor = st.text_area(
-        "Escreva o objetivo do contato ou um contexto adicional (opcional no auto-pitch):",
-        height=150,
-        key="pitch_prompt_assessor"
-    )
-
     pitch_mode = st.radio(
         "Modo de geração:",
         options=[PITCH_MODE_AUTO_PITCH, PITCH_MODE_GUIDED, PITCH_MODE_PROMPT_TO_PITCH],
@@ -287,6 +281,14 @@ def render_pitch_tab(cliente_id, cliente_info):
         horizontal=True,
         key=SESSION_PITCH_MODE,
     )
+
+    prompt_assessor = ""
+    if pitch_mode != PITCH_MODE_AUTO_PITCH:
+        prompt_assessor = st.text_area(
+            "Escreva o objetivo do contato ou um contexto adicional:",
+            height=150,
+            key="pitch_prompt_assessor"
+        )
 
     tracer = get_tracer()
 
