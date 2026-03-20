@@ -220,7 +220,7 @@ def init_session_state():
         st.session_state[SESSION_PITCH_FLOW_STARTED] = False
 
     if SESSION_PITCH_MODE not in st.session_state:
-        st.session_state[SESSION_PITCH_MODE] = "guided"
+        st.session_state[SESSION_PITCH_MODE] = "auto_pitch"
 
     if SESSION_TRACING_HEALTH_STATUS not in st.session_state:
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
