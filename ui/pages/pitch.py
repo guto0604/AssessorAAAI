@@ -31,11 +31,24 @@ from ui.state import (
     SESSION_PITCH_TRACE,
     _iso_now,
     get_tracer,
+    register_screen_run,
 )
 
 PITCH_MODE_GUIDED = "guided"
 PITCH_MODE_AUTO_PITCH = "auto_pitch"
 PITCH_MODE_PROMPT_TO_PITCH = "prompt_to_pitch"
+
+
+def _set_pitch_trace_state(run_id: str | None, status: str, *, timestamp_field: str) -> None:
+    """Atualiza o estado do tracing do pitch na sessão e no registro de feedback."""
+    st.session_state[SESSION_PITCH_TRACE] = {
+        "run_id": run_id,
+        "status": status,
+        timestamp_field: _iso_now(),
+    }
+    register_screen_run("pitch", run_id, status=status)
+
+
 
 def _start_pitch_trace(
     tracer: LangSmithTracer,
@@ -91,11 +104,7 @@ def _start_pitch_trace(
             "mode": mode,
         },
     )
-    st.session_state[SESSION_PITCH_TRACE] = {
-        "run_id": run_id,
-        "status": "in_progress",
-        "started_at": _iso_now(),
-    }
+    _set_pitch_trace_state(run_id, "in_progress", timestamp_field="started_at")
     return run_id
 
 
@@ -197,6 +206,14 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
             st.caption("Base consultiva: " + ", ".join(item["kb_files_selected"]))
         st.divider()
 
+    if priority_ids and st.session_state.get("auto_pitch_selected_priority_id") not in priority_ids:
+        st.session_state["auto_pitch_selected_priority_id"] = priority_ids[0]
+
+    if not priority_ids:
+        st.info("Gere as prioridades do auto-pitch para selecionar a melhor abordagem.")
+        st.session_state["auto_pitch_selected_priority"] = None
+        return
+
     selected_priority_id = st.radio(
         "Qual prioridade o assessor quer seguir?",
         options=priority_ids,
@@ -206,21 +223,21 @@ Categoria: `{item.get('categoria', '-')}` · Score: `{item.get('score_prioridade
     st.session_state["auto_pitch_selected_priority"] = priority_index.get(selected_priority_id)
 
     if communication_result:
-        st.subheader("🎯 Racional argumentativo")
-        if communication_result.get("resumo_estrategico"):
-            st.write(communication_result["resumo_estrategico"])
-        if communication_result.get("racional_argumentativo"):
-            st.markdown("**Racional:**")
-            for item in communication_result["racional_argumentativo"]:
-                st.write(f"- {item}")
-        if communication_result.get("provas_evidencias"):
-            st.markdown("**Provas e evidências:**")
-            for item in communication_result["provas_evidencias"]:
-                st.write(f"- {item}")
-        if communication_result.get("observacoes_assessor"):
-            st.markdown("**Observações para o assessor:**")
-            for item in communication_result["observacoes_assessor"]:
-                st.write(f"- {item}")
+        with st.expander("🎯 Racional argumentativo", expanded=False):
+            if communication_result.get("resumo_estrategico"):
+                st.write(communication_result["resumo_estrategico"])
+            if communication_result.get("racional_argumentativo"):
+                st.markdown("**Racional:**")
+                for item in communication_result["racional_argumentativo"]:
+                    st.write(f"- {item}")
+            if communication_result.get("provas_evidencias"):
+                st.markdown("**Provas e evidências:**")
+                for item in communication_result["provas_evidencias"]:
+                    st.write(f"- {item}")
+            if communication_result.get("observacoes_assessor"):
+                st.markdown("**Observações para o assessor:**")
+                for item in communication_result["observacoes_assessor"]:
+                    st.write(f"- {item}")
 
         st.subheader("💬 Comunicação sugerida")
         st.text_area(
@@ -259,7 +276,7 @@ def render_pitch_tab(cliente_id, cliente_info):
 
     pitch_mode = st.radio(
         "Modo de geração:",
-        options=[PITCH_MODE_GUIDED, PITCH_MODE_AUTO_PITCH, PITCH_MODE_PROMPT_TO_PITCH],
+        options=[PITCH_MODE_AUTO_PITCH, PITCH_MODE_GUIDED, PITCH_MODE_PROMPT_TO_PITCH],
         format_func=lambda mode: (
             "Fluxo guiado" if mode == PITCH_MODE_GUIDED else "Auto-pitch" if mode == PITCH_MODE_AUTO_PITCH else "Prompt-to-pitch"
         ),
@@ -311,11 +328,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                     },
                 },
             )
-            st.session_state[SESSION_PITCH_TRACE] = {
-                "run_id": pitch_run_id,
-                "status": "blocked",
-                "ended_at": _iso_now(),
-            }
+            _set_pitch_trace_state(pitch_run_id, "blocked", timestamp_field="ended_at")
             st.warning(guardrail_warning_message(guardrail_result.violation_type, context="pitch"))
             return
 
@@ -355,11 +368,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                         "final_chars": len(pitch),
                     },
                 )
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "completed",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
 
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "prompt_to_pitch", "error": str(exc)})
@@ -369,11 +378,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                     error=str(exc),
                     outputs={"status": "error", "step": "prompt_to_pitch", "mode": pitch_mode},
                 )
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro ao gerar pitch no modo prompt-to-pitch: {exc}")
 
     if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
@@ -429,17 +434,13 @@ def render_pitch_tab(cliente_id, cliente_info):
                     error=str(exc),
                     outputs={"status": "error", "step": "auto_pitch_priorities"},
                 )
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro ao gerar prioridades do auto-pitch: {exc}")
 
         _render_auto_pitch_result()
 
-        if st.session_state.get("auto_pitch_selected_priority") and st.button(
-            "Gerar Comunicação!",
+        if st.session_state.get("auto_pitch_selected_priority") and not st.session_state.get("auto_pitch_communication_result") and st.button(
+            "Gerar comunicação",
             key="auto_pitch_btn_communication",
         ):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
@@ -488,11 +489,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                         "communication": communication_result,
                     },
                 )
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "completed",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
                 st.rerun()
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "auto_pitch_communication", "error": str(exc)})
@@ -502,12 +499,11 @@ def render_pitch_tab(cliente_id, cliente_info):
                     error=str(exc),
                     outputs={"status": "error", "step": "auto_pitch_communication"},
                 )
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro ao gerar racional e comunicação do auto-pitch: {exc}")
+
+        if st.session_state.get("auto_pitch_communication_result"):
+            st.caption("✅ Comunicação gerada. Inicie um novo pitch para testar outra prioridade.")
 
         return
 
@@ -538,11 +534,7 @@ def render_pitch_tab(cliente_id, cliente_info):
         except Exception as exc:
             tracer.log_event(pitch_run_id, "pitch_error", {"step": "rank_journeys", "error": str(exc)})
             tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "rank_journeys"})
-            st.session_state[SESSION_PITCH_TRACE] = {
-                "run_id": pitch_run_id,
-                "status": "error",
-                "ended_at": _iso_now(),
-            }
+            _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
             st.error(f"Erro ao sugerir jornadas: {exc}")
 
     if st.session_state.etapa >= 2 and st.session_state.ranking_resultado:  # Jornadas já foram geradas
@@ -658,11 +650,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "step4", "error": str(exc)})
                 tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step4"})
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro no Passo 4: {exc}")
 
         if "step4_result" in st.session_state and st.session_state["step4_result"]:
@@ -755,11 +743,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "step5", "error": str(exc)})
                 tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step5"})
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro no Passo 5: {exc}")
 
         if "step5_result" in st.session_state and st.session_state["step5_result"]:
@@ -956,11 +940,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             except Exception as exc:
                 tracer.log_event(pitch_run_id, "pitch_error", {"step": "step7", "error": str(exc)})
                 tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step7"})
-                st.session_state[SESSION_PITCH_TRACE] = {
-                    "run_id": pitch_run_id,
-                    "status": "error",
-                    "ended_at": _iso_now(),
-                }
+                _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro ao gerar rascunho: {exc}")
 
         if st.session_state["pitch_draft"]:
@@ -1031,11 +1011,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                                 },
                             },
                         )
-                        st.session_state[SESSION_PITCH_TRACE] = {
-                            "run_id": pitch_run_id,
-                            "status": "blocked",
-                            "ended_at": _iso_now(),
-                        }
+                        _set_pitch_trace_state(pitch_run_id, "blocked", timestamp_field="ended_at")
                         st.warning(guardrail_warning_message(guardrail_result.violation_type, context="pitch"))
                         return
 
@@ -1059,11 +1035,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                     except Exception as exc:
                         tracer.log_event(pitch_run_id, "pitch_error", {"step": "step8", "error": str(exc)})
                         tracer.end_run(pitch_run_id, status="error", error=str(exc), outputs={"status": "error", "step": "step8"})
-                        st.session_state[SESSION_PITCH_TRACE] = {
-                            "run_id": pitch_run_id,
-                            "status": "error",
-                            "ended_at": _iso_now(),
-                        }
+                        _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                         st.error(f"Erro ao aplicar ajuste: {exc}")
 
             with colB:
@@ -1079,11 +1051,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                             "final_chars": len(st.session_state["pitch_final_text"] or ""),
                         },
                     )
-                    st.session_state[SESSION_PITCH_TRACE] = {
-                        "run_id": pitch_run_id,
-                        "status": "completed",
-                        "ended_at": _iso_now(),
-                    }
+                    _set_pitch_trace_state(pitch_run_id, "completed", timestamp_field="ended_at")
                     st.success("✅ Pitch finalizado")
 
             if st.session_state["pitch_final_text"]:

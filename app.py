@@ -103,14 +103,12 @@ def main():
     with tab_home:
         if _is_tab_enabled("🏠 Início"):
             render_home_tab()
-            render_screen_feedback("home", "🏠 Início")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
     with tab_clientes:
         if _is_tab_enabled("👤 Visualização clientes"):
             render_visualizacao_clientes_tab(st.session_state.selected_cliente_id)
-            render_screen_feedback("client_visualization", "👤 Visualização clientes")
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
@@ -144,7 +142,6 @@ def main():
 
     with tab_settings:
         render_settings_tab()
-        render_screen_feedback("settings", "⚙️ Configurações")
 
 
 if __name__ == "__main__":

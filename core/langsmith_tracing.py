@@ -182,7 +182,7 @@ class LangSmithTracer:
         if not self.enabled or not run_id:
             return False
 
-        run_state = self._runs.pop(run_id, None)
+        run_state = self._runs.get(run_id)
         if not run_state or not self._client:
             return False
 
@@ -212,6 +212,7 @@ class LangSmithTracer:
                 tags=run_state["tags"],
                 extra=extra,
             )
+            self._runs.pop(run_id, None)
             self.last_error = None
             return True
         except Exception as e:
@@ -241,17 +242,7 @@ class LangSmithTracer:
         }
         comment = f"Feedback da tela: {'like' if score else 'dislike'}"
 
-        try:
-            if feedback_id:
-                self._client.update_feedback(
-                    feedback_id,
-                    score=score_value,
-                    value=feedback_value,
-                    comment=comment,
-                )
-                self.last_error = None
-                return str(feedback_id)
-
+        def _create_feedback() -> str | None:
             feedback = self._client.create_feedback(
                 run_id=run_id,
                 trace_id=run_id,
@@ -266,8 +257,27 @@ class LangSmithTracer:
                     "screen_label": screen_label,
                 },
             )
-            self.last_error = None
             return str(getattr(feedback, "id", "") or "")
+
+        try:
+            if feedback_id:
+                try:
+                    self._client.update_feedback(
+                        feedback_id,
+                        score=score_value,
+                        value=feedback_value,
+                        comment=comment,
+                    )
+                    self.last_error = None
+                    return str(feedback_id)
+                except Exception as update_exc:
+                    message = str(update_exc)
+                    if "Feedback not found" not in message and "404" not in message:
+                        raise
+
+            new_feedback_id = _create_feedback()
+            self.last_error = None
+            return new_feedback_id
         except Exception as e:
             self.last_error = f"Falha ao registrar feedback no LangSmith. \n\n{e}"
             return None
