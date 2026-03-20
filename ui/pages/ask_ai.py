@@ -49,75 +49,77 @@ def render_ask_ai_tab():
     semantic_weight = float(st.session_state.get(SESSION_RAG_SEMANTIC_WEIGHT, 0.8) or 0.8)
     bm25_weight = 1.0 - semantic_weight
 
-    st.subheader("📥 Upload para knowledge base")
-    folders = _list_kb_folders()
-    default_folder = folders[0] if folders else "geral"
+    with st.expander("📥 Gestão da base vetorial", expanded=False):
+        st.caption("Abra esta seção para enviar novos documentos e atualizar a indexação da knowledge base.")
+        st.subheader("Upload para knowledge base")
+        folders = _list_kb_folders()
+        default_folder = folders[0] if folders else "geral"
 
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        folder_options = folders + ["+ Nova pasta"]
-        folder_choice = st.selectbox("Pasta de destino", options=folder_options, index=0)
-    with col2:
-        new_folder_name = st.text_input("Nova pasta", value="", placeholder="ex: normativos")
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            folder_options = folders + ["+ Nova pasta"]
+            folder_choice = st.selectbox("Pasta de destino", options=folder_options, index=0)
+        with col2:
+            new_folder_name = st.text_input("Nova pasta", value="", placeholder="ex: normativos")
 
-    selected_folder = new_folder_name.strip() if folder_choice == "+ Nova pasta" else folder_choice
-    if not selected_folder:
-        selected_folder = default_folder
+        selected_folder = new_folder_name.strip() if folder_choice == "+ Nova pasta" else folder_choice
+        if not selected_folder:
+            selected_folder = default_folder
 
-    uploaded_files = st.file_uploader(
-        "Envie arquivos PDF ou TXT",
-        type=["pdf", "txt"],
-        accept_multiple_files=True,
-        key="ask_ai_upload_files",
-    )
-    selected_segments = st.multiselect(
-        "Perfis/RLS com acesso ao documento",
-        options=RAG_SEGMENT_OPTIONS,
-        default=RAG_SEGMENT_OPTIONS,
-        help="Por padrão, novos documentos ficam visíveis para os 3 perfis. Você pode restringir no cadastro.",
-        key="ask_ai_upload_segments",
-    )
-    selected_document_date = st.date_input(
-        "Data de referência do documento",
-        value=date.today(),
-        help="Usada para filtrar documentos durante a consulta.",
-        key="ask_ai_upload_document_date",
-    )
+        uploaded_files = st.file_uploader(
+            "Envie arquivos PDF ou TXT",
+            type=["pdf", "txt"],
+            accept_multiple_files=True,
+            key="ask_ai_upload_files",
+        )
+        selected_segments = st.multiselect(
+            "Perfis/RLS com acesso ao documento",
+            options=RAG_SEGMENT_OPTIONS,
+            default=RAG_SEGMENT_OPTIONS,
+            help="Por padrão, novos documentos ficam visíveis para os 3 perfis. Você pode restringir no cadastro.",
+            key="ask_ai_upload_segments",
+        )
+        selected_document_date = st.date_input(
+            "Data de referência do documento",
+            value=date.today(),
+            help="Usada para filtrar documentos durante a consulta.",
+            key="ask_ai_upload_document_date",
+        )
 
-    if st.button("⬆️ Processar e indexar uploads", key="ask_ai_upload_button"):
-        if not uploaded_files:
-            st.warning("Selecione ao menos um arquivo para upload.")
-        elif not selected_folder:
-            st.error("Informe uma pasta de destino válida.")
-        elif not selected_segments:
-            st.error("Selecione ao menos um perfil para o documento.")
-        else:
-            added_files = 0
-            added_chunks = 0
-            for file in uploaded_files:
-                suffix = Path(file.name).suffix.lower()
-                if suffix not in SUPPORTED_EXTENSIONS:
-                    st.error(f"{file.name}: formato inválido. Apenas PDF e TXT.")
-                    continue
+        if st.button("⬆️ Processar e indexar uploads", key="ask_ai_upload_button"):
+            if not uploaded_files:
+                st.warning("Selecione ao menos um arquivo para upload.")
+            elif not selected_folder:
+                st.error("Informe uma pasta de destino válida.")
+            elif not selected_segments:
+                st.error("Selecione ao menos um perfil para o documento.")
+            else:
+                added_files = 0
+                added_chunks = 0
+                for file in uploaded_files:
+                    suffix = Path(file.name).suffix.lower()
+                    if suffix not in SUPPORTED_EXTENSIONS:
+                        st.error(f"{file.name}: formato inválido. Apenas PDF e TXT.")
+                        continue
 
-                try:
-                    result = rag.ingest_uploaded_file(
-                        selected_folder,
-                        file.name,
-                        file.getvalue(),
-                        allowed_segments=selected_segments,
-                        document_date=selected_document_date,
-                    )
-                    added_files += result.added_files
-                    added_chunks += result.added_chunks
-                    st.success(f"{file.name}: indexado com sucesso.")
-                except InvalidDocumentError as exc:
-                    st.error(f"{file.name}: {exc}")
-                except Exception as exc:
-                    st.error(f"{file.name}: falha ao processar arquivo ({exc}).")
+                    try:
+                        result = rag.ingest_uploaded_file(
+                            selected_folder,
+                            file.name,
+                            file.getvalue(),
+                            allowed_segments=selected_segments,
+                            document_date=selected_document_date,
+                        )
+                        added_files += result.added_files
+                        added_chunks += result.added_chunks
+                        st.success(f"{file.name}: indexado com sucesso.")
+                    except InvalidDocumentError as exc:
+                        st.error(f"{file.name}: {exc}")
+                    except Exception as exc:
+                        st.error(f"{file.name}: falha ao processar arquivo ({exc}).")
 
-            if added_files:
-                st.info(f"Indexação concluída: {added_files} arquivo(s), {added_chunks} chunk(s).")
+                if added_files:
+                    st.info(f"Indexação concluída: {added_files} arquivo(s), {added_chunks} chunk(s).")
 
     #if st.button("🪄 Aplicar metadados padrão onde faltarem", key="ask_ai_backfill_metadata_button"):
     #    with st.spinner("Aplicando metadados padrão nos chunks/documentos sem segmento/data..."):
