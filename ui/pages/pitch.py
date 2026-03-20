@@ -165,14 +165,19 @@ def _render_prompt_to_pitch_result():
 
 
 
-def _render_auto_pitch_result():
+def _render_auto_pitch_header():
+    st.divider()
+    st.header("🤖 Auto-pitch")
+    st.caption("A IA prioriza as melhores abordagens do momento, o assessor só escolhe a tese vencedora.")
+
+
+def _render_auto_pitch_result(*, render_header: bool = True):
     prioridades = st.session_state.get("auto_pitch_priorities") or []
     communication_result = st.session_state.get("auto_pitch_communication_result") or {}
     communication_revealed = st.session_state.get("auto_pitch_communication_revealed", False)
 
-    st.divider()
-    st.header("🤖 Auto-pitch")
-    st.caption("A IA prioriza as melhores abordagens do momento, o assessor só escolhe a tese vencedora.")
+    if render_header:
+        _render_auto_pitch_header()
 
     signal_summary = st.session_state.get("auto_pitch_signal_summary")
     if signal_summary:
@@ -438,6 +443,8 @@ def render_pitch_tab(cliente_id, cliente_info):
         produtos_df = load_produtos()
         carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
 
+        _render_auto_pitch_header()
+
         if st.button("Iniciar Auto-Pitch", key="auto_pitch_btn_priorities"):
             pitch_run_id = (st.session_state.get(SESSION_PITCH_TRACE) or {}).get("run_id")
             tracer.log_event(
@@ -482,7 +489,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                 _set_pitch_trace_state(pitch_run_id, "error", timestamp_field="ended_at")
                 st.error(f"Erro ao gerar prioridades do auto-pitch: {exc}")
 
-        _render_auto_pitch_result()
+        _render_auto_pitch_result(render_header=False)
 
         if st.session_state.get("auto_pitch_selected_priority") and not st.session_state.get("auto_pitch_communication_result") and st.button(
             "Gerar comunicação",
