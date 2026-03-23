@@ -34,6 +34,7 @@ RBAC_AVAILABLE_TABS = [
     "🚀 Voz do Assessor (Pitch)",
     "📝 Reuniões",
     "📊 Talk to your Data",
+    "🧠 Investment Case Builder",
     "🤖 Pergunte à IA",
 ]
 
