@@ -3,6 +3,7 @@ import streamlit as st
 from core.data_loader import get_cliente_by_id, load_clientes
 from ui.feedback import render_screen_feedback
 from ui.pages.ask_ai import render_ask_ai_tab
+from ui.pages.investment_case_builder import render_investment_case_builder_tab
 from ui.pages.home import render_home_tab
 from ui.pages.client_visualization import render_visualizacao_clientes_tab
 from ui.pages.meetings import render_meetings_tab
@@ -90,12 +91,13 @@ def main():
     dados_cliente_df = build_cliente_sidebar_table(cliente_info)
     st.sidebar.table(dados_cliente_df)
 
-    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_ask_ai, tab_settings = st.tabs([
+    tab_home, tab_clientes, tab_pitch, tab_meetings, tab_portfolio, tab_case_builder, tab_ask_ai, tab_settings = st.tabs([
         "🏠 Início",
         "👤 Visualização clientes",
         "🚀 Voz do Assessor (Pitch)",
         "📝 Reuniões",
         "📊 Talk to your Data",
+        "🧠 Investment Case Builder",
         "🤖 Pergunte à IA",
         "⚙️ Configurações",
     ])
@@ -130,6 +132,12 @@ def main():
         if _is_tab_enabled("📊 Talk to your Data"):
             render_talk_to_your_data_page()
             render_screen_feedback("talk_to_data", "📊 Talk to your Data")
+        else:
+            st.info("Tela desabilitada pelo perfil RBAC")
+
+    with tab_case_builder:
+        if _is_tab_enabled("🧠 Investment Case Builder"):
+            render_investment_case_builder_tab(st.session_state.selected_cliente_id, cliente_info)
         else:
             st.info("Tela desabilitada pelo perfil RBAC")
 
