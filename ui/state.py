@@ -24,7 +24,6 @@ SESSION_RAG_TOP_K = "rag_top_k"
 SESSION_RAG_SEMANTIC_WEIGHT = "rag_semantic_weight"
 SESSION_RLS_ALLOWED_SEGMENTS = "rls_allowed_segments"
 SESSION_RBAC_ENABLED_TABS = "rbac_enabled_tabs"
-TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION = "Quero escrever minha própria pergunta!"
 
 RLS_SEGMENT_OPTIONS = RAG_SEGMENT_OPTIONS.copy()
 
@@ -254,9 +253,3 @@ def init_session_state():
 
     if "talk_to_data_saved_sql" not in st.session_state:
         st.session_state.talk_to_data_saved_sql = ""
-
-    if "talk_to_data_can_generate" not in st.session_state:
-        st.session_state.talk_to_data_can_generate = True
-
-    if "talk_to_data_template_dropdown" not in st.session_state:
-        st.session_state.talk_to_data_template_dropdown = TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION
