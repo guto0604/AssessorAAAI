@@ -285,6 +285,7 @@ def render_talk_to_your_data_page():
             return
 
         st.session_state.talk_to_data_last_llm_output = llm_output
+        st.session_state.talk_to_data_generated_sql = (llm_output.get("sql") or "").strip()
     llm_output = st.session_state.get("talk_to_data_last_llm_output") or {}
     if not llm_output:
         return
@@ -313,9 +314,6 @@ def render_talk_to_your_data_page():
     if not sql:
         st.warning("A pergunta foi marcada como respondível, mas nenhum SQL foi retornado.")
         return
-
-    if not st.session_state.talk_to_data_generated_sql:
-        st.session_state.talk_to_data_generated_sql = sql
 
     st.subheader("Consulta SQL (permitida edição)")
     generated_sql = st.text_area(
