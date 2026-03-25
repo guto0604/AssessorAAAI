@@ -20,7 +20,6 @@ from ui.markdown_utils import escape_streamlit_markdown
 from ui.state import (
     RLS_SEGMENT_OPTIONS,
     SESSION_RLS_ALLOWED_SEGMENTS,
-    TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION,
     _iso_now,
     get_tracer,
     register_screen_run,
@@ -75,44 +74,6 @@ def _build_patrimonio_rls_condition_sql() -> str:
         return "FALSE"
     return " OR ".join([f"({condition})" for condition in conditions])
 
-def _reset_talk_to_data_state() -> None:
-    """Responsável por reiniciar talk to data state no contexto da aplicação de assessoria.
-
-    Returns:
-        Resultado da rotina, no tipo esperado pelo fluxo chamador.
-    
-    """
-    st.session_state.talk_to_data_question = ""
-    st.session_state.talk_to_data_last_llm_output = None
-    st.session_state.talk_to_data_generated_sql = ""
-    st.session_state.talk_to_data_saved_sql = ""
-    st.session_state.talk_to_data_can_generate = True
-
-
-def _reset_talk_to_data_page() -> None:
-    """Responsável por reiniciar talk to data page no contexto da aplicação de assessoria.
-
-    Returns:
-        Resultado da rotina, no tipo esperado pelo fluxo chamador.
-    
-    """
-    try:
-        _reset_talk_to_data_state()
-        st.session_state["talk_to_data_next_question_feedback"] = {
-            "status": "success",
-            "message": "Tela reiniciada. Faça sua próxima pergunta.",
-        }
-    except Exception as exc:
-        st.session_state["talk_to_data_next_question_feedback"] = {
-            "status": "error",
-            "message": (
-                "Erro ao atualizar para a próxima pergunta. "
-                "Selecione novamente a checkbox para funcionar."
-            ),
-            "details": str(exc),
-        }
-
-
 def _render_talk_to_data_samples(allowed_cliente_ids: list[str]) -> None:
 
     """Responsável por renderizar talk to data samples no contexto da aplicação de assessoria.
@@ -139,20 +100,6 @@ def _render_talk_to_data_samples(allowed_cliente_ids: list[str]) -> None:
 
             sampled_df = table_df.sample(n=sample_size, random_state=42)
             st.dataframe(sampled_df, width="stretch")
-
-
-def _apply_talk_to_data_template_question(question: str) -> None:
-    """Responsável por aplicar talk to data template question no contexto da aplicação de assessoria.
-
-    Args:
-        question: Pergunta do usuário que direciona a busca ou geração da resposta.
-
-    Returns:
-        Resultado da rotina, no tipo esperado pelo fluxo chamador.
-    
-    """
-    _reset_talk_to_data_page()
-    st.session_state.talk_to_data_question = question
 
 
 def render_talk_to_your_data_page():
@@ -199,33 +146,13 @@ def render_talk_to_your_data_page():
     #st.caption(f"RLS ativo para segmentos: {', '.join(allowed_segments)}")
     allowed_cliente_ids = _rls_filtered_clientes_df()["Cliente_ID"].astype(str).tolist()
 
-    feedback = st.session_state.pop("talk_to_data_next_question_feedback", None)
-    if feedback:
-        if feedback.get("status") == "error":
-            st.error(feedback.get("message", "Erro ao atualizar a tela."))
-            if feedback.get("details"):
-                st.caption(f"Detalhes técnicos: {feedback['details']}")
-        else:
-            st.success(feedback.get("message", "Tela atualizada."))
-
     _render_talk_to_data_samples(allowed_cliente_ids)
 
-    dropdown_options = [TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION]
-    for category, questions in sample_questions.items():
-        for sample_question in questions:
-            dropdown_options.append(f"{category} — {sample_question}")
-
-    selected_template = st.selectbox(
-        "Escolha uma pergunta modelo ou escreva sua própria pergunta ",
-        options=dropdown_options,
-        key="talk_to_data_template_dropdown",
-    )
-
-    if selected_template != TALK_TO_DATA_TEMPLATE_DEFAULT_OPTION:
-        selected_question = selected_template.split(" — ", 1)[1]
-        if selected_question != st.session_state.get("talk_to_data_question", ""):
-            _apply_talk_to_data_template_question(selected_question)
-            st.rerun()
+    with st.expander("💡 Perguntas exemplo (copie e cole se quiser testar)", expanded=False):
+        for category, questions in sample_questions.items():
+            st.markdown(f"**{category}**")
+            for sample_question in questions:
+                st.markdown(f"- {sample_question}")
 
     question = st.text_area(
         "Pergunte sobre a base de assessoria:",
@@ -234,18 +161,10 @@ def render_talk_to_your_data_page():
         height=100,
     )
 
-    controls_col_1, controls_col_2 = st.columns(2)
-    with controls_col_1:
-        generate_pressed = st.button(
-            "Gerar consulta",
-            key="talk_to_data_submit",
-            disabled=not st.session_state.get("talk_to_data_can_generate", True),
-        )
-
-    with controls_col_2:
-        if st.button("➡️ Próxima pergunta", key="talk_to_data_next_question"):
-            _reset_talk_to_data_page()
-            st.rerun()
+    generate_pressed = st.button(
+        "Gerar consulta",
+        key="talk_to_data_submit",
+    )
 
     if generate_pressed:
         if not question.strip():
@@ -366,8 +285,6 @@ def render_talk_to_your_data_page():
             return
 
         st.session_state.talk_to_data_last_llm_output = llm_output
-        st.session_state.talk_to_data_can_generate = False
-
     llm_output = st.session_state.get("talk_to_data_last_llm_output") or {}
     if not llm_output:
         return
