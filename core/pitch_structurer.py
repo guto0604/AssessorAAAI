@@ -213,16 +213,45 @@ Formato obrigatório:
         config=config,
     )
     response = llm.invoke(messages, config=config)
-    parsed = parse_json_output(str_output_parser.invoke(response, config=config))
+    raw_output = str_output_parser.invoke(response, config=config)
+    parsed = parse_json_output(raw_output)
+    api_metrics = _build_api_metrics(
+        response,
+        prompt={"messages": str(messages)},
+        output=raw_output,
+    )
+    if tracer and parent_run_id:
+        tracer.log_child_run(
+            parent_run_id,
+            name="pitch_step_5_structurer",
+            run_type="llm",
+            inputs={
+                "prompt_assessor": prompt_assessor,
+                "jornada_nome": jornada_selecionada.get("Nome_Jornada"),
+                "kb_files_selected": kb_files_selected,
+            },
+            outputs={
+                "content_blocks_count": len(parsed.get("blocos_conteudo", [])),
+                "tom_sugerido": parsed.get("tom_sugerido", {}),
+                "tamanho_pitch": parsed.get("tamanho_pitch", {}),
+            },
+            metadata={
+                "feature": "pitch",
+                "step": "step_5",
+                "model": api_metrics.get("model"),
+                "provider": api_metrics.get("provider"),
+                "input_tokens": api_metrics.get("input_tokens"),
+                "output_tokens": api_metrics.get("output_tokens"),
+                "total_tokens": api_metrics.get("total_tokens"),
+                "latency_ms": api_metrics.get("latency_ms"),
+            },
+            tags=["pitch", "step_5", "structurer"],
+        )
 
     if include_api_metrics:
         return {
             "result": parsed,
-            "api_metrics": _build_api_metrics(
-                response,
-                prompt={"messages": str(messages)},
-                output=str_output_parser.invoke(response, config=config),
-            ),
+            "api_metrics": api_metrics,
         }
 
     return parsed

@@ -24,6 +24,15 @@ def _iso_now() -> str:
     return _now_utc().isoformat()
 
 
+def _parse_datetime(value: str | None) -> datetime:
+    if not value:
+        return _now_utc()
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return _now_utc()
+
+
 class LangSmithTracer:
     def __init__(self, api_key: str, enabled: bool, base_url: str | None = None):
         """Inicializa a classe com dependências e estado necessários para o fluxo.
@@ -79,6 +88,7 @@ class LangSmithTracer:
             "tags": tags or [],
             "metadata": metadata or {},
             "events": [],
+            "child_runs": [],
         }
         return run_id
 
@@ -143,10 +153,28 @@ class LangSmithTracer:
         if not self.enabled or not parent_run_id:
             return None
 
+        child_run_id = str(uuid.uuid4())
+        child_payload = {
+            "id": child_run_id,
+            "parent_run_id": parent_run_id,
+            "trace_id": parent_run_id,
+            "name": name,
+            "run_type": run_type,
+            "inputs": inputs or {},
+            "outputs": outputs or {},
+            "metadata": metadata or {},
+            "error": error,
+            "tags": tags or [],
+            "start_time": _parse_datetime(start_time),
+            "end_time": _parse_datetime(end_time),
+        }
+        run_state["child_runs"].append(child_payload)
+
         self.log_event(
             parent_run_id,
             event_name=f"child_run:{name}",
             details={
+                "id": child_run_id,
                 "run_type": run_type,
                 "inputs": inputs or {},
                 "outputs": outputs or {},
@@ -157,7 +185,7 @@ class LangSmithTracer:
                 "end_time": end_time,
             },
         )
-        return None
+        return child_run_id
 
     def end_run(
         self,
@@ -193,7 +221,7 @@ class LangSmithTracer:
                 "events": run_state["events"],
             }
 
-        extra = {"metadata": run_state["metadata"]}
+        extra = {"metadata": {**run_state["metadata"]}}
         if error:
             extra["metadata"]["error"] = error
 
@@ -212,6 +240,23 @@ class LangSmithTracer:
                 tags=run_state["tags"],
                 extra=extra,
             )
+            for child in run_state["child_runs"]:
+                child_extra = {"metadata": {**(child.get("metadata") or {})}}
+                self._client.create_run(
+                    id=child["id"],
+                    trace_id=run_state["id"],
+                    parent_run_id=run_state["id"],
+                    name=child["name"],
+                    run_type=child["run_type"],
+                    project_name=run_state["project_name"],
+                    inputs=child["inputs"],
+                    outputs=child["outputs"],
+                    start_time=child["start_time"],
+                    end_time=child["end_time"],
+                    error=child["error"],
+                    tags=child["tags"],
+                    extra=child_extra,
+                )
             self._runs.pop(run_id, None)
             self.last_error = None
             return True

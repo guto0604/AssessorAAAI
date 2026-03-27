@@ -152,20 +152,33 @@ def transcribe_audio(file_bytes, filename, mime_type, trace_context: dict | None
     started = perf_counter()
     transcript = transcribe_audio_tool.invoke({"file_bytes": file_bytes, "filename": filename}, config=config)
     latency_ms = round((perf_counter() - started) * 1000, 2)
+    api_metrics = {
+        "step": "transcription",
+        "provider": "openai",
+        "model": "gpt-4o-mini-transcribe",
+        "latency_ms": latency_ms,
+        "input_tokens": None,
+        "output_tokens": None,
+        "total_tokens": None,
+        "response_id": None,
+    }
+    tracer = (trace_context or {}).get("tracer")
+    parent_run_id = (trace_context or {}).get("parent_run_id")
+    if tracer and parent_run_id:
+        tracer.log_child_run(
+            parent_run_id,
+            name="meeting_transcription",
+            run_type="tool",
+            inputs={"filename": filename, "mime_type": mime_type},
+            outputs={"transcript_preview": transcript[:240]},
+            metadata=api_metrics,
+            tags=["meeting", "transcription"],
+        )
 
     if include_api_metrics:
         return {
             "text": transcript,
-            "api_metrics": {
-                "step": "transcription",
-                "provider": "openai",
-                "model": "gpt-4o-mini-transcribe",
-                "latency_ms": latency_ms,
-                "input_tokens": None,
-                "output_tokens": None,
-                "total_tokens": None,
-                "response_id": None,
-            },
+            "api_metrics": api_metrics,
         }
     return transcript
 
@@ -219,27 +232,41 @@ Próximos passos sugeridos para o assessor:
         config=config,
     )
     response = llm.invoke(messages, config=config)
-    summary = str_output_parser.invoke(response, config=config).strip()
+    raw_output = str_output_parser.invoke(response, config=config)
+    summary = raw_output.strip()
+    usage = getattr(response, "usage", {}) or {}
+    api_metrics = {
+        "step": "summary",
+        "provider": "openai",
+        "model": getattr(response, "model", None),
+        "latency_ms": getattr(response, "elapsed_ms", None),
+        "input_tokens": usage.get("prompt_tokens"),
+        "output_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "response_id": getattr(response, "response_id", None),
+        "prompt": {
+            "system": system_prompt.strip(),
+            "user": payload,
+        },
+        "output": summary,
+    }
+    tracer = (trace_context or {}).get("tracer")
+    parent_run_id = (trace_context or {}).get("parent_run_id")
+    if tracer and parent_run_id:
+        tracer.log_child_run(
+            parent_run_id,
+            name="meeting_summary",
+            run_type="llm",
+            inputs={"payload": payload},
+            outputs={"summary_preview": summary[:240]},
+            metadata=api_metrics,
+            tags=["meeting", "summary"],
+        )
 
     if include_api_metrics:
-        usage = getattr(response, "usage", {}) or {}
         return {
             "text": summary,
-            "api_metrics": {
-                "step": "summary",
-                "provider": "openai",
-                "model": getattr(response, "model", None),
-                "latency_ms": getattr(response, "elapsed_ms", None),
-                "input_tokens": usage.get("prompt_tokens"),
-                "output_tokens": usage.get("completion_tokens"),
-                "total_tokens": usage.get("total_tokens"),
-                "response_id": getattr(response, "response_id", None),
-                "prompt": {
-                    "system": system_prompt.strip(),
-                    "user": payload,
-                },
-                "output": summary,
-            },
+            "api_metrics": api_metrics,
         }
     return summary
 
