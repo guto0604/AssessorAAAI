@@ -152,6 +152,10 @@ class LangSmithTracer:
         """
         if not self.enabled or not parent_run_id:
             return None
+        
+        run_state = self._runs.get(parent_run_id)
+        if not run_state:
+            return None
 
         child_run_id = str(uuid.uuid4())
         child_payload = {
