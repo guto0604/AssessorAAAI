@@ -177,12 +177,42 @@ Formato obrigatório:
     }
     messages = (payload_builder | prompt).invoke(payload, config=config)
     response = llm.invoke(messages, config=config)
-    parsed = _sanitize_step4_output(parse_json_output(str_output_parser.invoke(response, config=config)))
+    raw_output = str_output_parser.invoke(response, config=config)
+    parsed = _sanitize_step4_output(parse_json_output(raw_output))
     parsed["kb_files_selected"] = _filter_selected_txt_files(parsed.get("kb_files_selected", []), kb_files)
+    api_metrics = _build_api_metrics(
+        response,
+        prompt={"messages": str(messages)},
+        output=raw_output,
+    )
 
     tracer = (trace_context or {}).get("tracer")
     parent_run_id = (trace_context or {}).get("parent_run_id")
     if tracer and parent_run_id:
+        tracer.log_child_run(
+            parent_run_id,
+            name="pitch_step_4_source_selector",
+            run_type="llm",
+            inputs={
+                "prompt_assessor": prompt_assessor,
+                "jornada_nome": jornada_selecionada.get("Nome_Jornada"),
+            },
+            outputs={
+                "products_selected_ids": parsed.get("products_selected_ids", []),
+                "kb_files_selected": parsed.get("kb_files_selected", []),
+            },
+            metadata={
+                "feature": "pitch",
+                "step": "step_4",
+                "model": api_metrics.get("model"),
+                "provider": api_metrics.get("provider"),
+                "input_tokens": api_metrics.get("input_tokens"),
+                "output_tokens": api_metrics.get("output_tokens"),
+                "total_tokens": api_metrics.get("total_tokens"),
+                "latency_ms": api_metrics.get("latency_ms"),
+            },
+            tags=["pitch", "step_4", "source_selector"],
+        )
         tracer.log_event(
             parent_run_id,
             "pitch_step_4_documents_consulted",
@@ -195,11 +225,7 @@ Formato obrigatório:
     if include_api_metrics:
         return {
             "result": parsed,
-            "api_metrics": _build_api_metrics(
-                response,
-                prompt={"messages": str(messages)},
-                output=str_output_parser.invoke(response, config=config),
-            ),
+            "api_metrics": api_metrics,
         }
 
     return parsed

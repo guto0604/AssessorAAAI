@@ -32,6 +32,31 @@ def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | Non
     }
 
 
+def _log_trace_step(trace_context: dict | None, *, name: str, inputs: dict, outputs: dict, api_metrics: dict) -> None:
+    tracer = (trace_context or {}).get("tracer")
+    parent_run_id = (trace_context or {}).get("parent_run_id")
+    if not tracer or not parent_run_id:
+        return
+    tracer.log_child_run(
+        parent_run_id,
+        name=name,
+        run_type="llm",
+        inputs=inputs,
+        outputs=outputs,
+        metadata={
+            "feature": "pitch",
+            "model": api_metrics.get("model"),
+            "provider": api_metrics.get("provider"),
+            "input_tokens": api_metrics.get("input_tokens"),
+            "output_tokens": api_metrics.get("output_tokens"),
+            "total_tokens": api_metrics.get("total_tokens"),
+            "latency_ms": api_metrics.get("latency_ms"),
+            "response_id": api_metrics.get("response_id"),
+        },
+        tags=["pitch", name],
+    )
+
+
 def generate_final_pitch_step7(
     cliente_info: dict,
     prompt_assessor: str,
@@ -103,16 +128,24 @@ Regras:
 
     messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
-    pitch_text = str_output_parser.invoke(response, config=config).strip()
+    raw_output = str_output_parser.invoke(response, config=config)
+    pitch_text = raw_output.strip()
+    api_metrics = _build_api_metrics(response, prompt={"messages": str(messages)}, output=raw_output)
+    _log_trace_step(
+        trace_context,
+        name="pitch_step_7_writer",
+        inputs={
+            "prompt_assessor": prompt_assessor,
+            "jornada_nome": jornada_selecionada.get("Nome_Jornada"),
+        },
+        outputs={"pitch_preview": pitch_text[:240]},
+        api_metrics=api_metrics,
+    )
 
     if include_api_metrics:
         return {
             "text": pitch_text,
-            "api_metrics": _build_api_metrics(
-                response,
-                prompt={"messages": str(messages)},
-                output=str_output_parser.invoke(response, config=config),
-            ),
+            "api_metrics": api_metrics,
         }
 
     return pitch_text
@@ -170,16 +203,21 @@ Regras:
 
     messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
-    pitch_text = str_output_parser.invoke(response, config=config).strip()
+    raw_output = str_output_parser.invoke(response, config=config)
+    pitch_text = raw_output.strip()
+    api_metrics = _build_api_metrics(response, prompt={"messages": str(messages)}, output=raw_output)
+    _log_trace_step(
+        trace_context,
+        name="pitch_prompt_to_pitch_writer",
+        inputs={"prompt_assessor": prompt_assessor},
+        outputs={"pitch_preview": pitch_text[:240]},
+        api_metrics=api_metrics,
+    )
 
     if include_api_metrics:
         return {
             "text": pitch_text,
-            "api_metrics": _build_api_metrics(
-                response,
-                prompt={"messages": str(messages)},
-                output=str_output_parser.invoke(response, config=config),
-            ),
+            "api_metrics": api_metrics,
         }
 
     return pitch_text
@@ -239,16 +277,24 @@ Regras:
 
     messages = prompt.invoke({"user_payload": json.dumps(user_prompt, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
-    revised_text = str_output_parser.invoke(response, config=config).strip()
+    raw_output = str_output_parser.invoke(response, config=config)
+    revised_text = raw_output.strip()
+    api_metrics = _build_api_metrics(response, prompt={"messages": str(messages)}, output=raw_output)
+    _log_trace_step(
+        trace_context,
+        name="pitch_step_8_reviser",
+        inputs={
+            "edit_instruction": edit_instruction,
+            "has_target_excerpt": bool(target_excerpt),
+        },
+        outputs={"revised_preview": revised_text[:240]},
+        api_metrics=api_metrics,
+    )
 
     if include_api_metrics:
         return {
             "text": revised_text,
-            "api_metrics": _build_api_metrics(
-                response,
-                prompt={"messages": str(messages)},
-                output=str_output_parser.invoke(response, config=config),
-            ),
+            "api_metrics": api_metrics,
         }
 
     return revised_text
