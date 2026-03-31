@@ -20,6 +20,18 @@ CLIENTES_COLUMNS = [
     "Perfil_Suitability",
     "Rentabilidade_12_meses",
     "CDI_12_Meses",
+    "Data_Nascimento",
+    "Mes_Aniversario",
+    "Data_Ultimo_Contato",
+    "Dias_Desde_Ultimo_Contato",
+    "Objetivo_Principal",
+    "Data_Objetivo_Financeiro",
+    "Valor_Objetivo_Financeiro",
+    "Score_Risco_Churn",
+    "Idade",
+    "Status_Relacionamento",
+    "Potencial_Captacao",
+    "Evento_Vida_Recente",
 ]
 
 INVESTIMENTOS_COLUMNS = [
