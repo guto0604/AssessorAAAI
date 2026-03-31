@@ -75,6 +75,18 @@ def _extract_rows(df_like, columns: list[str] | None = None) -> list[dict]:
     return filtered
 
 
+def _json_default_serializer(value: Any):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):
+        try:
+            return isoformat()
+        except TypeError:
+            pass
+    return str(value)
+
+
 def _parse_date(value: Any) -> date | None:
     if value in (None, ""):
         return None
@@ -187,10 +199,6 @@ def _derive_capture_potential(cliente_info: dict) -> str | None:
 
 
 def _derive_recent_life_event(cliente_info: dict, today: date, aniversario_proximo_dias: int | None) -> str:
-    event = str(cliente_info.get("Evento_Vida_Recente") or "").strip()
-    if event:
-        return event
-
     if isinstance(aniversario_proximo_dias, int) and aniversario_proximo_dias <= 21:
         return f"Aniversário em {aniversario_proximo_dias} dias"
 
@@ -260,7 +268,6 @@ def build_auto_pitch_signal_summary(
             "spread_vs_cdi_12m": spread_vs_cdi,
             "ultima_interacao_dias": ultima_interacao_dias,
             "aniversario_proximo_dias": aniversario_proximo_dias,
-            "evento_vida_recente": evento_vida,
             "objetivo_principal": _coalesce(cliente_info, "Objetivo_Principal"),
             "data_objetivo_financeiro": _coalesce(cliente_info, "Data_Objetivo_Financeiro"),
             "valor_objetivo_financeiro": _coalesce(cliente_info, "Valor_Objetivo_Financeiro"),
@@ -480,7 +487,10 @@ Formato obrigatório:
         },
     )
 
-    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke(
+        {"user_payload": json.dumps(user_payload, ensure_ascii=False, default=_json_default_serializer)},
+        config=config,
+    )
     response = llm.invoke(messages, config=config)
     raw_output = str_output_parser.invoke(response, config=config)
     parsed = _sanitize_priorities(parse_json_output(raw_output))
@@ -575,7 +585,10 @@ Formato obrigatório:
         },
     )
 
-    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke(
+        {"user_payload": json.dumps(user_payload, ensure_ascii=False, default=_json_default_serializer)},
+        config=config,
+    )
     response = llm.invoke(messages, config=config)
     raw_output = str_output_parser.invoke(response, config=config)
     parsed = _sanitize_communication(parse_json_output(raw_output))

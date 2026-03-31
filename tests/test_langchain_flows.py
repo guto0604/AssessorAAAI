@@ -217,7 +217,7 @@ class FlowTests(unittest.TestCase):
         self.assertIn("data_atual", signal_summary["contexto"])
         self.assertIsNotNone(signal_summary["cliente"]["ultima_interacao_dias"])
         self.assertIsNotNone(signal_summary["cliente"]["aniversario_proximo_dias"])
-        self.assertNotEqual(signal_summary["cliente"]["evento_vida_recente"], None)
+        self.assertIn("tem_evento_relacional", signal_summary["crm_readiness"])
         self.assertEqual(signal_summary["cliente"]["score_risco_churn"], 80)
 
         candidates = build_priority_candidates(signal_summary)
