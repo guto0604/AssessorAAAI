@@ -202,11 +202,23 @@ class FlowTests(unittest.TestCase):
                 "Dinheiro_Disponivel_Para_Investir": 200,
                 "Ultima_Interacao_Dias": 60,
                 "Aniversario_Proximo_Dias": 5,
+                "Objetivo_Principal": "Aposentadoria",
+                "Data_Objetivo_Financeiro": "2030-01-01",
+                "Valor_Objetivo_Financeiro": 500000,
+                "Score_Risco_Churn": 80,
+                "Idade": 45,
+                "Status_Relacionamento": "Em Risco",
+                "Potencial_Captacao": "Alto",
             },
             {"spread_vs_cdi_12m": -0.02},
             inv_df,
         )
         self.assertEqual(signal_summary["cliente"]["nome"], "Cli")
+        self.assertIn("data_atual", signal_summary["contexto"])
+        self.assertIsNotNone(signal_summary["cliente"]["ultima_interacao_dias"])
+        self.assertIsNotNone(signal_summary["cliente"]["aniversario_proximo_dias"])
+        self.assertNotEqual(signal_summary["cliente"]["evento_vida_recente"], None)
+        self.assertEqual(signal_summary["cliente"]["score_risco_churn"], 80)
 
         candidates = build_priority_candidates(signal_summary)
         self.assertTrue(len(candidates) >= 3)

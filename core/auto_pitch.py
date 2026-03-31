@@ -1,4 +1,5 @@
 import json
+from datetime import date, datetime
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -55,6 +56,84 @@ def _extract_rows(df_like, columns: list[str] | None = None) -> list[dict]:
     return filtered
 
 
+def _parse_date(value: Any) -> date | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).date()
+    except ValueError:
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y"):
+            try:
+                return datetime.strptime(text, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
+def _compute_days_since_last_contact(cliente_info: dict, today: date) -> int | None:
+    for key in ("Dias_Sem_Contato", "Ultima_Interacao_Dias", "Dias_Desde_Ultimo_Contato"):
+        value = cliente_info.get(key)
+        if isinstance(value, (int, float)):
+            return max(int(value), 0)
+    last_contact = _parse_date(cliente_info.get("Data_Ultimo_Contato"))
+    if last_contact:
+        return max((today - last_contact).days, 0)
+    return None
+
+
+def _compute_days_until_birthday(cliente_info: dict, today: date) -> int | None:
+    current = cliente_info.get("Aniversario_Proximo_Dias")
+    if isinstance(current, (int, float)):
+        return max(int(current), 0)
+
+    birth_date = _parse_date(cliente_info.get("Data_Nascimento"))
+    month = cliente_info.get("Mes_Aniversario")
+    if birth_date:
+        month = birth_date.month
+        day = birth_date.day
+    else:
+        if not isinstance(month, (int, float)):
+            return None
+        month = int(month)
+        day = 1
+
+    if not 1 <= int(month) <= 12:
+        return None
+    year = today.year
+    try:
+        next_birthday = date(year, int(month), int(day))
+    except ValueError:
+        return None
+    if next_birthday < today:
+        next_birthday = date(year + 1, int(month), int(day))
+    return (next_birthday - today).days
+
+
+def _derive_recent_life_event(cliente_info: dict, today: date, aniversario_proximo_dias: int | None) -> str:
+    event = str(cliente_info.get("Evento_Vida_Recente") or "").strip()
+    if event:
+        return event
+
+    if isinstance(aniversario_proximo_dias, int) and aniversario_proximo_dias <= 21:
+        return f"Aniversário em {aniversario_proximo_dias} dias"
+
+    objetivo = str(cliente_info.get("Objetivo_Principal") or "").strip()
+    objetivo_data = _parse_date(cliente_info.get("Data_Objetivo_Financeiro"))
+    if objetivo and objetivo_data:
+        dias_para_objetivo = (objetivo_data - today).days
+        if 0 <= dias_para_objetivo <= 120:
+            return f"Meta de {objetivo.lower()} prevista para {dias_para_objetivo} dias"
+
+    return ""
+
+
 def _top_categories(investimentos_rows: list[dict]) -> list[dict]:
     totals: dict[str, float] = {}
     total_investido = 0.0
@@ -77,6 +156,7 @@ def build_auto_pitch_signal_summary(
     carteira_summary: dict,
     investimentos_cliente_df,
 ) -> dict:
+    today = date.today()
     investimentos_rows = _extract_rows(
         investimentos_cliente_df,
         columns=["Produto", "Categoria", "Valor_Investido"],
@@ -90,11 +170,12 @@ def build_auto_pitch_signal_summary(
     spread_vs_cdi = carteira_summary.get("spread_vs_cdi_12m")
     top_categories = _top_categories(investimentos_rows)
     top_category_weight = top_categories[0]["peso"] if top_categories else 0.0
-    ultima_interacao_dias = cliente_info.get("Dias_Sem_Contato", cliente_info.get("Ultima_Interacao_Dias"))
-    aniversario_proximo_dias = cliente_info.get("Aniversario_Proximo_Dias")
-    evento_vida = cliente_info.get("Evento_Vida_Recente")
+    ultima_interacao_dias = _compute_days_since_last_contact(cliente_info, today)
+    aniversario_proximo_dias = _compute_days_until_birthday(cliente_info, today)
+    evento_vida = _derive_recent_life_event(cliente_info, today, aniversario_proximo_dias)
 
     return {
+        "contexto": {"data_atual": today.isoformat()},
         "cliente": {
             "cliente_id": cliente_info.get("Cliente_ID"),
             "nome": cliente_info.get("Nome"),
@@ -108,6 +189,13 @@ def build_auto_pitch_signal_summary(
             "ultima_interacao_dias": ultima_interacao_dias,
             "aniversario_proximo_dias": aniversario_proximo_dias,
             "evento_vida_recente": evento_vida,
+            "objetivo_principal": cliente_info.get("Objetivo_Principal"),
+            "data_objetivo_financeiro": cliente_info.get("Data_Objetivo_Financeiro"),
+            "valor_objetivo_financeiro": cliente_info.get("Valor_Objetivo_Financeiro"),
+            "score_risco_churn": cliente_info.get("Score_Risco_Churn"),
+            "idade": cliente_info.get("Idade"),
+            "status_relacionamento": cliente_info.get("Status_Relacionamento"),
+            "potencial_captacao": cliente_info.get("Potencial_Captacao"),
         },
         "portfolio": {
             "total_investido_calculado": round(total_investido, 2),
@@ -266,6 +354,7 @@ Objetivo:
 Regras:
 - Responda APENAS JSON válido.
 - Não use playbooks pré-definidos: descubra as melhores abordagens a partir do contexto completo.
+- Considere explicitamente o campo `data_atual` recebido no payload para toda análise temporal.
 - Você tem liberdade total para definir as categorias e teses de abordagem.
 - Balanceie relacionamento e oportunidade comercial. Nem toda prioridade deve ser oferta de produto.
 - Se houver evento relacional relevante, considere uma prioridade de relacionamento.
@@ -296,6 +385,7 @@ Formato obrigatório:
 """
 
     user_payload = {
+        "data_atual": date.today().isoformat(),
         "prompt_assessor": prompt_assessor,
         "signal_summary": signal_summary,
         "produtos_catalogo": produtos_catalogo,
@@ -370,6 +460,7 @@ Objetivo:
 Regras:
 - Responda APENAS JSON válido.
 - Use somente dados do cliente, carteira, prioridade selecionada, produtos selecionados e documentos internos fornecidos.
+- Considere explicitamente o campo `data_atual` recebido no payload para toda análise temporal.
 - Não invente retornos, taxas ou garantias.
 - O racional deve ser acionável, em português do Brasil e orientado à conversa.
 - `mensagem_principal` deve ficar pronta para WhatsApp ou e-mail curto.
@@ -387,6 +478,7 @@ Formato obrigatório:
 """
 
     user_payload = {
+        "data_atual": date.today().isoformat(),
         "cliente_info": cliente_info,
         "carteira_summary": carteira_summary,
         "investimentos_atuais": investimentos_rows,
