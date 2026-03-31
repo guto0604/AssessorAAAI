@@ -1,4 +1,5 @@
 import json
+import math
 from datetime import date, datetime
 from typing import Any
 
@@ -36,6 +37,24 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, float):
+        return math.isnan(value)
+    return False
+
+
+def _coalesce(cliente_info: dict, *keys: str):
+    for key in keys:
+        value = cliente_info.get(key)
+        if not _is_missing(value):
+            return value
+    return None
 
 
 def _extract_rows(df_like, columns: list[str] | None = None) -> list[dict]:
@@ -88,6 +107,21 @@ def _compute_days_since_last_contact(cliente_info: dict, today: date) -> int | N
     return None
 
 
+def _compute_age(cliente_info: dict, today: date) -> int | None:
+    age = _coalesce(cliente_info, "Idade")
+    if isinstance(age, (int, float)) and not _is_missing(age):
+        return max(int(age), 0)
+
+    birth_date = _parse_date(_coalesce(cliente_info, "Data_Nascimento"))
+    if birth_date is None:
+        return None
+
+    years = today.year - birth_date.year
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        years -= 1
+    return max(years, 0)
+
+
 def _compute_days_until_birthday(cliente_info: dict, today: date) -> int | None:
     current = cliente_info.get("Aniversario_Proximo_Dias")
     if isinstance(current, (int, float)):
@@ -114,6 +148,42 @@ def _compute_days_until_birthday(cliente_info: dict, today: date) -> int | None:
     if next_birthday < today:
         next_birthday = date(year + 1, int(month), int(day))
     return (next_birthday - today).days
+
+
+def _derive_relationship_status(cliente_info: dict, ultima_interacao_dias: int | None) -> str | None:
+    status = _coalesce(cliente_info, "Status_Relacionamento")
+    if isinstance(status, str) and status.strip():
+        return status.strip()
+
+    score_churn = _coalesce(cliente_info, "Score_Risco_Churn")
+    if isinstance(score_churn, (int, float)) and not _is_missing(score_churn):
+        if score_churn >= 75:
+            return "Em Risco"
+        if score_churn >= 45:
+            return "Morno"
+        return "Ativo"
+
+    if isinstance(ultima_interacao_dias, int):
+        if ultima_interacao_dias >= 60:
+            return "Em Risco"
+        if ultima_interacao_dias >= 30:
+            return "Morno"
+        return "Ativo"
+    return None
+
+
+def _derive_capture_potential(cliente_info: dict) -> str | None:
+    potencial = _coalesce(cliente_info, "Potencial_Captacao")
+    if isinstance(potencial, str) and potencial.strip():
+        return potencial.strip()
+
+    patrimonio_outros = _safe_float(_coalesce(cliente_info, "Patrimonio_Investido_Outros", "Patrimonio_Investido_Fora"))
+    dinheiro_disponivel = _safe_float(_coalesce(cliente_info, "Dinheiro_Disponivel_Para_Investir"))
+    if patrimonio_outros >= 750000 or dinheiro_disponivel >= 250000:
+        return "Alto"
+    if patrimonio_outros >= 200000 or dinheiro_disponivel >= 80000:
+        return "Médio"
+    return "Baixo"
 
 
 def _derive_recent_life_event(cliente_info: dict, today: date, aniversario_proximo_dias: int | None) -> str:
@@ -164,15 +234,17 @@ def build_auto_pitch_signal_summary(
     total_investido = sum(_safe_float(row.get("Valor_Investido")) for row in investimentos_rows)
     dinheiro_disponivel = _safe_float(cliente_info.get("Dinheiro_Disponivel_Para_Investir"))
     patrimonio_conosco = _safe_float(cliente_info.get("Patrimonio_Investido_Conosco"))
-    patrimonio_outros = _safe_float(
-        cliente_info.get("Patrimonio_Investido_Outros", cliente_info.get("Patrimonio_Investido_Fora"))
-    )
+    patrimonio_outros = _safe_float(_coalesce(cliente_info, "Patrimonio_Investido_Outros", "Patrimonio_Investido_Fora"))
     spread_vs_cdi = carteira_summary.get("spread_vs_cdi_12m")
     top_categories = _top_categories(investimentos_rows)
     top_category_weight = top_categories[0]["peso"] if top_categories else 0.0
     ultima_interacao_dias = _compute_days_since_last_contact(cliente_info, today)
     aniversario_proximo_dias = _compute_days_until_birthday(cliente_info, today)
     evento_vida = _derive_recent_life_event(cliente_info, today, aniversario_proximo_dias)
+    idade = _compute_age(cliente_info, today)
+    score_risco_churn = _coalesce(cliente_info, "Score_Risco_Churn")
+    status_relacionamento = _derive_relationship_status(cliente_info, ultima_interacao_dias)
+    potencial_captacao = _derive_capture_potential(cliente_info)
 
     return {
         "contexto": {"data_atual": today.isoformat()},
@@ -189,13 +261,13 @@ def build_auto_pitch_signal_summary(
             "ultima_interacao_dias": ultima_interacao_dias,
             "aniversario_proximo_dias": aniversario_proximo_dias,
             "evento_vida_recente": evento_vida,
-            "objetivo_principal": cliente_info.get("Objetivo_Principal"),
-            "data_objetivo_financeiro": cliente_info.get("Data_Objetivo_Financeiro"),
-            "valor_objetivo_financeiro": cliente_info.get("Valor_Objetivo_Financeiro"),
-            "score_risco_churn": cliente_info.get("Score_Risco_Churn"),
-            "idade": cliente_info.get("Idade"),
-            "status_relacionamento": cliente_info.get("Status_Relacionamento"),
-            "potencial_captacao": cliente_info.get("Potencial_Captacao"),
+            "objetivo_principal": _coalesce(cliente_info, "Objetivo_Principal"),
+            "data_objetivo_financeiro": _coalesce(cliente_info, "Data_Objetivo_Financeiro"),
+            "valor_objetivo_financeiro": _coalesce(cliente_info, "Valor_Objetivo_Financeiro"),
+            "score_risco_churn": score_risco_churn,
+            "idade": idade,
+            "status_relacionamento": status_relacionamento,
+            "potencial_captacao": potencial_captacao,
         },
         "portfolio": {
             "total_investido_calculado": round(total_investido, 2),
