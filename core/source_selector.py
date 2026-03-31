@@ -88,7 +88,7 @@ def select_sources_step4(
     produtos_df,
     investimentos_cliente_df,
     kb_dir: str = "knowledge_base",
-    model: str = "gpt-5-mini",
+    model: str = "gpt-4o-mini",
     trace_context: dict | None = None,
     include_api_metrics: bool = False,
 ):
@@ -150,7 +150,7 @@ Formato obrigatório:
     prompt = ChatPromptTemplate.from_messages(
         [("system", system_prompt), ("user", "{user_payload}")]
     )
-    llm = get_chat_model(model=model, temperature=1, response_format={"type": "json_object"})
+    llm = get_chat_model(model=model, temperature=0, response_format={"type": "json_object"})
 
     payload_builder = RunnableParallel(
         user_payload=RunnablePassthrough() | RunnableLambda(lambda x: json.dumps(x, ensure_ascii=False))

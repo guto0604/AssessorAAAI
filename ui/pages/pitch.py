@@ -677,7 +677,7 @@ def render_pitch_tab(cliente_id, cliente_info):
 
         carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
 
-        with st.expander("🔎 Resumo do Cliente e Carteira (inputs do passo 4)", expanded=False):
+        with st.expander("🔎 Resumo do Cliente e Carteira", expanded=False):
             st.json(carteira_summary)
             st.dataframe(investimentos_cliente_df, width="stretch")
 
@@ -785,7 +785,7 @@ def render_pitch_tab(cliente_id, cliente_info):
                         investimentos_cliente_df=investimentos_cliente_df,
                         produtos_selecionados_df=produtos_selecionados_df,
                         kb_files_selected=kb_files_selected,
-                        model="gpt-4o-mini",
+                        model="gpt-5.1",
                         trace_context={"tracer": tracer, "parent_run_id": pitch_run_id},
                         include_api_metrics=True,
                     )

@@ -103,7 +103,7 @@ Rankeie as 5 jornadas mais adequadas.
     prompt = ChatPromptTemplate.from_messages(
         [("system", system_prompt), ("user", user_prompt)]
     )
-    model = get_chat_model(model="gpt-5-mini", temperature=1, response_format={"type": "json_object"})
+    model = get_chat_model(model="gpt-4o-mini", temperature=0.3, response_format={"type": "json_object"})
 
     config = build_runnable_config(
         run_name="pitch_step_1_rank_journeys",
