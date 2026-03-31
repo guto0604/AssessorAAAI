@@ -139,33 +139,40 @@ def build_priority_candidates(signal_summary: dict) -> list[dict]:
     candidates = [
         {
             "tipo": "contato_padrão",
-            "score_base": 40,
+            "forca_sinal": 0.45,
             "gatilhos": ["manter relacionamento ativo", "gerar conversa consultiva mesmo sem campanha específica"],
+            "papel": "baseline relacional",
         },
         {
             "tipo": "parabens",
-            "score_base": 20 + (45 if crm.get("tem_janela_aniversario") else 0) + (20 if crm.get("tem_evento_relacional") else 0),
+            "forca_sinal": 0.2 + (0.45 if crm.get("tem_janela_aniversario") else 0) + (0.2 if crm.get("tem_evento_relacional") else 0),
             "gatilhos": ["janela de aniversário ou evento relacional detectado"],
+            "papel": "relacional contextual",
         },
         {
             "tipo": "oferta_produto",
-            "score_base": 30 + (30 if cash_ratio >= 0.12 else 0) + (20 if outside_ratio >= 0.35 else 0),
+            "forca_sinal": 0.3 + (0.3 if cash_ratio >= 0.12 else 0) + (0.2 if outside_ratio >= 0.35 else 0),
             "gatilhos": ["caixa disponível", "oportunidade de share of wallet", "recomendação orientada por suitability"],
+            "papel": "expansão comercial",
         },
         {
             "tipo": "rebalanceamento",
-            "score_base": 25 + (25 if isinstance(spread_vs_cdi, (int, float)) and spread_vs_cdi < -0.01 else 0) + (20 if top_category_weight >= 0.45 else 0),
+            "forca_sinal": 0.25
+            + (0.25 if isinstance(spread_vs_cdi, (int, float)) and spread_vs_cdi < -0.01 else 0)
+            + (0.2 if top_category_weight >= 0.45 else 0),
             "gatilhos": ["concentração relevante", "performance abaixo do CDI", "ajuste de carteira"],
+            "papel": "otimização de carteira",
         },
         {
             "tipo": "reativacao",
-            "score_base": 25 + (35 if isinstance(days_since_contact, (int, float)) and days_since_contact >= 45 else 0),
+            "forca_sinal": 0.25 + (0.35 if isinstance(days_since_contact, (int, float)) and days_since_contact >= 45 else 0),
             "gatilhos": ["tempo elevado sem contato", "retomar cadência comercial"],
+            "papel": "recuperação de cadência",
         },
     ]
 
-    ranked = sorted(candidates, key=lambda item: item["score_base"], reverse=True)
-    return ranked[:4]
+    ranked = sorted(candidates, key=lambda item: item["forca_sinal"], reverse=True)
+    return ranked
 
 
 def _sanitize_priorities(parsed: dict) -> dict:
@@ -242,7 +249,6 @@ def generate_auto_pitch_priorities(
     include_api_metrics: bool = False,
 ):
     signal_summary = build_auto_pitch_signal_summary(cliente_info, carteira_summary, investimentos_cliente_df)
-    candidate_playbooks = build_priority_candidates(signal_summary)
     produtos_catalogo = _extract_rows(
         produtos_df,
         columns=["Produto_ID", "Nome_Produto", "Categoria", "Subcategoria", "Risco_Nivel", "Suitability_Ideal"],
@@ -259,7 +265,8 @@ Objetivo:
 
 Regras:
 - Responda APENAS JSON válido.
-- Use primeiro os sinais determinísticos em `candidate_playbooks`, mas refine com raciocínio contextual.
+- Não use playbooks pré-definidos: descubra as melhores abordagens a partir do contexto completo.
+- Você tem liberdade total para definir as categorias e teses de abordagem.
 - Balanceie relacionamento e oportunidade comercial. Nem toda prioridade deve ser oferta de produto.
 - Se houver evento relacional relevante, considere uma prioridade de relacionamento.
 - Só recomende produto específico quando houver aderência mínima ao suitability ou ao momento do cliente.
@@ -273,7 +280,7 @@ Formato obrigatório:
     {
       "priority_rank": 1,
       "priority_id": "p1",
-      "categoria": "contato_padrão|parabens|oferta_produto|rebalanceamento|reativacao",
+      "categoria": "string",
       "titulo": "string",
       "objetivo": "string",
       "porque_agora": "string",
@@ -291,7 +298,6 @@ Formato obrigatório:
     user_payload = {
         "prompt_assessor": prompt_assessor,
         "signal_summary": signal_summary,
-        "candidate_playbooks": candidate_playbooks,
         "produtos_catalogo": produtos_catalogo,
         "kb_files_available": kb_files_available,
     }
