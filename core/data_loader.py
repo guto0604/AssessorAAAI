@@ -31,7 +31,6 @@ CLIENTES_COLUMNS = [
     "Idade",
     "Status_Relacionamento",
     "Potencial_Captacao",
-    "Evento_Vida_Recente",
 ]
 
 INVESTIMENTOS_COLUMNS = [
