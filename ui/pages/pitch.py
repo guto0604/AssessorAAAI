@@ -137,6 +137,9 @@ def _reset_pitch_flow_state():
         "auto_pitch_signal_summary",
         "auto_pitch_communication_result",
         "auto_pitch_communication_revealed",
+        "pitch_prompt_to_pitch_final_box",
+        "auto_pitch_message_box",
+        "auto_pitch_followup_box",
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
