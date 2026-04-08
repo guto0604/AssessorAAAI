@@ -159,11 +159,11 @@ def _render_prompt_to_pitch_result():
     if not st.session_state.get("pitch_final_text"):
         return
 
+    st.session_state["pitch_prompt_to_pitch_final_box"] = st.session_state["pitch_final_text"]
     st.divider()
     st.header("⚡ Prompt-to-pitch")
     st.text_area(
         "Texto final:",
-        value=st.session_state["pitch_final_text"],
         height=240,
         key="pitch_prompt_to_pitch_final_box",
     )
@@ -442,7 +442,6 @@ def render_pitch_tab(cliente_id, cliente_info):
 
     active_pitch_mode = st.session_state.get(SESSION_PITCH_ACTIVE_MODE)
     if active_pitch_mode and pitch_mode != active_pitch_mode:
-        st.info("Você trocou o modo de geração. Clique em **Iniciar novo pitch** para executar o fluxo no modo selecionado.")
         return
 
     if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH and active_pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
