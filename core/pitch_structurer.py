@@ -1,11 +1,10 @@
-import json
 import re
 import unicodedata
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 
-from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
+from core.langchain_runtime import build_runnable_config, get_chat_model, json_dumps_safe, parse_json_output, str_output_parser
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
@@ -207,7 +206,7 @@ Formato obrigatório:
 
     messages = prompt.invoke(
         {
-            "user_payload": json.dumps(user_payload, ensure_ascii=False),
+            "user_payload": json_dumps_safe(user_payload, ensure_ascii=False),
             "topics_instructions": _build_topics_instructions(topicos_llm),
         },
         config=config,

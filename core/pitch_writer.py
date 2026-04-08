@@ -1,8 +1,7 @@
-import json
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from core.langchain_runtime import build_runnable_config, get_chat_model, str_output_parser
+from core.langchain_runtime import build_runnable_config, get_chat_model, json_dumps_safe, str_output_parser
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
@@ -126,7 +125,7 @@ Regras:
         },
     )
 
-    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke({"user_payload": json_dumps_safe(user_payload, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
     raw_output = str_output_parser.invoke(response, config=config)
     pitch_text = raw_output.strip()
@@ -201,7 +200,7 @@ Regras:
         },
     )
 
-    messages = prompt.invoke({"user_payload": json.dumps(user_payload, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke({"user_payload": json_dumps_safe(user_payload, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
     raw_output = str_output_parser.invoke(response, config=config)
     pitch_text = raw_output.strip()
@@ -275,7 +274,7 @@ Regras:
         },
     )
 
-    messages = prompt.invoke({"user_payload": json.dumps(user_prompt, ensure_ascii=False)}, config=config)
+    messages = prompt.invoke({"user_payload": json_dumps_safe(user_prompt, ensure_ascii=False)}, config=config)
     response = llm.invoke(messages, config=config)
     raw_output = str_output_parser.invoke(response, config=config)
     revised_text = raw_output.strip()

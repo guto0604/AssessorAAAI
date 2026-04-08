@@ -1,4 +1,5 @@
 import unittest
+from datetime import date
 from unittest.mock import patch
 
 from core.auto_pitch import (
@@ -150,7 +151,7 @@ class FlowTests(unittest.TestCase):
                 "Topicos_LLM": "Diagnóstico de alocação; Próximos passos recomendados",
             }
         ])
-        cliente = {"Nome": "Cli"}
+        cliente = {"Nome": "Cli", "Data_Nascimento": date(1990, 1, 2)}
         jornada = {
             "jornada_id": "J1",
             "topicos_llm": ["Diagnóstico de alocação", "Próximos passos recomendados"],
@@ -171,6 +172,7 @@ class FlowTests(unittest.TestCase):
         inv_df = MiniDF([{"Produto": "X", "Categoria": "Y", "Valor_Investido": 100}])
         r4 = select_sources_step4(cliente, "meta", jornada, {}, produtos_df, inv_df)
         self.assertEqual(len(r4["products_selected_ids"]), 3)
+        self.assertEqual(cliente["Data_Nascimento"], date(1990, 1, 2))
 
         r4m = select_sources_step4(cliente, "meta", jornada, {}, produtos_df, inv_df, include_api_metrics=True)
         self.assertEqual(len(r4m["result"]["products_selected_ids"]), 3)
