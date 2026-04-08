@@ -27,6 +27,7 @@ from ui.guardrails import (
 )
 from ui.markdown_utils import escape_streamlit_markdown
 from ui.state import (
+    SESSION_PITCH_ACTIVE_MODE,
     SESSION_PITCH_FLOW_STARTED,
     SESSION_PITCH_MODE,
     SESSION_PITCH_TRACE,
@@ -119,6 +120,7 @@ def _reset_pitch_flow_state():
     """
     st.session_state.etapa = 1
     st.session_state.ranking_resultado = None
+    st.session_state[SESSION_PITCH_ACTIVE_MODE] = None
 
     keys_to_reset = [
         "editar_descricao",
@@ -386,6 +388,7 @@ def render_pitch_tab(cliente_id, cliente_info):
             return
 
         st.session_state[SESSION_PITCH_FLOW_STARTED] = True
+        st.session_state[SESSION_PITCH_ACTIVE_MODE] = pitch_mode
 
         if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
             tracer.log_event(pitch_run_id, "pitch_prompt_to_pitch_started", {"mode": pitch_mode})
@@ -437,11 +440,16 @@ def render_pitch_tab(cliente_id, cliente_info):
     if not st.session_state.get(SESSION_PITCH_FLOW_STARTED):
         return
 
-    if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
+    active_pitch_mode = st.session_state.get(SESSION_PITCH_ACTIVE_MODE)
+    if active_pitch_mode and pitch_mode != active_pitch_mode:
+        st.info("Você trocou o modo de geração. Clique em **Iniciar novo pitch** para executar o fluxo no modo selecionado.")
+        return
+
+    if pitch_mode == PITCH_MODE_PROMPT_TO_PITCH and active_pitch_mode == PITCH_MODE_PROMPT_TO_PITCH:
         _render_prompt_to_pitch_result()
         return
 
-    if pitch_mode == PITCH_MODE_AUTO_PITCH:
+    if pitch_mode == PITCH_MODE_AUTO_PITCH and active_pitch_mode == PITCH_MODE_AUTO_PITCH:
         investimentos_cliente_df = get_investimentos_by_cliente(cliente_id)
         produtos_df = load_produtos()
         carteira_summary = carteira_summary_for_llm(cliente_info, investimentos_cliente_df)
