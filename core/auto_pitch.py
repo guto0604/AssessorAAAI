@@ -1,11 +1,16 @@
-import json
 import math
 from datetime import date, datetime
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
+from core.langchain_runtime import (
+    build_runnable_config,
+    get_chat_model,
+    json_dumps_safe,
+    parse_json_output,
+    str_output_parser,
+)
 from core.pitch_structurer import read_kb_files_tool
 from core.source_selector import list_kb_files
 
@@ -73,18 +78,6 @@ def _extract_rows(df_like, columns: list[str] | None = None) -> list[dict]:
     for row in rows:
         filtered.append({column: row.get(column) for column in columns})
     return filtered
-
-
-def _json_default_serializer(value: Any):
-    if isinstance(value, (datetime, date)):
-        return value.isoformat()
-    isoformat = getattr(value, "isoformat", None)
-    if callable(isoformat):
-        try:
-            return isoformat()
-        except TypeError:
-            pass
-    return str(value)
 
 
 def _parse_date(value: Any) -> date | None:
@@ -488,7 +481,7 @@ Formato obrigatório:
     )
 
     messages = prompt.invoke(
-        {"user_payload": json.dumps(user_payload, ensure_ascii=False, default=_json_default_serializer)},
+        {"user_payload": json_dumps_safe(user_payload, ensure_ascii=False)},
         config=config,
     )
     response = llm.invoke(messages, config=config)
@@ -586,7 +579,7 @@ Formato obrigatório:
     )
 
     messages = prompt.invoke(
-        {"user_payload": json.dumps(user_payload, ensure_ascii=False, default=_json_default_serializer)},
+        {"user_payload": json_dumps_safe(user_payload, ensure_ascii=False)},
         config=config,
     )
     response = llm.invoke(messages, config=config)

@@ -1,10 +1,9 @@
-import json
 from pathlib import Path
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
 
-from core.langchain_runtime import build_runnable_config, get_chat_model, parse_json_output, str_output_parser
+from core.langchain_runtime import build_runnable_config, get_chat_model, json_dumps_safe, parse_json_output, str_output_parser
 
 
 def _build_api_metrics(response, *, provider: str = "openai", prompt: dict | None = None, output: str | None = None) -> dict:
@@ -153,7 +152,7 @@ Formato obrigatório:
     llm = get_chat_model(model=model, temperature=0, response_format={"type": "json_object"})
 
     payload_builder = RunnableParallel(
-        user_payload=RunnablePassthrough() | RunnableLambda(lambda x: json.dumps(x, ensure_ascii=False))
+        user_payload=RunnablePassthrough() | RunnableLambda(lambda x: json_dumps_safe(x, ensure_ascii=False))
     )
 
     config = build_runnable_config(

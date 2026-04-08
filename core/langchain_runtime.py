@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import date, datetime
 from typing import Any
 
 from langchain_core.output_parsers import StrOutputParser
@@ -79,5 +80,24 @@ def parse_json_output(text: str) -> Any:
     """
     return json.loads(text)
 
+
+
+
+def json_default_serializer(value: Any) -> str:
+    """Serializa tipos não padrão para JSON no contexto dos fluxos LangChain."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):
+        try:
+            return isoformat()
+        except TypeError:
+            pass
+    return str(value)
+
+
+def json_dumps_safe(payload: Any, *, ensure_ascii: bool = False) -> str:
+    """Aplica serialização JSON resiliente para objetos com datas."""
+    return json.dumps(payload, ensure_ascii=ensure_ascii, default=json_default_serializer)
 
 str_output_parser = StrOutputParser()
