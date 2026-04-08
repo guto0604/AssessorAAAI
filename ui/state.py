@@ -16,6 +16,7 @@ SESSION_PITCH_TRACE = "pitch_trace_run"
 SESSION_MEETING_TRACE = "meeting_trace_run"
 SESSION_PITCH_FLOW_STARTED = "pitch_flow_started"
 SESSION_PITCH_MODE = "pitch_mode"
+SESSION_PITCH_ACTIVE_MODE = "pitch_active_mode"
 SESSION_TRACING_HEALTH_STATUS = "langsmith_tracing_health_status"
 SESSION_LANGSMITH_TRACER = "langsmith_tracer_instance"
 SESSION_SCREEN_RUN_REGISTRY = "screen_run_registry"
@@ -220,6 +221,9 @@ def init_session_state():
 
     if SESSION_PITCH_MODE not in st.session_state:
         st.session_state[SESSION_PITCH_MODE] = "auto_pitch"
+
+    if SESSION_PITCH_ACTIVE_MODE not in st.session_state:
+        st.session_state[SESSION_PITCH_ACTIVE_MODE] = None
 
     if SESSION_TRACING_HEALTH_STATUS not in st.session_state:
         st.session_state[SESSION_TRACING_HEALTH_STATUS] = None
