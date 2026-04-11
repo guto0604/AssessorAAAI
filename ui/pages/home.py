@@ -7,29 +7,35 @@ def render_home_tab():
     Returns:
         Não retorna valor; atualiza diretamente os componentes da interface.
     """
-    st.title("Potencializando assessores com IA")
+    st.title("🏠 Início")
+    st.markdown("Você está aqui 😄")
 
-    st.subheader("🎯 Objetivo da ferramenta")
+    st.markdown("\n👤 **Visualização Clientes (NON AI)**")
     st.markdown(
-        """
-        - Aumentar a qualidade e consistência dos contatos com clientes.
-        - Reduzir tempo operacional para montar abordagens e materiais.
-        - Transformar dados internos em ações comerciais práticas.
-        """
+        "Painel executivo com patrimônio, risco, liquidez, aderência e oportunidades comerciais do cliente."
     )
 
-    st.subheader("📚 O que você encontra em cada aba")
+    st.markdown("\n🚀 **Voz do Assessor**")
     st.markdown(
-        """
-        - **👤 Visualização clientes**: painel executivo com KPIs, alertas, composição de carteira, aderência de risco e oportunidades comerciais.
-        - **🚀 Voz do Assessor (Pitch)**: fluxo de IA guiado para estruturar argumentos, tom e narrativa de contato.
-        - **📝 Reuniões**: transcrição e resumo de reuniões, com direcionamento de próximos passos e acompanhamento das interações com o cliente.
-        - **📊 Talk to your Data**: pergunte e converse em linguagem natural para explorar e visualizar dados.
-        - **🤖 Pergunte à IA**: canal para tirar dúvidas de processos, políticas e documentos internos usando IA.
-        - **⚙️ Configurações**: gerenciamento de credenciais e status das integrações da sessão.
-        """
+        "Crie pitches personalizados com IA, mantendo controle humano sobre tese, tom e mensagem final."
     )
 
-    st.info(
-        "Para as abas de Visualização Clientes, Voz do Assessor e Reuniões, selecione o cliente na barra lateral antes de iniciar para garantir o contexto correto."
+    st.markdown("\n📝 **Reuniões**")
+    st.markdown(
+        "Grave ou envie áudio de reuniões para transcrever, resumir e registrar próximos passos por cliente."
+    )
+
+    st.markdown("\n📊 **Talk to your Data**")
+    st.markdown(
+        "Faça perguntas em linguagem natural e obtenha as respostas baseado em dados."
+    )
+
+    st.markdown("\n🤖 **Pergunte à IA**")
+    st.markdown(
+        "Consulte políticas, procedimentos internos e muito mais com respostas baseadas em nossas fontes."
+    )
+
+    st.markdown("\n⚙️ **Configurações (Focado no Admin)**")
+    st.markdown(
+        "Gerencie chaves, tracing, parâmetros de busca, reindexação vetorial e permissões."
     )
