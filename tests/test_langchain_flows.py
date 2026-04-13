@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import patch
 
 from core.auto_pitch import (
@@ -266,6 +266,14 @@ class FlowTests(unittest.TestCase):
         
         """
         out = summarize_transcript({"Nome": "Cli"}, "texto")
+        self.assertTrue(isinstance(out, str))
+
+    @patch("langchain_openai.get_openai_client", return_value=_FakeClient())
+    def test_meeting_summary_accepts_datetime_in_cliente_info(self, _mock_client):
+        out = summarize_transcript(
+            {"Nome": "Cli", "Data_Ultimo_Contato": datetime(2026, 4, 13, 15, 30)},
+            "texto",
+        )
         self.assertTrue(isinstance(out, str))
 
 
