@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from io import BytesIO
 from pathlib import Path
 import json
@@ -24,6 +24,16 @@ def _iso_now() -> str:
         Resultado da rotina, no tipo esperado pelo fluxo chamador.
     """
     return datetime.now(timezone.utc).isoformat()
+
+
+def _json_default_serializer(value):
+    """Serializa tipos não nativos de JSON para manter o fluxo resiliente."""
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):
+        return isoformat()
+    return str(value)
 
 
 def ensure_client_meetings_dir(cliente_id) -> Path:
@@ -226,7 +236,11 @@ Próximos passos sugeridos para o assessor:
         },
     )
 
-    payload = json.dumps({"cliente_info": cliente_info, "transcricao": transcript}, ensure_ascii=False)
+    payload = json.dumps(
+        {"cliente_info": cliente_info, "transcricao": transcript},
+        ensure_ascii=False,
+        default=_json_default_serializer,
+    )
     messages = prompt.invoke(
         {"payload": payload},
         config=config,
